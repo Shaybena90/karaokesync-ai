@@ -1,0 +1,30 @@
+# Secrets
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Node
+node_modules/
+dist/
+dev-dist/
+*.tsbuildinfo
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Worker temp / model cache
+worker/tmp/
+worker/.cache/
+models/
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

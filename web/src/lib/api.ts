@@ -1,0 +1,109 @@
+import { supabase, supabaseAnonKey } from './supabase'
+import type { Limits } from './types'
+
+const API_URL = ((import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:8000').replace(/\/$/, '')
+
+export class ApiError extends Error {
+  code: string
+  status: number
+  constructor(code: string, status = 0) {
+    super(code)
+    this.code = code
+    this.status = status
+  }
+}
+
+async function accessToken(): Promise<string | null> {
+  if (!supabase) return null
+  const { data } = await supabase.auth.getSession()
+  return data.session?.access_token ?? null
+}
+
+async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const token = await accessToken()
+  const headers = new Headers(init.headers)
+  if (token) headers.set('Authorization', `Bearer ${token}`)
+  if (init.body) headers.set('Content-Type', 'application/json')
+
+  let resp: Response
+  try {
+    resp = await fetch(`${API_URL}${path}`, { ...init, headers })
+  } catch {
+    throw new ApiError(navigator.onLine ? 'api_unreachable' : 'network')
+  }
+  if (resp.status === 204) return undefined as T
+  let body: unknown = null
+  try {
+    body = await resp.json()
+  } catch {
+    /* empty body */
+  }
+  if (!resp.ok) {
+    const detail = (body as { detail?: unknown } | null)?.detail
+    throw new ApiError(typeof detail === 'string' ? detail : 'generic', resp.status)
+  }
+  return body as T
+}
+
+export interface UploadInit {
+  project_id: string
+  audio_file_id: string
+  upload_url: string
+  content_type: string
+}
+
+export interface ProjectState {
+  project_id: string
+  status: string
+  job_id: string | null
+  duration_ms: number | null
+  error_code: string | null
+}
+
+export const api = {
+  limits: () => request<Limits>('/limits'),
+  initUpload: (file: File) =>
+    request<UploadInit>('/uploads', {
+      method: 'POST',
+      body: JSON.stringify({ file_name: file.name, size_bytes: file.size, mime_type: file.type }),
+    }),
+  completeUpload: (projectId: string) => request<ProjectState>(`/uploads/${projectId}/complete`, { method: 'POST' }),
+  retry: (projectId: string) => request<ProjectState>(`/projects/${projectId}/retry`, { method: 'POST' }),
+  deleteProject: (projectId: string) => request<void>(`/projects/${projectId}`, { method: 'DELETE' }),
+}
+
+/**
+ * Upload the file DIRECTLY to Supabase Storage using the one-time signed URL
+ * issued by the API (the file never passes through our servers).
+ * XHR is used instead of fetch because it reports upload progress.
+ */
+export function uploadToSignedUrl(
+  url: string,
+  file: File,
+  contentType: string,
+  onProgress: (fraction: number) => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest()
+    xhr.open('PUT', url)
+    xhr.setRequestHeader('Content-Type', contentType)
+    xhr.setRequestHeader('x-upsert', 'false')
+    if (supabaseAnonKey) xhr.setRequestHeader('apikey', supabaseAnonKey)
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable) onProgress(e.loaded / e.total)
+    }
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        onProgress(1)
+        resolve()
+      } else {
+        reject(new ApiError(xhr.status === 413 ? 'file_too_large' : 'upload_failed', xhr.status))
+      }
+    }
+    xhr.onerror = () => reject(new ApiError(navigator.onLine ? 'upload_failed' : 'network'))
+    xhr.onabort = () => reject(new ApiError('aborted'))
+    signal?.addEventListener('abort', () => xhr.abort())
+    xhr.send(file)
+  })
+}

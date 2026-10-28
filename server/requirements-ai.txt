@@ -1,0 +1,6 @@
+# Heavy AI dependencies — needed only on the machine that runs the worker.
+-r requirements.txt
+faster-whisper>=1.1.0
+# Vocal separation (optional, set ENABLE_VOCAL_SEPARATION=true). Large download
+# (PyTorch). Strongly recommended to run on a GPU machine.
+demucs>=4.0.1

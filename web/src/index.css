@@ -1,0 +1,51 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink-950: #07060f;
+  --color-ink-900: #0d0b1d;
+  --color-ink-800: #15122b;
+  --color-ink-700: #221d42;
+  --color-violet-glow: #a855f7;
+  --color-blue-glow: #3b82f6;
+  --font-display: "Rubik", "Heebo", system-ui, sans-serif;
+  --font-sans: "Heebo", "Rubik", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply min-h-dvh bg-ink-950 font-sans text-white antialiased;
+    background-image:
+      radial-gradient(60rem 40rem at 85% -10%, rgb(168 85 247 / 0.18), transparent 60%),
+      radial-gradient(50rem 35rem at 0% 20%, rgb(59 130 246 / 0.14), transparent 60%);
+    background-attachment: fixed;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-violet-400;
+  }
+}
+
+@utility text-gradient {
+  @apply bg-gradient-to-l from-violet-300 via-fuchsia-300 to-sky-300 bg-clip-text text-transparent;
+}
+
+@utility glass {
+  @apply border border-white/10 bg-white/[0.04] backdrop-blur-xl;
+}
+
+/* Karaoke word fill: --p goes 0..1 and is driven by the audio clock. */
+.karaoke-word {
+  --p: 0;
+  background-image: linear-gradient(
+    to var(--fill-dir, left),
+    var(--k-active, #e879f9) calc(var(--p) * 100%),
+    var(--k-idle, rgb(255 255 255 / 0.55)) calc(var(--p) * 100%)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.karaoke-word:dir(ltr) { --fill-dir: right; }
