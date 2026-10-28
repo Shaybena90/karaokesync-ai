@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
-import { LyricsPreview } from '../components/LyricsPreview'
+import { KaraokePlayer } from '../components/player/KaraokePlayer'
 import { StatusBadge } from '../components/StatusBadge'
 import { Alert, Button, ButtonLink, Card, ProgressBar, Spinner } from '../components/ui'
 import { errorKey, isMessageKey, useI18n } from '../i18n/I18nProvider'
@@ -162,15 +162,20 @@ export function ProjectPage() {
         )}
 
         {(project.status === 'ready' || project.status === 'expired') && (
-          <Card>
-            <h2 className="mb-4 font-display text-lg font-semibold">{t('project.preview')}</h2>
-            <LyricsPreview
+          <div className="space-y-3">
+            <KaraokePlayer
               projectId={project.id}
+              title={project.title}
               storagePath={audio?.status === 'verified' ? audio.storage_path : null}
               language={project.language}
             />
-            <p className="mt-4 text-xs text-white/40">{t('project.previewNote')}</p>
-          </Card>
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <ButtonLink to={`/projects/${project.id}/play`} variant="ghost">
+                {t('player.open')}
+              </ButtonLink>
+              <p className="hidden text-xs text-white/40 sm:block">{t('player.shortcuts')}</p>
+            </div>
+          </div>
         )}
 
         {actionError && <Alert>{t(errorKey(actionError))}</Alert>}

@@ -6,6 +6,7 @@ import { I18nProvider } from './i18n/I18nProvider'
 import { PendingFileProvider } from './lib/pendingFile'
 import { AuthPage } from './pages/AuthPage'
 import { HomePage } from './pages/HomePage'
+import { PlayerPage } from './pages/PlayerPage'
 import { ProjectPage } from './pages/ProjectPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { UploadPage } from './pages/UploadPage'
@@ -26,6 +27,7 @@ export default function App() {
                 <Route path="upload" element={<RequireAuth><UploadPage /></RequireAuth>} />
                 <Route path="projects" element={<RequireAuth><ProjectsPage /></RequireAuth>} />
                 <Route path="projects/:id" element={<RequireAuth><ProjectPage /></RequireAuth>} />
+                <Route path="projects/:id/play" element={<RequireAuth><PlayerPage /></RequireAuth>} />
                 <Route path="*" element={<HomePage />} />
               </Route>
             </Routes>

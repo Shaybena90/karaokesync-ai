@@ -19,10 +19,10 @@ export function LogoMark({ className = 'size-9' }: { className?: string }) {
 
 export function Logo() {
   return (
-    <Link to="/" className="flex items-center gap-2.5 rounded-xl" aria-label="KaraokeSync AI">
+    <Link to="/" className="flex shrink-0 items-center gap-2 rounded-xl" aria-label="KaraokeSync AI">
       <LogoMark />
       {/* Brand name is always LTR, even inside the RTL layout */}
-      <span dir="ltr" className="font-display text-lg font-bold tracking-tight">
+      <span dir="ltr" className="font-display text-base font-bold tracking-tight whitespace-nowrap sm:text-lg">
         KaraokeSync <span className="text-gradient">AI</span>
       </span>
     </Link>

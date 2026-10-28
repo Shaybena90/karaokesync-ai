@@ -36,16 +36,79 @@
   @apply border border-white/10 bg-white/[0.04] backdrop-blur-xl;
 }
 
-/* Karaoke word fill: --p goes 0..1 and is driven by the audio clock. */
+/* ---------------------------------------------------------------- karaoke
+   Colours are CSS variables so the subtitle styles of stage 8 can override them. */
+.karaoke-theme {
+  --k-active: #e879f9;
+  --k-idle: rgb(255 255 255 / 0.92);
+  --k-glow: rgb(232 121 249 / 0.55);
+}
+
+/* Word fill: --p goes 0..1 and is driven by the audio clock. */
 .karaoke-word {
   --p: 0;
+  display: inline-block;
   background-image: linear-gradient(
     to var(--fill-dir, left),
-    var(--k-active, #e879f9) calc(var(--p) * 100%),
-    var(--k-idle, rgb(255 255 255 / 0.55)) calc(var(--p) * 100%)
+    var(--k-active) calc(var(--p) * 100%),
+    var(--k-idle) calc(var(--p) * 100%)
   );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  transition: transform 0.15s ease-out, filter 0.15s ease-out;
 }
 .karaoke-word:dir(ltr) { --fill-dir: right; }
+.karaoke-word[data-state="active"] {
+  transform: scale(1.06);
+  filter: drop-shadow(0 0 0.35em var(--k-glow));
+}
+@media (prefers-reduced-motion: reduce) {
+  .karaoke-word { transition: none; }
+  .karaoke-word[data-state="active"] { transform: none; }
+}
+
+@keyframes ks-line-in {
+  from { opacity: 0; transform: translateY(0.4em); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Seek bar: native range input (accessible, touch friendly), mirrored in RTL. */
+.ks-seek {
+  --pct: 0%;
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 28px;
+  background: transparent;
+  cursor: pointer;
+  touch-action: none;
+}
+.ks-seek:dir(rtl) { --seek-dir: left; }
+.ks-seek::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to var(--seek-dir, right), #a855f7 0%, #38bdf8 var(--pct), rgb(255 255 255 / 0.15) var(--pct));
+}
+.ks-seek::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(to var(--seek-dir, right), #a855f7 0%, #38bdf8 var(--pct), rgb(255 255 255 / 0.15) var(--pct));
+}
+.ks-seek::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  margin-top: -6px;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgb(168 85 247 / 0.35);
+}
+.ks-seek::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgb(168 85 247 / 0.35);
+}
