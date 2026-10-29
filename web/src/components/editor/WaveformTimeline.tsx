@@ -11,7 +11,8 @@ interface Props {
   zoom: number
   onReady: (ws: WaveSurfer | null) => void
   onSelect: (wordId: string) => void
-  onTimingChange: (wordId: string, startMs: number, endMs: number) => void
+  /** `moved` is true when the whole word was dragged (not one of its edges). */
+  onTimingChange: (wordId: string, startMs: number, endMs: number, moved: boolean) => void
 }
 
 type RegionsApi = ReturnType<typeof RegionsPlugin.create>
@@ -58,7 +59,10 @@ export function WaveformTimeline({ url, doc, selectedId, zoom, onReady, onSelect
       dragToSeek: false,
     })
     const regions = ws.registerPlugin(RegionsPlugin.create())
-    regions.on('region-updated', (r: Region) => callbacks.current.onTimingChange(r.id, r.start * 1000, r.end * 1000))
+    // `side` is set when an edge was resized, undefined when the whole word was dragged.
+    regions.on('region-updated', (r: Region, side?: 'start' | 'end') =>
+      callbacks.current.onTimingChange(r.id, r.start * 1000, r.end * 1000, side === undefined),
+    )
     regions.on('region-clicked', (r: Region, e: MouseEvent) => {
       e.stopPropagation()
       callbacks.current.onSelect(r.id)
@@ -108,7 +112,8 @@ export function WaveformTimeline({ url, doc, selectedId, zoom, onReady, onSelect
     for (const stale of existing.values()) stale.remove()
   }, [doc, selectedId, ready])
 
-  // Bring the selected word into view.
+  // Bring the whole box of the selected word into view (with some room around
+  // it), so it can be dragged without touching the screen edge.
   useEffect(() => {
     const ws = wsRef.current
     if (!ws || !ready || !selectedId) return
@@ -116,8 +121,10 @@ export function WaveformTimeline({ url, doc, selectedId, zoom, onReady, onSelect
     if (!r) return
     const scroll = ws.getScroll()
     const width = container.current?.clientWidth ?? 0
-    const px = r.start * zoom
-    if (px < scroll || px > scroll + width - 40) ws.setScrollTime(Math.max(0, r.start - 1))
+    const margin = Math.min(60, width / 6)
+    if (r.start * zoom < scroll + margin || r.end * zoom > scroll + width - margin) {
+      ws.setScroll(Math.max(0, r.start * zoom - width / 4))
+    }
   }, [selectedId, ready, zoom])
 
   return (

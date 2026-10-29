@@ -47,7 +47,7 @@ export function HomePage() {
       )}
 
       <section className="grid items-center gap-10 pt-10 sm:pt-16 lg:grid-cols-[1.1fr_1fr] lg:gap-14">
-        <div className="text-center lg:text-start">
+        <div className="min-w-0 text-center lg:text-start">
           <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-xs font-medium text-violet-200">
             <span className="size-1.5 rounded-full bg-violet-400 shadow-[0_0_10px_2px] shadow-violet-500/60" />
             {t('home.badge')}
@@ -80,7 +80,7 @@ export function HomePage() {
           </ul>
         </div>
 
-        <div className="relative">
+        <div className="relative min-w-0">
           <div className="absolute -inset-4 -z-10 rounded-[2.5rem] bg-gradient-to-br from-violet-600/30 to-blue-600/20 blur-3xl" />
           <div className="glass rounded-[2rem] p-3 sm:p-4">
             <KaraokeTeaser />
@@ -127,7 +127,7 @@ function KaraokeTeaser() {
       aria-hidden="true"
       className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-ink-800 to-ink-900 px-5 py-6 ring-1 ring-white/5"
     >
-      <div className="flex h-10 items-end justify-center gap-1 opacity-70">
+      <div className="flex h-10 items-end justify-center gap-1 overflow-hidden opacity-70">
         {Array.from({ length: 36 }, (_, i) => (
           <span
             key={i}

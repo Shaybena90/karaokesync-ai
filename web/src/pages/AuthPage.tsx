@@ -159,16 +159,16 @@ export function AuthPage({ mode }: { mode: AuthMode }) {
         <div className="mt-6 flex flex-col gap-2 text-center text-sm">
           {mode === 'login' && (
             <>
-              <Link className="text-violet-300 hover:underline" to="/forgot-password" state={location.state}>
+              <Link className="inline-flex min-h-11 items-center justify-center text-violet-300 hover:underline" to="/forgot-password" state={location.state}>
                 {t('auth.toForgot')}
               </Link>
-              <Link className="text-violet-300 hover:underline" to="/signup" state={location.state}>
+              <Link className="inline-flex min-h-11 items-center justify-center text-violet-300 hover:underline" to="/signup" state={location.state}>
                 {t('auth.toSignup')}
               </Link>
             </>
           )}
           {(mode === 'signup' || mode === 'forgot') && (
-            <Link className="text-violet-300 hover:underline" to="/login" state={location.state}>
+            <Link className="inline-flex min-h-11 items-center justify-center text-violet-300 hover:underline" to="/login" state={location.state}>
               {t('auth.toLogin')}
             </Link>
           )}

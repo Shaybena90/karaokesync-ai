@@ -9,7 +9,8 @@
     "lint": "oxlint src",
     "preview": "vite preview",
     "test": "vitest run",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.118.0",
@@ -19,6 +20,8 @@
     "wavesurfer.js": "^8.0.3"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.63.0",
     "@tailwindcss/vite": "^4.3.3",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
@@ -28,6 +31,7 @@
     "@vitejs/plugin-react": "^6.1.2",
     "jsdom": "^29.1.1",
     "oxlint": "^1.89.0",
+    "playwright-core": "1.63.0",
     "tailwindcss": "^4.3.3",
     "typescript": "~7.0.2",
     "vite": "^8.3.5",

@@ -22,7 +22,8 @@ export function Logo() {
     <Link to="/" className="flex shrink-0 items-center gap-2 rounded-xl" aria-label="KaraokeSync AI">
       <LogoMark />
       {/* Brand name is always LTR, even inside the RTL layout */}
-      <span dir="ltr" className="font-display text-base font-bold tracking-tight whitespace-nowrap sm:text-lg">
+      {/* On very narrow phones (< 360px) only the icon is shown, so the header fits. */}
+      <span dir="ltr" className="hidden font-display text-base font-bold tracking-tight whitespace-nowrap min-[360px]:inline sm:text-lg">
         KaraokeSync <span className="text-gradient">AI</span>
       </span>
     </Link>

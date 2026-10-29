@@ -78,7 +78,7 @@ export function ProjectPage() {
 
   return (
     <div className="mx-auto max-w-3xl pt-6 sm:pt-10">
-      <Link to="/projects" className="text-sm text-white/60 hover:text-white">
+      <Link to="/projects" className="inline-flex min-h-11 items-center gap-1 text-sm text-white/60 hover:text-white">
         <span aria-hidden="true">{locale === 'he' ? '→' : '←'}</span> {t('project.back')}
       </Link>
 

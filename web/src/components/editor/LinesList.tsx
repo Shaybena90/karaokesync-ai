@@ -57,7 +57,7 @@ export const LinesList = memo(function LinesList({
                   ref={(el) => registerChip(w.id, el)}
                   onClick={() => onSelect(w.id)}
                   title={`${(w.start_ms / 1000).toFixed(2)}–${(w.end_ms / 1000).toFixed(2)}`}
-                  className={`ks-chip min-h-10 rounded-xl px-3 text-base font-semibold transition ${
+                  className={`ks-chip min-h-10 scroll-mt-48 scroll-mb-[55vh] rounded-xl px-3 sm:scroll-mb-4 text-base font-semibold transition ${
                     w.id === selectedId ? 'bg-fuchsia-500/40 ring-2 ring-fuchsia-300' : 'bg-white/[0.07] hover:bg-white/15'
                   } ${unsure ? 'underline decoration-amber-300/80 decoration-dotted decoration-2 underline-offset-4' : ''}`}
                 >

@@ -60,6 +60,7 @@ export function Dropzone({ onFile, maxMb, maxMinutes, disabled }: Props) {
         accept={ACCEPT_ATTR}
         className="sr-only"
         tabIndex={-1}
+        aria-label={t('drop.browse')}
         onChange={(e) => {
           const file = e.target.files?.[0]
           e.target.value = ''

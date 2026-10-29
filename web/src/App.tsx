@@ -1,17 +1,30 @@
+import { lazy, Suspense, type ComponentType } from 'react'
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import { AuthProvider } from './auth/AuthProvider'
 import { Layout } from './components/Layout'
 import { RequireAuth } from './components/RequireAuth'
+import { Spinner } from './components/ui'
 import { I18nProvider } from './i18n/I18nProvider'
 import { PendingFileProvider } from './lib/pendingFile'
-import { AuthPage } from './pages/AuthPage'
-import { EditorPage } from './pages/EditorPage'
 import { HomePage } from './pages/HomePage'
-import { PlayerPage } from './pages/PlayerPage'
-import { ProjectPage } from './pages/ProjectPage'
-import { ProjectsPage } from './pages/ProjectsPage'
-import { StylePage } from './pages/StylePage'
-import { UploadPage } from './pages/UploadPage'
+
+// Pages other than the home page load on demand, so phones download less up
+// front (the editor alone brings the waveform library).
+const named = <K extends string, P extends object>(load: () => Promise<{ [k in K]: ComponentType<P> }>, name: K) =>
+  lazy(() => load().then((m) => ({ default: m[name] })))
+const AuthPage = named(() => import('./pages/AuthPage'), 'AuthPage')
+const EditorPage = named(() => import('./pages/EditorPage'), 'EditorPage')
+const PlayerPage = named(() => import('./pages/PlayerPage'), 'PlayerPage')
+const ProjectPage = named(() => import('./pages/ProjectPage'), 'ProjectPage')
+const ProjectsPage = named(() => import('./pages/ProjectsPage'), 'ProjectsPage')
+const StylePage = named(() => import('./pages/StylePage'), 'StylePage')
+const UploadPage = named(() => import('./pages/UploadPage'), 'UploadPage')
+
+const pageFallback = (
+  <div className="grid min-h-[50vh] place-items-center text-white/60">
+    <Spinner className="size-8" />
+  </div>
+)
 
 export default function App() {
   return (
@@ -19,6 +32,7 @@ export default function App() {
       <AuthProvider>
         <PendingFileProvider>
           <BrowserRouter>
+            <Suspense fallback={pageFallback}>
             <Routes>
               <Route element={<Layout />}>
                 <Route index element={<HomePage />} />
@@ -35,6 +49,7 @@ export default function App() {
                 <Route path="*" element={<HomePage />} />
               </Route>
             </Routes>
+            </Suspense>
           </BrowserRouter>
         </PendingFileProvider>
       </AuthProvider>

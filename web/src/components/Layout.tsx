@@ -30,7 +30,9 @@ export function Layout() {
               className="rounded-xl px-2.5 py-2 text-sm text-white/70 hover:text-white sm:px-3"
               lang={locale === 'he' ? 'en' : 'he'}
             >
-              {t('nav.language')}
+              {/* The accessible name is the visible text ("EN" on phones), with lang set above. */}
+              <span className="sm:hidden">{locale === 'he' ? 'EN' : 'עב'}</span>
+              <span className="hidden sm:inline">{t('nav.language')}</span>
             </button>
             {session ? (
               <button type="button" onClick={signOut} className="rounded-xl px-2.5 py-2 text-sm text-white/70 hover:text-white sm:px-3">

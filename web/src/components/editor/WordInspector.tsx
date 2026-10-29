@@ -143,7 +143,7 @@ function TimeField({ label, ms, onChange, onNow }: { label: string; ms: number; 
           onBlur={commit}
           onKeyDown={(e) => e.key === 'Enter' && e.currentTarget.blur()}
           aria-label={label}
-          className="min-h-10 w-full min-w-0 rounded-xl bg-transparent text-center font-mono text-sm tabular-nums focus:bg-white/5 focus:outline-none"
+          className="min-h-10 w-full min-w-0 rounded-xl bg-transparent text-center font-mono text-base tabular-nums focus:bg-white/5 focus:outline-none"
         />
         <button type="button" onClick={() => onChange(ms + 50)} className="grid size-10 shrink-0 place-items-center rounded-xl bg-white/10 text-lg active:scale-95" aria-label={`${label} +0.05`}>
           +

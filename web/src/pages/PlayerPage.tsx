@@ -30,11 +30,12 @@ export function PlayerPage() {
 
   return (
     <div className="pt-4 pb-2">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <Link to={`/projects/${id}`} className="shrink-0 text-sm text-white/60 hover:text-white">
+      <div className="mb-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        <Link to={`/projects/${id}`} className="inline-flex min-h-11 items-center gap-1 shrink-0 text-sm text-white/60 hover:text-white">
           <span aria-hidden="true">{locale === 'he' ? '→' : '←'}</span> {t('project.back')}
         </Link>
-        <h1 className="truncate font-display text-base font-semibold sm:text-lg" dir="auto">
+        {/* On narrow phones the title gets its own line instead of being squeezed. */}
+        <h1 className="order-last w-full truncate font-display text-base font-semibold sm:order-none sm:w-auto sm:min-w-0 sm:flex-1 sm:text-lg" dir="auto">
           {project.title}
         </h1>
         <Link to={`/projects/${id}/edit`} className="shrink-0 rounded-xl bg-white/10 px-3 py-2 text-sm hover:bg-white/15">

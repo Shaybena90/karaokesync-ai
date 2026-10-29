@@ -76,6 +76,15 @@ describe('timing', () => {
     expect(times(setWordTiming(doc, 'd', 3300, 9999, 3500))[3]).toBe('3300-3500')
   })
 
+  it('moving a word keeps its length when it has to be clamped', () => {
+    // dragged far to the right, past the next word: stops at the next word's start, same 400ms length
+    expect(times(setWordTiming(doc, 'a', 2600, 3000, undefined, true))[0]).toBe('1500-1900')
+    // dragged before 0
+    expect(times(setWordTiming(doc, 'a', -300, 100, undefined, true))[0]).toBe('0-400')
+    // a resize (keepDuration = false) may change the length
+    expect(times(setWordTiming(doc, 'a', 1000, 1300))[0]).toBe('1000-1300')
+  })
+
   it('shifts a whole line, clamped by its neighbours', () => {
     expect(times(shiftTiming(doc, 'L2', -500))).toEqual(['1000-1400', '1500-2000', '2500-2700', '2700-3300'])
     // cannot move before the previous word's start (1500)

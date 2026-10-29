@@ -97,6 +97,8 @@ export function EditorPage() {
 
   const select = useCallback((wordId: string) => {
     setSelectedId(wordId)
+    // On phones the word panel covers the lower half: keep the chosen word visible above it.
+    chips.current.get(wordId)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
     const pos = findWord(docRef.current, wordId)
     if (pos && wsRef.current && !wsRef.current.isPlaying()) {
       wsRef.current.setTime(docRef.current[pos.line].words[pos.word].start_ms / 1000)
@@ -104,8 +106,8 @@ export function EditorPage() {
   }, [])
 
   const onTimingChange = useCallback(
-    (wordId: string, start: number, end: number) => {
-      edit((d) => setWordTiming(d, wordId, start, end, audioDuration()))
+    (wordId: string, start: number, end: number, moved = false) => {
+      edit((d) => setWordTiming(d, wordId, start, end, audioDuration(), moved))
       setSelectedId(wordId)
     },
     [edit, audioDuration],
@@ -261,10 +263,10 @@ export function EditorPage() {
   ) : null
 
   return (
-    <div className={`pt-4 ${selected ? 'pb-[52vh] lg:pb-10' : 'pb-10'}`}>
+    <div className={`pt-4 ${selected ? 'pb-[52vh] sm:pe-80 sm:pb-10 lg:pe-0' : 'pb-10'}`}>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Link to={`/projects/${id}`} className="text-sm text-white/60 hover:text-white">
+        <Link to={`/projects/${id}`} className="inline-flex min-h-11 items-center gap-1 text-sm text-white/60 hover:text-white">
           <span aria-hidden="true">{locale === 'he' ? '→' : '←'}</span> {t('project.back')}
         </Link>
         <h1 className="min-w-0 flex-1 truncate font-display text-lg font-bold sm:text-xl" dir="auto">
@@ -301,7 +303,8 @@ export function EditorPage() {
       )}
 
       {/* Waveform + transport (sticky) */}
-      <div className="glass sticky top-16 z-20 mt-3 rounded-3xl bg-ink-950/85 p-3">
+      {/* Sticky only on tall screens: on short phones (and in landscape) it would leave no room for the words. */}
+      <div className="glass z-20 mt-3 rounded-3xl bg-ink-950/85 p-3 [@media(min-height:700px)]:sticky [@media(min-height:700px)]:top-16">
         {url ? (
           <WaveformTimeline
             url={url}
@@ -333,7 +336,7 @@ export function EditorPage() {
             value={rate}
             onChange={(e) => setRate(Number(e.target.value))}
             aria-label={t('editor.speed')}
-            className="h-10 rounded-xl bg-white/10 px-2 text-sm"
+            className="h-10 rounded-xl bg-white/10 px-2 text-base"
           >
             {[0.5, 0.75, 1].map((r) => (
               <option key={r} value={r} className="bg-ink-900">
@@ -393,14 +396,14 @@ export function EditorPage() {
           )}
         </div>
 
-        {/* Desktop: side panel. Mobile: bottom sheet. */}
+        {/* Desktop: side panel. Portrait phones: bottom sheet. Landscape phones / tablets: side drawer. */}
         <aside className="hidden lg:block">
           <div className="glass sticky top-[17rem] rounded-3xl p-4">
             {inspector ?? <p className="text-sm text-white/50">{t('editor.selectHint')}</p>}
           </div>
         </aside>
         {inspector && (
-          <div className="fixed inset-x-0 bottom-0 z-40 max-h-[50vh] overflow-y-auto rounded-t-3xl border-t border-white/10 bg-ink-900/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-xl lg:hidden">
+          <div className="fixed inset-x-0 bottom-0 z-40 max-h-[50vh] overflow-y-auto rounded-t-3xl border-t border-white/10 bg-ink-900/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-xl sm:inset-x-auto sm:end-0 sm:top-16 sm:max-h-none sm:w-80 sm:rounded-none sm:rounded-s-3xl sm:border-t-0 sm:border-s lg:hidden">
             {inspector}
           </div>
         )}

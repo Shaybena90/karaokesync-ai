@@ -170,7 +170,8 @@ export function KaraokePlayer({
 
   const skip = useCallback((delta: number) => seekTo((audioRef.current?.currentTime ?? 0) * 1000 + delta), [seekTo])
 
-  const seekToLine = useCallback((line: LyricLine) => seekTo(Math.max(0, line.start_ms - 300)), [seekTo])
+  // Land exactly on the line's first word, so that line (not the previous one) is shown.
+  const seekToLine = useCallback((line: LyricLine) => seekTo(line.start_ms), [seekTo])
 
   const onKeyDown = useCallback(
     (e: KeyboardEvent | ReactKeyboardEvent) => {

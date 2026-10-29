@@ -39,19 +39,30 @@ export const LyricsStage = memo(function LyricsStage({
   const prev = !videoFrame && view.prev >= 0 ? lines[view.prev] : null
   const next = showNext && view.next >= 0 ? lines[view.next] : null
 
-  const sideLine = (line: LyricLine | null, kind: 'prev' | 'next') => (
-    <button
-      type="button"
-      tabIndex={-1}
-      onClick={() => line && onSeekToLine(line)}
-      style={{ fontSize: `calc(var(--k-base) * var(--k-scale) * ${videoFrame ? 0.8 : 0.6})` }}
-      className={`ks-lyric block w-full leading-snug transition-opacity duration-300 ${
-        line ? (kind === 'prev' ? 'text-[var(--k-active)] opacity-35' : 'text-[var(--k-idle)] opacity-45') : 'invisible'
-      }`}
-    >
-      {line ? line.words.map((w) => w.text).join(' ') : ' '}
-    </button>
-  )
+  const sideLine = (line: LyricLine | null, kind: 'prev' | 'next') => {
+    const style = { fontSize: `calc(var(--k-base) * var(--k-scale) * ${videoFrame ? 0.8 : 0.6})` }
+    const tone = line ? (kind === 'prev' ? 'text-[var(--k-active)] opacity-35' : 'text-[var(--k-idle)] opacity-45') : 'invisible'
+    const text = line ? line.words.map((w) => w.text).join(' ') : '\u00a0'
+    // Inside the video preview the next line is display-only, exactly like in the video.
+    if (videoFrame) {
+      return (
+        <p style={style} className={`ks-lyric w-full leading-snug ${tone}`}>
+          {text}
+        </p>
+      )
+    }
+    return (
+      <button
+        type="button"
+        tabIndex={-1}
+        onClick={() => line && onSeekToLine(line)}
+        style={style}
+        className={`ks-lyric block min-h-8 w-full leading-snug transition-opacity duration-300 ${tone}`}
+      >
+        {text}
+      </button>
+    )
+  }
 
   return (
     <div className="flex w-full flex-col items-center gap-[0.35em] text-center" dir={dir} lang={language ?? undefined}>

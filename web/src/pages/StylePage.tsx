@@ -79,7 +79,7 @@ export function StylePage() {
   return (
     <div className="pt-4 pb-10">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Link to={`/projects/${id}`} className="text-sm text-white/60 hover:text-white">
+        <Link to={`/projects/${id}`} className="inline-flex min-h-11 items-center gap-1 text-sm text-white/60 hover:text-white">
           <span aria-hidden="true">{locale === 'he' ? '→' : '←'}</span> {t('project.back')}
         </Link>
         <h1 className="min-w-0 flex-1 truncate font-display text-lg font-bold sm:text-xl" dir="auto">

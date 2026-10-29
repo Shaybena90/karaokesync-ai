@@ -110,14 +110,32 @@ export function setWordText(doc: LyricsDoc, id: string, text: string): LyricsDoc
  * Set a word's start/end. The start is kept between the previous and the next
  * word's start (so the song order never breaks); end >= start; both within
  * the audio duration when it is known.
+ *
+ * `keepDuration` is for moving a word (dragging it on the waveform): when the
+ * new position has to be clamped, the word keeps its length instead of being
+ * squeezed or stretched.
  */
-export function setWordTiming(doc: LyricsDoc, id: string, startMs: number, endMs: number, durationMs?: number): LyricsDoc {
+export function setWordTiming(
+  doc: LyricsDoc,
+  id: string,
+  startMs: number,
+  endMs: number,
+  durationMs?: number,
+  keepDuration = false,
+): LyricsDoc {
   const { prev, next } = neighbours(doc, id)
   const max = durationMs && durationMs > 0 ? Math.round(durationMs) : Number.POSITIVE_INFINITY
+  const length = Math.max(0, Math.round(endMs - startMs))
   let start = Math.round(Math.max(0, startMs, prev?.start_ms ?? 0))
   if (next) start = Math.min(start, next.start_ms)
   start = Math.min(start, max)
-  const end = Math.round(Math.min(Math.max(endMs, start), max))
+  let end: number
+  if (keepDuration) {
+    end = Math.min(start + length, max)
+    start = Math.max(start, Math.min(end - length, start)) // never before the clamped start
+  } else {
+    end = Math.round(Math.min(Math.max(endMs, start), max))
+  }
   return mapWord(doc, id, (w) => (w.start_ms === start && w.end_ms === end ? [w] : [{ ...w, start_ms: start, end_ms: end, confidence: 1 }]))
 }
 

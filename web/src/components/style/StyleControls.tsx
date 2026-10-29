@@ -60,6 +60,7 @@ export function StyleControls({ style, onChange }: Props) {
       <Section title={t('style.text')}>
         <Row label={t('style.font')}>
           <select
+            aria-label={t('style.font')}
             value={style.font}
             onChange={(e) => set('font', e.target.value as FontName)}
             className="h-11 w-full rounded-xl bg-white/10 px-3"
