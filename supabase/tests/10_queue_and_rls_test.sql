@@ -93,8 +93,11 @@ do $$ begin
   assert (select count(*) from public.lyric_words) = 0, 'bob sees alice words';
   update public.projects set title = 'hacked';
   assert not found, 'bob updated alice project';
-  delete from public.lyric_words;
-  assert not found, 'bob deleted alice words';
+  begin
+    delete from public.lyric_words;
+    assert false, 'bob deleted alice words';
+  exception when insufficient_privilege then null;
+  end;
 end $$;
 
 -- Browser roles cannot change status or call queue functions.
@@ -118,10 +121,82 @@ do $$ begin
     assert false, 'queue functions must be service-role only';
   exception when insufficient_privilege then null;
   end;
-  -- Alice can edit her lyrics (karaoke editor)
-  update public.lyric_words set text = 'שלום!' where word_index = 0;
-  assert found, 'alice edits words';
+  -- Lyrics can only be changed through save_lyrics (validated), not row by row.
+  begin
+    update public.lyric_words set text = 'x' where word_index = 0;
+    assert false, 'direct word update must be blocked';
+  exception when insufficient_privilege then null;
+  end;
 end $$;
 reset role;
+
+-- ------------------------------------------------------- save_lyrics (editor)
+do $$
+declare
+  v_project uuid;
+  v_version int;
+  v_new int;
+begin
+  select id, lyrics_version into v_project, v_version from public.projects limit 1;
+  -- the project must be "ready" to be edited (it failed in the queue test above)
+  reset role;
+  update public.projects set status = 'ready' where id = v_project;
+  select lyrics_version into v_version from public.projects where id = v_project;
+  set role authenticated;
+  perform set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000a', false);
+
+  v_new := public.save_lyrics(v_project, v_version, '[
+    {"id":"10000000-0000-0000-0000-000000000001","words":[
+      {"id":"20000000-0000-0000-0000-000000000001","text":" שלום ","start_ms":100,"end_ms":500,"confidence":1},
+      {"id":"20000000-0000-0000-0000-000000000002","text":"עולם","start_ms":600,"end_ms":900,"confidence":null}]},
+    {"id":"10000000-0000-0000-0000-000000000002","words":[]},
+    {"id":"10000000-0000-0000-0000-000000000003","words":[
+      {"id":"20000000-0000-0000-0000-000000000003","text":"שיר","start_ms":1000,"end_ms":1500,"confidence":0.4}]}
+  ]');
+  assert v_new = v_version + 1, 'version increments';
+  assert (select count(*) from public.lyric_lines where project_id = v_project) = 2, 'empty line dropped';
+  assert (select start_ms || '-' || end_ms from public.lyric_lines where project_id = v_project and line_index = 0) = '100-900', 'line bounds derived from words';
+  assert (select text from public.lyric_words where id = '20000000-0000-0000-0000-000000000001') = 'שלום', 'text trimmed';
+  assert (select string_agg(word_index::text, ',' order by word_index) from public.lyric_words where project_id = v_project) = '0,1,2';
+
+  -- stale version (another tab saved meanwhile) is rejected
+  begin
+    perform public.save_lyrics(v_project, v_version, '[]');
+    assert false, 'stale version accepted';
+  exception when raise_exception then
+    assert sqlerrm = 'version_conflict', sqlerrm;
+  end;
+
+  -- invalid documents are rejected and leave data untouched
+  begin
+    perform public.save_lyrics(v_project, v_new, '[{"words":[{"text":"a","start_ms":500,"end_ms":100}]}]');
+    assert false, 'end before start accepted';
+  exception when invalid_parameter_value then null;
+  end;
+  begin
+    perform public.save_lyrics(v_project, v_new, '[{"words":[{"text":"a","start_ms":500,"end_ms":600},{"text":"b","start_ms":100,"end_ms":200}]}]');
+    assert false, 'unordered words accepted';
+  exception when invalid_parameter_value then null;
+  end;
+  begin
+    perform public.save_lyrics(v_project, v_new, '[{"words":[{"text":"   ","start_ms":1,"end_ms":2}]}]');
+    assert false, 'empty word accepted';
+  exception when invalid_parameter_value then null;
+  end;
+  assert (select count(*) from public.lyric_words where project_id = v_project) = 3, 'failed saves roll back';
+
+  -- Bob cannot save Alice's lyrics
+  perform set_config('request.jwt.claim.sub', '00000000-0000-0000-0000-00000000000b', false);
+  begin
+    perform public.save_lyrics(v_project, v_new, '[]');
+    assert false, 'bob saved alice lyrics';
+  exception when no_data_found then null;
+  end;
+  reset role;
+  -- a new AI result bumps the version so an open editor cannot overwrite it
+  update public.projects set status = 'processing' where id = v_project;
+  update public.projects set status = 'ready' where id = v_project;
+  assert (select lyrics_version from public.projects where id = v_project) = v_new + 1, 'ready bumps version';
+end $$;
 
 \echo 'ALL SQL TESTS PASSED'

@@ -36,6 +36,9 @@ export function PlayerPage() {
         <h1 className="truncate font-display text-base font-semibold sm:text-lg" dir="auto">
           {project.title}
         </h1>
+        <Link to={`/projects/${id}/edit`} className="shrink-0 rounded-xl bg-white/10 px-3 py-2 text-sm hover:bg-white/15">
+          {t('editor.open')}
+        </Link>
       </div>
       <KaraokePlayer
         variant="page"

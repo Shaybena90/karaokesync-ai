@@ -6,6 +6,8 @@ export interface Project {
   status: ProjectStatus
   language: string | null
   error_code: string | null
+  /** incremented on every saved edit; used to detect conflicting edits */
+  lyrics_version?: number
   created_at: string
   updated_at: string
 }

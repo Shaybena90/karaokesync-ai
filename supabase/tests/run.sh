@@ -10,5 +10,7 @@ trap '"$PGBIN/pg_ctl" -D "$data" stop -m immediate >/dev/null 2>&1 || true; rm -
 psql=(psql -h "$data" -p 54329 -U postgres -v ON_ERROR_STOP=1 -q)
 "${psql[@]}" -c 'create database t'
 "${psql[@]}" -d t -f "$here/00_stub_supabase.sql"
-"${psql[@]}" -d t -f "$here/../migrations/20261028000001_init.sql"
+for migration in "$here"/../migrations/*.sql; do
+  "${psql[@]}" -d t -f "$migration"
+done
 "${psql[@]}" -d t -f "$here/10_queue_and_rls_test.sql"

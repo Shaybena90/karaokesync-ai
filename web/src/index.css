@@ -112,3 +112,20 @@
   background: #fff;
   box-shadow: 0 0 0 4px rgb(168 85 247 / 0.35);
 }
+
+/* ---------------------------------------------------------------- editor */
+.ks-waveform ::part(region-content) {
+  padding: 2px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+}
+.ks-chip[data-playing="true"] {
+  box-shadow: inset 0 -3px 0 #38bdf8;
+  background-color: rgb(56 189 248 / 0.18);
+}

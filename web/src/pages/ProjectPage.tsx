@@ -170,9 +170,14 @@ export function ProjectPage() {
               language={project.language}
             />
             <div className="flex flex-wrap items-center justify-between gap-3">
-              <ButtonLink to={`/projects/${project.id}/play`} variant="ghost">
-                {t('player.open')}
-              </ButtonLink>
+              <div className="flex flex-wrap gap-2">
+                <ButtonLink to={`/projects/${project.id}/play`} variant="ghost">
+                  {t('player.open')}
+                </ButtonLink>
+                <ButtonLink to={`/projects/${project.id}/edit`} variant="ghost">
+                  {t('editor.open')}
+                </ButtonLink>
+              </div>
               <p className="hidden text-xs text-white/40 sm:block">{t('player.shortcuts')}</p>
             </div>
           </div>
