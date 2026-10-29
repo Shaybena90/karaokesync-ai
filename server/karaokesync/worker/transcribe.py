@@ -61,6 +61,23 @@ def _load_model(name: str, device: str, compute_type: str):
     return _model
 
 
+def load_wav_16k(path: Path):
+    """Read the 16 kHz mono PCM file made by to_working_wav as float32 samples.
+
+    Passing samples (instead of a path) keeps faster-whisper from decoding the
+    file again with PyAV, whose API changes between versions broke decoding.
+    """
+    import wave
+
+    import numpy as np
+
+    with wave.open(str(path), "rb") as wav:
+        if wav.getframerate() != 16000 or wav.getnchannels() != 1 or wav.getsampwidth() != 2:
+            raise PipelineError("convert_failed", retryable=False)
+        frames = wav.readframes(wav.getnframes())
+    return np.frombuffer(frames, dtype="<i2").astype(np.float32) / 32768.0
+
+
 def transcribe(
     audio: Path,
     model_name: str,
@@ -71,7 +88,7 @@ def transcribe(
 ) -> Transcript:
     model = _load_model(model_name, device, compute_type)
     segments, info = model.transcribe(
-        str(audio),
+        load_wav_16k(audio),
         language=language,
         word_timestamps=True,
         vad_filter=True,
