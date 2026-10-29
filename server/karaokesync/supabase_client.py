@@ -133,6 +133,17 @@ class SupabaseClient:
         signed = resp.json().get("signedURL") or resp.json().get("signedUrl")
         return f"{self._url}/storage/v1{signed}"
 
+    def upload_file(self, bucket: str, path: str, local_path: str, content_type: str) -> None:
+        """Upload (or replace) an object from a local file."""
+        with open(local_path, "rb") as fh:
+            resp = self._http.post(
+                f"{self._url}/storage/v1/object/{bucket}/{quote(path)}",
+                content=fh,
+                headers=self._headers({"Content-Type": content_type, "x-upsert": "true"}),
+                timeout=httpx.Timeout(600.0, connect=10.0),
+            )
+        self._raise_for(resp)
+
     def list_objects(self, bucket: str, prefix: str) -> list[str]:
         resp = self._http.post(
             f"{self._url}/storage/v1/object/list/{bucket}",

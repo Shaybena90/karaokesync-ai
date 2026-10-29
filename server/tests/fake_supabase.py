@@ -21,6 +21,8 @@ def _matches(row: dict, key: str, expr: str) -> bool:
         return str(current) != value
     if op in ("gte", "lt"):
         return (str(current) >= value) if op == "gte" else (str(current) < value)
+    if op == "is":
+        return (current is None) if value == "null" else str(current).lower() == value
     if op == "in":
         return str(current) in value.strip("()").split(",")
     raise NotImplementedError(op)
@@ -30,6 +32,7 @@ class FakeSupabase:
     def __init__(self):
         self.tables: dict[str, list[dict]] = {
             "projects": [], "audio_files": [], "processing_jobs": [],
+            "lyric_lines": [], "lyric_words": [], "export_jobs": [],
         }
         self.tokens: dict[str, AuthUser] = {}
         self.objects: dict[str, dict[str, Path]] = {"audio": {}, "exports": {}}
@@ -70,6 +73,11 @@ class FakeSupabase:
         if table == "audio_files":
             row.setdefault("status", "pending")
             row.setdefault("duration_ms", None)
+        if table == "export_jobs":
+            row.setdefault("status", "queued")
+            row.setdefault("output_path", None)
+            if any(j["project_id"] == row["project_id"] and j["status"] in ("queued", "running") for j in self.tables[table]):
+                raise SupabaseError(409, "duplicate key", "23505")
         if table == "processing_jobs":
             row.setdefault("status", "queued")
             active = [j for j in self.tables[table]
@@ -89,7 +97,7 @@ class FakeSupabase:
         doomed = {r["id"] for r in self._filter(table, params)}
         self.tables[table] = [r for r in self.tables[table] if r["id"] not in doomed]
         if table == "projects":  # emulate ON DELETE CASCADE
-            for child in ("audio_files", "processing_jobs"):
+            for child in ("audio_files", "processing_jobs", "lyric_lines", "lyric_words", "export_jobs"):
                 self.tables[child] = [r for r in self.tables[child] if r["project_id"] not in doomed]
 
     def rpc(self, fn, args):
@@ -118,3 +126,15 @@ class FakeSupabase:
     def remove_objects(self, bucket, paths):
         for p in paths:
             self.objects[bucket].pop(p, None)
+
+    def download_to(self, url, dest, max_bytes):
+        data = Path(url).read_bytes()
+        Path(dest).write_bytes(data)
+        return len(data)
+
+    def upload_file(self, bucket, path, local_path, content_type):
+        import tempfile
+
+        stored = Path(tempfile.mkdtemp()) / Path(local_path).name
+        stored.write_bytes(Path(local_path).read_bytes())
+        self.objects[bucket][path] = stored

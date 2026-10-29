@@ -41,13 +41,37 @@
 .karaoke-theme {
   --k-active: #e879f9;
   --k-idle: rgb(255 255 255 / 0.92);
-  --k-glow: rgb(232 121 249 / 0.55);
+  --k-glow: transparent;
+  --k-stroke: 0em;
+  --k-stroke-color: #000;
+  --k-shadow: none;
+  --k-font: "Heebo", system-ui, sans-serif;
+  --k-weight: 700;
+  --k-scale: 1;
+}
+.ks-lyric {
+  font-family: var(--k-font);
+  font-weight: var(--k-weight);
 }
 
-/* Word fill: --p goes 0..1 and is driven by the audio clock. */
+/* Word fill: --p goes 0..1 and is driven by the audio clock.
+   Two layers per word: .kw-outline (stroke, underneath) and .kw-fill (gradient
+   clipped to the text, absolutely positioned on top). A text stroke on the
+   clipped element itself would paint over the fill. */
 .karaoke-word {
   --p: 0;
+  position: relative;
   display: inline-block;
+  filter: var(--k-shadow);
+  transition: transform 0.15s ease-out, filter 0.15s ease-out;
+}
+.kw-outline {
+  color: var(--k-stroke-color);
+  -webkit-text-stroke: var(--k-stroke) var(--k-stroke-color);
+}
+.kw-fill {
+  position: absolute;
+  inset: 0;
   background-image: linear-gradient(
     to var(--fill-dir, left),
     var(--k-active) calc(var(--p) * 100%),
@@ -56,12 +80,14 @@
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
-  transition: transform 0.15s ease-out, filter 0.15s ease-out;
 }
-.karaoke-word:dir(ltr) { --fill-dir: right; }
+.karaoke-word:dir(ltr) .kw-fill { --fill-dir: right; }
+.karaoke-word[data-state="sung"] {
+  filter: var(--k-shadow) drop-shadow(0 0 0.2em var(--k-glow));
+}
 .karaoke-word[data-state="active"] {
   transform: scale(1.06);
-  filter: drop-shadow(0 0 0.35em var(--k-glow));
+  filter: var(--k-shadow) drop-shadow(0 0 0.35em var(--k-glow));
 }
 @media (prefers-reduced-motion: reduce) {
   .karaoke-word { transition: none; }

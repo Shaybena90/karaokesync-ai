@@ -8,6 +8,7 @@ import type { MessageKey } from '../i18n/he'
 import { ApiError, api } from '../lib/api'
 import { formatBytes, formatDuration } from '../lib/format'
 import type { ProcessingJob, Project } from '../lib/types'
+import { normalizeStyle } from '../lib/subtitleStyle'
 import { useProjectLive } from '../lib/useProjectLive'
 
 const FLOW: MessageKey[] = ['flow.upload', 'flow.ai', 'flow.words', 'flow.sync', 'flow.preview']
@@ -168,6 +169,7 @@ export function ProjectPage() {
               title={project.title}
               storagePath={audio?.status === 'verified' ? audio.storage_path : null}
               language={project.language}
+              style={normalizeStyle(project.style)}
             />
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div className="flex flex-wrap gap-2">
@@ -176,6 +178,9 @@ export function ProjectPage() {
                 </ButtonLink>
                 <ButtonLink to={`/projects/${project.id}/edit`} variant="ghost">
                   {t('editor.open')}
+                </ButtonLink>
+                <ButtonLink to={`/projects/${project.id}/style`} variant="ghost">
+                  {t('style.open')}
                 </ButtonLink>
               </div>
               <p className="hidden text-xs text-white/40 sm:block">{t('player.shortcuts')}</p>

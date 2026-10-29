@@ -8,6 +8,8 @@ export interface Project {
   error_code: string | null
   /** incremented on every saved edit; used to detect conflicting edits */
   lyrics_version?: number
+  /** subtitle style (see subtitleStyle.ts); free-form JSON in the database */
+  style?: unknown
   created_at: string
   updated_at: string
 }
@@ -51,6 +53,19 @@ export interface LyricLine {
   start_ms: number
   end_ms: number
   words: LyricWord[]
+}
+
+export interface ExportJob {
+  id: string
+  project_id: string
+  format: 'srt' | 'lrc' | 'ass' | 'mp4'
+  options: { aspect?: '16:9' | '9:16' | '1:1'; resolution?: number }
+  status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
+  progress: number
+  output_path: string | null
+  error_code: string | null
+  created_at: string
+  finished_at: string | null
 }
 
 export interface Limits {

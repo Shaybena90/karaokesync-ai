@@ -41,6 +41,17 @@ def run_retention(sb: SupabaseClient, settings: Settings, now: datetime | None =
         )
         removed += 1
 
+    # 3. Rendered videos older than the export retention period.
+    exports_before = (now - timedelta(days=settings.export_retention_days)).isoformat()
+    for export in sb.select(
+        "export_jobs",
+        {"status": "eq.succeeded", "output_path": "not.is.null", "finished_at": f"lt.{exports_before}",
+         "select": "id,output_path", "limit": "200"},
+    ):
+        sb.remove_objects(settings.exports_bucket, [export["output_path"]])
+        sb.update("export_jobs", {"id": f"eq.{export['id']}"}, {"output_path": None, "error_code": "expired"})
+        removed += 1
+
     if removed:
         log.info("retention removed %d item(s)", removed)
     return removed

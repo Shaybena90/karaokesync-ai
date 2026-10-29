@@ -27,16 +27,15 @@ from ..audio_validation import (
 from ..config import Settings, get_settings
 from ..logging_setup import setup_logging
 from ..supabase_client import AuthUser, SupabaseClient, SupabaseError
+from .common import iso as _iso
+from .common import owned_project as _owned_project
 from .deps import get_supabase, rate_limited_user, settings_dep
+from .exports import exports_router
 
 log = logging.getLogger("karaokesync.api")
 
 ACTIVE_JOB_STATUSES = "(queued,running)"
 SIGNED_READ_SECONDS = 120
-
-
-def _iso(dt: datetime) -> str:
-    return dt.astimezone(timezone.utc).isoformat()
 
 
 def create_app() -> FastAPI:
@@ -52,8 +51,10 @@ def create_app() -> FastAPI:
         allow_origins=settings.cors_origin_list,
         allow_methods=["GET", "POST", "DELETE"],
         allow_headers=["Authorization", "Content-Type"],
+        expose_headers=["Content-Disposition"],
     )
     app.include_router(_router())
+    app.include_router(exports_router())
     return app
 
 
@@ -85,19 +86,6 @@ class ProjectStateResponse(BaseModel):
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-def _owned_project(sb: SupabaseClient, project_id: str, user: AuthUser) -> dict:
-    """Load a project and make sure it belongs to the caller. 404 otherwise
-    (we never reveal whether someone else's project exists)."""
-    try:
-        uuid.UUID(project_id)
-    except ValueError as exc:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found") from exc
-    rows = sb.select("projects", {"id": f"eq.{project_id}", "user_id": f"eq.{user.id}", "select": "*"})
-    if not rows:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="project_not_found")
-    return rows[0]
-
-
 def _latest_audio(sb: SupabaseClient, project_id: str) -> dict:
     rows = sb.select(
         "audio_files",

@@ -10,6 +10,7 @@ import { HomePage } from './pages/HomePage'
 import { PlayerPage } from './pages/PlayerPage'
 import { ProjectPage } from './pages/ProjectPage'
 import { ProjectsPage } from './pages/ProjectsPage'
+import { StylePage } from './pages/StylePage'
 import { UploadPage } from './pages/UploadPage'
 
 export default function App() {
@@ -30,6 +31,7 @@ export default function App() {
                 <Route path="projects/:id" element={<RequireAuth><ProjectPage /></RequireAuth>} />
                 <Route path="projects/:id/play" element={<RequireAuth><PlayerPage /></RequireAuth>} />
                 <Route path="projects/:id/edit" element={<RequireAuth><EditorPage /></RequireAuth>} />
+                <Route path="projects/:id/style" element={<RequireAuth><StylePage /></RequireAuth>} />
                 <Route path="*" element={<HomePage />} />
               </Route>
             </Routes>

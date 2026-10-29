@@ -13,4 +13,6 @@ psql=(psql -h "$data" -p 54329 -U postgres -v ON_ERROR_STOP=1 -q)
 for migration in "$here"/../migrations/*.sql; do
   "${psql[@]}" -d t -f "$migration"
 done
-"${psql[@]}" -d t -f "$here/10_queue_and_rls_test.sql"
+for test in "$here"/[1-9]*_test.sql; do
+  "${psql[@]}" -d t -f "$test"
+done

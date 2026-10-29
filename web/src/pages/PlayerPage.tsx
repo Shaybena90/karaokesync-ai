@@ -2,6 +2,7 @@ import { Link, Navigate, useParams } from 'react-router-dom'
 import { KaraokePlayer } from '../components/player/KaraokePlayer'
 import { Alert, Spinner } from '../components/ui'
 import { useI18n } from '../i18n/I18nProvider'
+import { normalizeStyle } from '../lib/subtitleStyle'
 import { useProjectLive } from '../lib/useProjectLive'
 
 /** Dedicated, distraction-free karaoke player for one project. */
@@ -39,6 +40,9 @@ export function PlayerPage() {
         <Link to={`/projects/${id}/edit`} className="shrink-0 rounded-xl bg-white/10 px-3 py-2 text-sm hover:bg-white/15">
           {t('editor.open')}
         </Link>
+        <Link to={`/projects/${id}/style`} className="shrink-0 rounded-xl bg-white/10 px-3 py-2 text-sm hover:bg-white/15">
+          {t('style.open')}
+        </Link>
       </div>
       <KaraokePlayer
         variant="page"
@@ -46,6 +50,7 @@ export function PlayerPage() {
         title={project.title}
         storagePath={audio?.status === 'verified' ? audio.storage_path : null}
         language={project.language}
+        style={normalizeStyle(project.style)}
       />
       <p className="mt-3 hidden text-center text-xs text-white/40 sm:block">{t('player.shortcuts')}</p>
     </div>

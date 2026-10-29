@@ -5,6 +5,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
+  type CSSProperties,
   type ReactNode,
 } from 'react'
 import { useI18n } from '../../i18n/I18nProvider'
@@ -15,6 +16,7 @@ import { wordFill } from '../../lib/sync'
 import type { LyricLine } from '../../lib/types'
 import { useLyrics } from '../../lib/useLyrics'
 import { useSignedAudio } from '../../lib/useSignedAudio'
+import { DEFAULT_STYLE, styleVars, type SubtitleStyle } from '../../lib/subtitleStyle'
 import { Spinner } from '../ui'
 import { LyricsStage } from './LyricsStage'
 import { useFullscreen } from './useFullscreen'
@@ -26,12 +28,37 @@ interface Props {
   storagePath: string | null
   language: string | null
   variant?: 'embedded' | 'page'
+  style?: SubtitleStyle
+  /** Show the lyrics inside a frame with the export video's aspect ratio (style/export page). */
+  videoFrame?: VideoAspect
+}
+
+export type VideoAspect = '16:9' | '9:16' | '1:1'
+
+/**
+ * Inside a video frame, sizes are relative to the frame width (cqi) with the
+ * same proportions as the exported video (server/karaokesync/exports/ass.py):
+ * base text size 6.67% of the short side (8.5% of the width when vertical),
+ * 6% side margins and 10% top/bottom margins.
+ */
+const FRAME: Record<VideoAspect, { ratio: string; base: string; padY: string }> = {
+  '16:9': { ratio: '16 / 9', base: '3.75cqi', padY: '5.6cqi' },
+  '9:16': { ratio: '9 / 16', base: '8.5cqi', padY: '17.8cqi' },
+  '1:1': { ratio: '1 / 1', base: '6.67cqi', padY: '10cqi' },
 }
 
 const SKIP_MS = 5000
 const EMPTY_VIEW: KaraokeView = { main: -1, prev: -1, next: -1, countdown: null, instrumental: false }
 
-export function KaraokePlayer({ projectId, title, storagePath, language, variant = 'embedded' }: Props) {
+export function KaraokePlayer({
+  projectId,
+  title,
+  storagePath,
+  language,
+  variant = 'embedded',
+  style = DEFAULT_STYLE,
+  videoFrame,
+}: Props) {
   const { t, dir: uiDir } = useI18n()
   const { lines, error: lyricsError } = useLyrics(projectId)
   const { url, failed: urlFailed, refresh } = useSignedAudio(storagePath)
@@ -75,8 +102,9 @@ export function KaraokePlayer({ projectId, title, storagePath, language, variant
     for (const [id, el] of wordEls.current) {
       const word = wordsById.get(id)
       if (!word) continue
-      el.style.setProperty('--p', wordFill(word, now).toFixed(4))
-      const state = wordState(word, now)
+      const state = style.animation === 'none' ? 'upcoming' : wordState(word, now)
+      const fill = style.animation === 'fill' ? wordFill(word, now) : state === 'upcoming' ? 0 : 1
+      el.style.setProperty('--p', fill.toFixed(4))
       if (el.dataset.state !== state) el.dataset.state = state
     }
 
@@ -87,7 +115,7 @@ export function KaraokePlayer({ projectId, title, storagePath, language, variant
       seekRef.current.setAttribute('aria-valuetext', formatDuration(now))
     }
     if (timeRef.current) timeRef.current.textContent = formatDuration(now)
-  }, [lines, wordsById])
+  }, [lines, wordsById, style.animation])
 
   // Animation loop only while playing; single renders on seek/pause/load.
   useEffect(() => {
@@ -229,18 +257,41 @@ export function KaraokePlayer({ projectId, title, storagePath, language, variant
 
   const large = variant === 'page' || isFullscreen
   const canPlay = Boolean(storagePath) && !urlFailed && !audioError
+  const frame = videoFrame ? FRAME[videoFrame] : null
+  const justify = { top: 'justify-start', center: 'justify-center', bottom: 'justify-end' }[style.position]
+  const stageVars = {
+    ...styleVars(style),
+    '--k-base': frame ? frame.base : large ? 'clamp(2rem, 7vw, 5.5rem)' : 'clamp(1.6rem, 6vw, 3.25rem)',
+  } as CSSProperties
+
+  const stage = (
+    <LyricsStage
+      lines={lines}
+      view={view.main === -1 ? computeView(lines, 0) : view}
+      dir={lyricDir}
+      language={language}
+      videoFrame={Boolean(frame)}
+      showNext={style.show_next_line}
+      textBox={style.text_box}
+      registerWord={registerWord}
+      onSeekToLine={seekToLine}
+    />
+  )
 
   return (
     <div
       ref={containerRef}
       tabIndex={-1}
       onKeyDown={variant === 'embedded' && !isFullscreen ? onKeyDown : undefined}
-      className={`karaoke-theme flex flex-col overflow-hidden bg-gradient-to-b from-ink-900 via-ink-950 to-black outline-none ${
+      style={stageVars}
+      className={`karaoke-theme flex flex-col overflow-hidden outline-none ${frame && !isFullscreen ? '' : 'bg-[image:var(--k-bg)]'} ${
         isFullscreen
           ? `${pseudo ? 'fixed inset-0 z-50' : 'h-full w-full'} px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]`
-          : variant === 'page'
-            ? 'min-h-[calc(100dvh-10rem)] rounded-3xl px-4 py-5 ring-1 ring-white/5 sm:px-8'
-            : 'rounded-3xl px-4 py-5 ring-1 ring-white/5'
+          : frame
+            ? ''
+            : variant === 'page'
+              ? 'min-h-[calc(100dvh-10rem)] rounded-3xl px-4 py-5 ring-1 ring-white/5 sm:px-8'
+              : 'rounded-3xl px-4 py-5 ring-1 ring-white/5'
       }`}
     >
       {isFullscreen && (
@@ -250,17 +301,21 @@ export function KaraokePlayer({ projectId, title, storagePath, language, variant
       )}
 
       {/* Lyrics */}
-      <div className={`flex flex-1 items-center justify-center ${large ? 'py-8' : 'min-h-56 py-4'}`}>
-        <LyricsStage
-          lines={lines}
-          view={view.main === -1 ? computeView(lines, 0) : view}
-          dir={lyricDir}
-          language={language}
-          large={large}
-          registerWord={registerWord}
-          onSeekToLine={seekToLine}
-        />
-      </div>
+      {frame && !isFullscreen ? (
+        <div
+          className="relative mx-auto max-w-full overflow-hidden rounded-2xl bg-[image:var(--k-bg)] ring-1 ring-white/10 [container-type:inline-size]"
+          style={{ aspectRatio: frame.ratio, ...(videoFrame === '16:9' ? { width: '100%' } : { height: '62vh' }) }}
+        >
+          <div
+            className={`absolute inset-0 flex flex-col items-center ${justify}`}
+            style={{ paddingBlock: frame.padY, paddingInline: '6cqi' }}
+          >
+            {stage}
+          </div>
+        </div>
+      ) : (
+        <div className={`flex flex-1 flex-col items-center ${large ? 'py-8' : 'min-h-56 py-4'} ${justify}`}>{stage}</div>
+      )}
 
       {/* Controls */}
       {storagePath ? (

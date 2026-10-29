@@ -49,6 +49,9 @@ class Settings(BaseSettings):
     whisper_model: str = "large-v3"
     whisper_device: Literal["auto", "cpu", "cuda"] = "auto"
     whisper_compute_type: str = "auto"
+    fonts_dir: str = str(ROOT_DIR / "server" / "fonts")
+    max_exports_per_day: int = 10
+    export_retention_days: int = 7
     enable_vocal_separation: bool = False
     demucs_model: str = "htdemucs"
 
