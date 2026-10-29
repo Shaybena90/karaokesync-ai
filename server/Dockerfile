@@ -1,6 +1,9 @@
-# Image for the API and the worker (same image, different command).
-#   API:    docker run -p 8000:8000 --env-file ../.env karaokesync-server
-#   Worker: docker run --env-file ../.env karaokesync-server python -m karaokesync.worker.runner
+# One Dockerfile for the API and the worker.
+#   API (light, default):  docker build -t karaokesync-api .
+#                          docker run -p 8000:8000 --env-file ../.env karaokesync-api
+#   Worker (AI, ~several GB):
+#                          docker build --build-arg INSTALL_AI=true -t karaokesync-worker .
+#                          docker run --env-file ../.env karaokesync-worker python -m karaokesync.worker.runner
 # For a GPU worker, build FROM an nvidia/cuda runtime image instead.
 FROM python:3.12-slim
 
@@ -9,7 +12,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends ffmpeg fonts-de
 
 WORKDIR /app
 COPY requirements.txt requirements-ai.txt ./
-ARG INSTALL_AI=true
+ARG INSTALL_AI=false
 RUN pip install --no-cache-dir -r requirements.txt \
     && if [ "$INSTALL_AI" = "true" ]; then pip install --no-cache-dir -r requirements-ai.txt; fi
 
@@ -23,4 +26,5 @@ RUN useradd --create-home app && chown -R app /app/tmp /app/fonts
 USER app
 
 EXPOSE 8000
-CMD ["uvicorn", "karaokesync.api.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers"]
+# Hosting platforms (e.g. Render) tell the app which port to use through $PORT.
+CMD ["sh", "-c", "exec uvicorn karaokesync.api.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]

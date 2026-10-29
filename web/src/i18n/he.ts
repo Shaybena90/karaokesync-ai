@@ -35,6 +35,7 @@ export const he = {
   'upload.uploading': 'מעלה…',
   'upload.verifying': 'מאמת את קובץ השמע בשרת…',
   'upload.done': 'הקובץ התקבל! מעביר לעיבוד…',
+  'upload.serverWaking': 'השרת מתעורר… בתוכנית החינמית הוא נרדם אחרי 15 דקות ללא שימוש, וההתעוררות יכולה לקחת עד דקה.',
   'upload.another': 'העלאת קובץ אחר',
   'upload.cancel': 'ביטול',
   'upload.retry': 'נסו שוב',

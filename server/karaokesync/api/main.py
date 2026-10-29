@@ -38,9 +38,23 @@ ACTIVE_JOB_STATUSES = "(queued,running)"
 SIGNED_READ_SECONDS = 120
 
 
+SECURITY_HEADERS = {
+    "X-Content-Type-Options": "nosniff",
+    "Referrer-Policy": "no-referrer",
+    "X-Frame-Options": "DENY",
+    "Cache-Control": "no-store",
+    "Strict-Transport-Security": "max-age=31536000; includeSubDomains",
+}
+
+
 def create_app() -> FastAPI:
     settings = get_settings()
     setup_logging()
+    if settings.app_env == "production":
+        problems = settings.production_problems()
+        if problems:
+            # Fail loudly at start-up instead of running with an unsafe configuration.
+            raise RuntimeError("Unsafe production configuration:\n- " + "\n- ".join(problems))
     app = FastAPI(
         title="KaraokeSync AI API",
         docs_url="/docs" if settings.app_env != "production" else None,
@@ -53,6 +67,13 @@ def create_app() -> FastAPI:
         allow_headers=["Authorization", "Content-Type"],
         expose_headers=["Content-Disposition"],
     )
+    @app.middleware("http")
+    async def security_headers(request, call_next):
+        response = await call_next(request)
+        for name, value in SECURITY_HEADERS.items():
+            response.headers.setdefault(name, value)
+        return response
+
     app.include_router(_router())
     app.include_router(exports_router())
     return app

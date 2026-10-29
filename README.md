@@ -286,29 +286,19 @@ npm run e2e                            # כל המסכים בדפדפן, על 7 
 
 ---
 
-## 🚀 פריסה (הוראות — עדיין לא בוצעה)
+## 🚀 פריסה לאינטרנט
 
-> ⚠️ לא אבצע פריסה לשירותים בתשלום בלי אישור שלך.
+המדריך המלא, צעד אחר צעד: **[docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)**.
 
-**1. האתר ב-Vercel**
-1. Vercel ← Add New Project ← ייבוא ה-repository מ-GitHub.
-2. **Root Directory:** ‏`web`.
-3. Environment Variables: ‏`VITE_SUPABASE_URL`, ‏`VITE_SUPABASE_ANON_KEY`, ‏`VITE_API_URL` (כתובת ה-API בענן), ‏`VITE_ENABLE_GOOGLE_AUTH`. **לא** להוסיף את מפתח ה-service role.
-4. ב-Supabase ← Authentication ← URL Configuration: הוסיפו את כתובת האתר (למשל `https://karaokesync.vercel.app` ו-`https://karaokesync.vercel.app/**`).
+בקצרה, המסלול החינמי:
+- **האתר** ב-Vercel (Root Directory: ‏`web`).
+- **ה-API** ב-Render בתוכנית החינמית — מוגדר מראש ב-`render.yaml` (Blueprint).
+- **ה-Worker** במחשב שלכם (`5-start-worker.bat`) — אין אירוח ענן חינמי עם מספיק זיכרון לעיבוד AI.
+- **בדיקה אוטומטית אחרי הפריסה:** ‏`server/scripts/smoke_test.py` בודק CORS, דליפת מפתחות, RLS, אחסון פרטי ועוד.
 
-**2. ה-API וה-Worker** (כל שרת שמריץ Docker)
-```
-cd server
-docker build -t karaokesync-server .
-docker run -p 8000:8000 --env-file ../.env karaokesync-server                                   # API
-docker run --env-file ../.env karaokesync-server python -m karaokesync.worker.runner            # Worker
-```
-- ל-API מספיק שרת קטן. בנו עם `--build-arg INSTALL_AI=false` כדי לקבל image קטן.
-- ה-Worker צריך זיכרון (‏4GB+ ל-`small`), ועדיף GPU. אפשר להריץ כמה Workers במקביל — התור מונע כפילויות.
-- ב-`.env` של השרת: ‏`APP_ENV=production`, ‏`CORS_ORIGINS=https://<כתובת האתר שלך>`.
+בייצור השרת **מסרב לעלות** עם הגדרות לא בטוחות, והאתר נבנה עם Content-Security-Policy שמאפשר לו לדבר רק עם ה-Supabase וה-API שלו.
 
-**3. Google Login (אופציונלי)**
-Supabase ← Authentication ← Providers ← Google: הזינו Client ID ו-Secret מ-Google Cloud Console, ואז `VITE_ENABLE_GOOGLE_AUTH=true`.
+> ⚠️ שום שירות בתשלום לא הוגדר. כל צעד שעולה כסף מסומן במדריך ב-💰.
 
 ---
 

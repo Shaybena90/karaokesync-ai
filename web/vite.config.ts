@@ -1,11 +1,51 @@
 /// <reference types="vitest/config" />
-import { defineConfig, loadEnv } from 'vite'
+import { defineConfig, loadEnv, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 // The single .env file lives in the repository root (one level up).
 const envDir = '..'
+
+const origin = (url: string | undefined) => {
+  try {
+    return url ? new URL(url).origin : ''
+  } catch {
+    return ''
+  }
+}
+
+/**
+ * Content-Security-Policy for production builds: the page may only load code
+ * from itself and talk to its own Supabase project and API. Built from the
+ * same VITE_ variables, so every deployment gets the right addresses.
+ */
+function contentSecurityPolicy(env: Record<string, string>): Plugin {
+  const supabase = origin(env.VITE_SUPABASE_URL)
+  const api = origin(env.VITE_API_URL)
+  const supabaseWs = supabase.replace(/^http/, 'ws')
+  const policy = [
+    "default-src 'self'",
+    "script-src 'self'",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // inline: wavesurfer's shadow-DOM styles
+    "font-src 'self' https://fonts.gstatic.com data:",
+    "img-src 'self' data: blob:",
+    `media-src 'self' blob: ${supabase}`,
+    `connect-src 'self' ${supabase} ${supabaseWs} ${api}`,
+    "worker-src 'self' blob:",
+    "manifest-src 'self'",
+    "object-src 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+  ]
+    .map((d) => d.replace(/\s+/g, ' ').trim())
+    .join('; ')
+  return {
+    name: 'karaokesync-csp',
+    apply: 'build',
+    transformIndexHtml: () => [{ tag: 'meta', attrs: { 'http-equiv': 'Content-Security-Policy', content: policy }, injectTo: 'head-prepend' }],
+  }
+}
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, envDir, 'VITE_')
@@ -19,6 +59,7 @@ export default defineConfig(({ mode }) => {
   return {
     envDir,
     plugins: [
+      contentSecurityPolicy(env),
       react(),
       tailwindcss(),
       VitePWA({

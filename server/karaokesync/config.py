@@ -63,6 +63,21 @@ class Settings(BaseSettings):
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
 
+    def production_problems(self) -> list[str]:
+        """Configuration mistakes that must stop a production server from starting."""
+        problems = []
+        if not self.supabase_url.startswith("https://"):
+            problems.append("SUPABASE_URL must be the https:// address of your Supabase project")
+        if not self.supabase_service_role_key:
+            problems.append("SUPABASE_SERVICE_ROLE_KEY is missing")
+        origins = self.cors_origin_list
+        if not origins:
+            problems.append("CORS_ORIGINS must list the website address (e.g. https://your-site.vercel.app)")
+        for origin in origins:
+            if origin == "*" or "localhost" in origin or "127.0.0.1" in origin or not origin.startswith("https://"):
+                problems.append(f"CORS_ORIGINS contains {origin!r}: in production only https:// website addresses are allowed")
+        return problems
+
     def require_supabase(self) -> None:
         if not self.supabase_url or not self.supabase_service_role_key:
             raise RuntimeError(

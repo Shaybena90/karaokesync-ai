@@ -37,6 +37,7 @@ export const en: Record<MessageKey, string> = {
   'upload.uploading': 'Uploading…',
   'upload.verifying': 'Verifying the audio on the server…',
   'upload.done': 'Got it! Sending to processing…',
+  'upload.serverWaking': 'Waking up the server… on the free plan it sleeps after 15 idle minutes and can take up to a minute to start.',
   'upload.another': 'Upload another file',
   'upload.cancel': 'Cancel',
   'upload.retry': 'Try again',

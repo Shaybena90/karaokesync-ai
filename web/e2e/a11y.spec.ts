@@ -2,6 +2,10 @@
 import AxeBuilder from '@axe-core/playwright'
 import { expect, PID, test } from './fixtures'
 
+// axe-core downloads the page's stylesheets with fetch() to inspect them; the CSP
+// (correctly) blocks that for Google Fonts. Real visitors never make this request.
+test.use({ ignoredCsp: /Connecting to 'https:\/\/fonts\.googleapis\.com\// })
+
 const PAGES = [
   { path: '/', ready: 'h1' },
   { path: '/upload', ready: 'input[type=file]' },

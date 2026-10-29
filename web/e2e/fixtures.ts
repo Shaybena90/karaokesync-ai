@@ -253,12 +253,21 @@ export class MockBackend {
   }
 }
 
-export const test = base.extend<{ backend: MockBackend; signedIn: boolean }>({
+export const test = base.extend<{ backend: MockBackend; signedIn: boolean; ignoredCsp: RegExp | null }>({
   signedIn: [true, { option: true }],
-  backend: async ({ page, signedIn }, use) => {
+  /** CSP violations caused by test tooling itself (not by the app) can be ignored per spec. */
+  ignoredCsp: [null, { option: true }],
+  backend: async ({ page, signedIn, ignoredCsp }, use) => {
     const backend = new MockBackend()
+    // The production build carries a Content-Security-Policy: any violation fails the test.
+    const cspViolations: string[] = []
+    page.on('console', (msg) => {
+      const text = msg.text()
+      if (/Content Security Policy/i.test(text) && !(ignoredCsp && ignoredCsp.test(text))) cspViolations.push(text)
+    })
     await backend.install(page, signedIn)
     await use(backend)
+    expect(cspViolations, 'Content-Security-Policy violations').toEqual([])
   },
 })
 

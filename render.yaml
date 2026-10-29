@@ -1,0 +1,40 @@
+# Render Blueprint for the KaraokeSync AI API (FREE plan).
+# Render dashboard → New → Blueprint → choose this repository.
+# Values marked "sync: false" are secrets: Render asks for them when you create
+# the Blueprint; they are never stored in the repository.
+#
+# The AI worker is NOT defined here: it needs 2–4 GB of RAM, which no free plan
+# offers. Run it on your own computer (scripts/windows/5-start-worker.bat) or
+# see docs/DEPLOYMENT.md for paid options.
+services:
+  - type: web
+    name: karaokesync-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    dockerContext: ./server
+    dockerfilePath: ./server/Dockerfile
+    buildFilter:                 # rebuild only when the server code changes
+      paths:
+        - server/**
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: CORS_ORIGINS        # your website address, e.g. https://karaokesync.vercel.app
+        sync: false
+      - key: MAX_UPLOAD_MB
+        value: "50"
+      - key: MAX_AUDIO_DURATION_SECONDS
+        value: "600"
+      - key: MAX_UPLOADS_PER_DAY
+        value: "20"
+      - key: MAX_ACTIVE_JOBS_PER_USER
+        value: "2"
+      - key: MAX_EXPORTS_PER_DAY
+        value: "10"

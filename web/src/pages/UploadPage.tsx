@@ -104,6 +104,16 @@ export function UploadPage() {
     }
   }, [pending, setPending, start])
 
+  // A free API host sleeps when idle and needs up to a minute to wake up:
+  // explain the wait instead of looking stuck.
+  const [slow, setSlow] = useState(false)
+  const waitingForServer = phase.kind === 'preparing' || phase.kind === 'verifying'
+  useEffect(() => {
+    if (!waitingForServer) return setSlow(false)
+    const timer = setTimeout(() => setSlow(true), 5000)
+    return () => clearTimeout(timer)
+  }, [waitingForServer])
+
   const busy = ['checking', 'preparing', 'uploading', 'verifying', 'done'].includes(phase.kind)
   const label = phaseLabel[phase.kind]
 
@@ -150,6 +160,12 @@ export function UploadPage() {
                 </dl>
               </div>
             </div>
+
+            {slow && waitingForServer && (
+              <p className="mt-4 text-sm text-white/60" role="status">
+                {t('upload.serverWaking')}
+              </p>
+            )}
 
             {phase.kind === 'uploading' && (
               <div className="mt-5 flex items-center gap-3">
