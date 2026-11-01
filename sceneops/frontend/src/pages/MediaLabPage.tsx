@@ -77,7 +77,7 @@ function SourceWizard({ initCase, initExhibit, onDone }: { initCase?: number; in
   }
 
   return (
-    <div className="grid gap-5 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-5 lg:grid-cols-2">
       <div className="space-y-4">
         <p className="text-sm font-semibold text-ink-2">1. שיוך לתיק ומוצג</p>
         <Field label="תיק" required>
@@ -224,7 +224,7 @@ export default function MediaLabPage() {
 
       <Card>
         <CardHeader title="מלאי מדיה" icon={<Search />} subtitle="חיפוש וסינון בקבצים שנסרקו" />
-        <div className="grid gap-3 px-5 pb-4 md:grid-cols-3 xl:grid-cols-7 items-end">
+        <div className="grid grid-cols-1 gap-3 px-5 pb-4 md:grid-cols-3 xl:grid-cols-7 items-end">
           <Field label="תיק"><Select value={caseId} onChange={(e) => { setCaseId(e.target.value); setCamera(""); }}>
             {cases.data?.map((c) => <option key={c.id} value={c.id}>{c.reference} ({c.media_count})</option>)}
           </Select></Field>

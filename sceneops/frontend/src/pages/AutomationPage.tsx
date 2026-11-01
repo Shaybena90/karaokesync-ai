@@ -134,7 +134,7 @@ export default function AutomationPage() {
     <div className="space-y-5">
       <PageHeader title="אוטומציות ומשימות" icon={<Layers />}
         subtitle="תהליכי עבודה עם שלבים מסודרים, תלויות, ניסיונות חוזרים, ביטול בטוח ותיעוד מלא" />
-      <section aria-label="תהליכי עבודה" className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <section aria-label="תהליכי עבודה" className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         {wfs.data?.filter((w) => w.scope !== "camera").map((w) => (
           <Card key={w.key} className="flex flex-col p-4">
             <h3 className="font-bold">{w.name}</h3>
@@ -152,7 +152,7 @@ export default function AutomationPage() {
         </Card>
       </section>
 
-      <div className={cn("grid gap-5", selected && "2xl:grid-cols-2")}>
+      <div className={cn("grid grid-cols-1 gap-5", selected && "2xl:grid-cols-2")}>
         <Card className="min-w-0">
           <CardHeader title="תור המשימות" icon={<ListChecks />} actions={
             <div className="flex gap-2">

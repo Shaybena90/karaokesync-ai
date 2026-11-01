@@ -88,7 +88,7 @@ function JobsTable({ jobs }: { jobs: Job[] }) {
   const nav = useNavigate();
   if (!jobs.length) return <EmptyState title="אין משימות פעילות" description="משימות חדשות יופיעו כאן עם התקדמות בזמן אמת." />;
   return (
-    <div className="overflow-x-auto">
+    <div className="relative overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="text-ink-2 border-b border-line/80">
@@ -154,7 +154,7 @@ function FeedList({ items, empty }: { items: { id: number; icon: ReactNode; text
         <li key={i.id}>
           <Link to={i.to ?? "#"} className="flex items-center gap-3 py-2.5 text-sm hover:text-accent">
             <span className="shrink-0 [&_svg]:size-5">{i.icon}</span>
-            <span className="flex-1 truncate">{i.text}</span>
+            <span className="min-w-0 flex-1 truncate">{i.text}</span>
             <span className="tabular text-ink-2 text-[13px]">{fmtTime(i.time)}</span>
           </Link>
         </li>
@@ -186,7 +186,7 @@ export default function DashboardPage() {
 
       {q.isError ? <ErrorState error={q.error} retry={() => q.refetch()} /> : (
         <>
-          <section aria-label="מדדים" className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <section aria-label="מדדים" className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
             {!d ? Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-[118px] rounded-xl" />) : (
               <>
                 <Kpi to="/cases" tone="blue" value={d.kpis.open_cases} label="תיקים פתוחים" icon={<FolderOpen />}
@@ -219,14 +219,14 @@ export default function DashboardPage() {
             </div>
           </Card>
 
-          <div className="grid gap-5 xl:grid-cols-12">
+          <div className="grid grid-cols-1 gap-5 xl:grid-cols-12">
             <div className="space-y-5 xl:col-span-7 2xl:col-span-8 min-w-0">
               <Card>
                 <CardHeader title="משימות פעילות" icon={<ListChecks />}
                   actions={<Link to="/automation" className="text-sm text-accent hover:underline">לכל המשימות</Link>} />
                 <div className="px-3 pb-3">{d ? <JobsTable jobs={d.jobs} /> : <Skeleton className="h-40" />}</div>
               </Card>
-              <div className="grid gap-5 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
                 <Card>
                   <CardHeader title="פעילות אחרונה" icon={<History />} />
                   <div className="px-5 pb-2">

@@ -57,7 +57,7 @@ export default function MediaDetailPage() {
         </div>
       )}
 
-      <div className="grid gap-5 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-5">
         <Card className="xl:col-span-3">
           <CardHeader title="צפייה בעותק העבודה" icon={<ListVideo />} subtitle="הנגן מציג קובץ תצוגה שנוצר מעותק העבודה – לא מקובץ המקור" />
           <CardBody>

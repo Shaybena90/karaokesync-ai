@@ -63,7 +63,7 @@ function CameraForm({ open, onOpenChange, existing }: { open: boolean; onOpenCha
     <Dialog open={open} onOpenChange={onOpenChange} wide title={existing ? `עריכת מכשיר ${existing.name}` : "רישום מכשיר DVR/NVR"}
       description="יש להזין רק כתובת מכשיר מורשית אחת. המערכת אינה סורקת רשתות ואינה שומרת סיסמאות."
       footer={<><Button onClick={submit} loading={save.isPending}>שמירה</Button><Button variant="secondary" onClick={() => onOpenChange(false)}>ביטול</Button></>}>
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <Field label="שם מכשיר" required error={err.name}><Input value={f.name} onChange={set("name")} disabled={!!existing} dir="ltr" className="text-start" placeholder="DVR-04" /></Field>
         <Field label="יצרן"><Input value={f.vendor} onChange={set("vendor")} dir="ltr" className="text-start" /></Field>
         <Field label="דגם"><Input value={f.model} onChange={set("model")} dir="ltr" className="text-start" /></Field>

@@ -62,7 +62,7 @@ export function StartWorkflowDialog({ open, onOpenChange, workflow: fixed, caseI
       footer={<><Button onClick={submit} disabled={!!missing} loading={run.isPending}><ListChecks />הוספה לתור</Button>
         <Button variant="secondary" onClick={() => onOpenChange(false)}>ביטול</Button>
         {missing && <span className="text-sm text-ink-3">{missing}</span>}</>}>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         {!fixed && (
           <Field label="תהליך עבודה" className="md:col-span-2">
             <Select value={wf} onChange={(e) => setWf(e.target.value)}>
@@ -95,7 +95,7 @@ export function StartWorkflowDialog({ open, onOpenChange, workflow: fixed, caseI
                   onClick={() => onOpenChange(false)}>מעבדת המדיה</Link>.
               </p>
             ) : (
-              <div className="grid gap-2" role="radiogroup" aria-label="מקור ראיות">
+              <div className="grid grid-cols-1 gap-2" role="radiogroup" aria-label="מקור ראיות">
                 {sources.map((s) => (
                   <label key={s.id} className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 ${srcId === s.id ? "border-accent bg-accent/10" : "border-line"}`}>
                     <input type="radio" name="src" checked={srcId === s.id} onChange={() => setSrcId(s.id)} className="mt-1 accent-[#319BFF]" />

@@ -61,7 +61,7 @@ export function CaseFormDialog({ open, onOpenChange, existing }: {
       description="פרטי התיק נשמרים במסד הנתונים המקומי ומתועדים ביומן הביקורת."
       footer={<><Button onClick={submit} loading={save.isPending}>{existing ? "שמירת שינויים" : "פתיחת התיק"}</Button>
         <Button variant="secondary" onClick={() => onOpenChange(false)}>ביטול</Button></>}>
-      <form className="grid gap-4 md:grid-cols-2" onSubmit={(e) => { e.preventDefault(); submit(); }}>
+      <form className="grid grid-cols-1 gap-4 md:grid-cols-2" onSubmit={(e) => { e.preventDefault(); submit(); }}>
         <Field label="מספר תיק" required error={errors.reference} hint="לדוגמה: 4590/25">
           <Input value={f.reference} onChange={set("reference")} disabled={!!existing} dir="ltr" className="text-start" />
         </Field>

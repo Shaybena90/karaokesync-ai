@@ -99,7 +99,7 @@ export function ExportDialog({ open, onOpenChange, cameraId }: {
       footer={<><Button onClick={submit} loading={run.isPending}><Download />בקשת ייצוא</Button>
         <Button variant="secondary" onClick={() => onOpenChange(false)}>ביטול</Button>
         {err && <span role="alert" className="text-sm text-danger">{err}</span>}</>}>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Field label="מכשיר" required>
           <Select value={camId ?? ""} onChange={(e) => { setCamId(Number(e.target.value) || undefined); setChannels([]); }}>
             <option value="">— בחרו מכשיר —</option>

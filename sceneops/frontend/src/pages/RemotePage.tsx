@@ -49,7 +49,7 @@ function SubmitJob({ st }: { st: RemoteStatus }) {
   };
   if (st.mode === "disabled") return <p className="text-sm text-ink-3">הגשת משימות לסוכן אפשרית רק כאשר מצב סימולציה מקומית פעיל.</p>;
   return (
-    <div className="grid gap-4 md:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
       <Field label="סוכן"><Select value={agentId ?? ""} onChange={(e) => setAgentId(Number(e.target.value) || undefined)}>
         {agents.map((a) => <option key={a.id} value={a.id}>{a.name}</option>)}</Select></Field>
       <Field label="סוג משימה (רשימה מותרת)"><Select value={wf} onChange={(e) => setWf(e.target.value)}>
@@ -95,7 +95,7 @@ export default function RemotePage() {
   return (
     <div className="space-y-5">
       <PageHeader title="שליטה מרחוק" icon={<Monitor />} subtitle="ארכיטקטורת סוכן בטוחה – רשימת משימות מותרת, אישור מנהל, חתימה והגנת replay" />
-      <div className="grid gap-5 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
         <Card className={enabled ? "border-ok/50" : ""}>
           <CardHeader title="מצב" icon={enabled ? <ShieldCheck className="text-ok" /> : <ShieldOff />} />
           <CardBody className="space-y-3">
@@ -113,7 +113,7 @@ export default function RemotePage() {
         </Card>
         <Card className="xl:col-span-2">
           <CardHeader title="מה הסוכן רשאי לעשות" icon={<ShieldCheck />} />
-          <CardBody className="grid gap-4 md:grid-cols-2 text-sm">
+          <CardBody className="grid grid-cols-1 gap-4 md:grid-cols-2 text-sm">
             <div>
               <p className="mb-2 font-semibold text-ok">מותר (רשימה סגורה)</p>
               <ul className="space-y-1">{st.allowlist.map((w) => <li key={w.key} className="flex items-center gap-2"><ShieldCheck className="size-4 text-ok" />{w.name}</li>)}</ul>
@@ -148,7 +148,7 @@ export default function RemotePage() {
         </Table>
       </Card>
 
-      <div className="grid gap-5 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
         <Card>
           <CardHeader title="הגשת משימה לסוכן" icon={<Send />} />
           <CardBody><SubmitJob st={st} /></CardBody>

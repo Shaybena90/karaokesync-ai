@@ -37,7 +37,7 @@ function General() {
   const save = useAction((b: Record<string, unknown>) => api("/api/settings", { method: "PATCH", json: b }), { success: "ההגדרות נשמרו", invalidate: [["settings"]] });
   if (!q.data) return <Loading />;
   return (
-    <div className="grid gap-5 xl:grid-cols-2">
+    <div className="grid grid-cols-1 gap-5 xl:grid-cols-2">
       <Card>
         <CardHeader title="הגדרות עיבוד" icon={<Settings />} />
         <CardBody className="space-y-4">
@@ -74,7 +74,7 @@ function General() {
       </Card>
       <Card className="xl:col-span-2 border-warn/40">
         <CardHeader title="אבטחה – הדגמה מול ייצור" icon={<ShieldAlert className="text-warn" />} />
-        <CardBody className="grid gap-4 text-sm text-ink-2 md:grid-cols-2">
+        <CardBody className="grid grid-cols-1 gap-4 text-sm text-ink-2 md:grid-cols-2">
           <div><p className="mb-1 font-semibold text-ink">ממומש בהדגמה</p>
             <ul className="list-disc space-y-0.5 ps-5"><li>סיסמאות מגובבות (PBKDF2-SHA256), פקיעת התחברות</li><li>הרשאות לפי תפקיד: מנהל, חוקר, צופה</li>
               <li>יומן ביקורת בשרשרת גיבוב</li><li>הגבלת נתיבים, חסימת Path Traversal ומגבלת גודל בקשה</li><li>אי-רישום סודות ביומנים</li></ul></div>

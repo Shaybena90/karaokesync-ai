@@ -30,7 +30,7 @@ export default function CasesPage() {
       <PageHeader title="תיקים ומוצגים" subtitle="ניהול תיקי חקירה, מוצגים דיגיטליים ושרשרת משמורת" icon={<FolderOpen />}
         actions={can("investigator") && <Button onClick={() => setOpen(true)}><FolderPlus />פתח תיק חדש</Button>} />
       <Card className="p-4 mb-4">
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_1fr_auto] items-center">
+        <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-[2fr_1fr_1fr_1fr_auto] items-center">
           <div className="relative">
             <Search className="pointer-events-none absolute start-3 top-1/2 size-4 -translate-y-1/2 text-ink-3" />
             <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="חיפוש לפי מספר תיק, כותרת או תיאור" className="ps-9"

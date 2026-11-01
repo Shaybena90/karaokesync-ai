@@ -65,12 +65,12 @@ export default function ReportDetailPage() {
         <p className="rounded-lg border border-warn/40 bg-warn/5 p-3 text-sm text-ink-2">טיוטה – הדוח טרם נבדק ואושר על ידי חוקר מורשה. קבצי הטיוטה מסומנים בסימן מים "טיוטה".</p>
       )}
 
-      <div className="grid gap-5 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
         <Card className="xl:col-span-2">
           <CardHeader title="תצוגת תוכן הגרסה הנוכחית" icon={<FileText />} subtitle={c.generated_at ? `הופק ${c.generated_at}` : undefined} />
           <CardBody className="space-y-5">
             {c.case && (
-              <dl className="grid gap-3 sm:grid-cols-3">
+              <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <KV label="מספר תיק"><Ltr>{c.case.reference}</Ltr></KV><KV label="חוקר אחראי">{c.case.investigator}</KV>
                 <KV label="סטטוס">{c.case.status}</KV><KV label="מוצגים">{c.summary?.exhibits}</KV>
                 <KV label="קבצי מדיה">{c.summary?.media}</KV><KV label="עותקים מאומתים">{c.summary?.verified}</KV>

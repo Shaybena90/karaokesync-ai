@@ -59,7 +59,7 @@ function ExhibitDialog({ open, onOpenChange, caseId, existing }: {
   return (
     <Dialog open={open} onOpenChange={onOpenChange} wide title={existing ? `עריכת מוצג ${existing.identifier}` : "הוספת מוצג"}
       footer={<><Button onClick={submit} loading={save.isPending}>שמירה</Button><Button variant="secondary" onClick={() => onOpenChange(false)}>ביטול</Button></>}>
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Field label="מזהה מוצג" required error={err.identifier} hint="לדוגמה: 003">
           <Input value={f.identifier} onChange={set("identifier")} disabled={!!existing} dir="ltr" className="text-start" />
         </Field>
@@ -94,14 +94,14 @@ function CustodyDialog({ open, onOpenChange, exhibit }: { open: boolean; onOpenC
       footer={<><Button onClick={() => f.description.trim().length < 2 ? setErr("יש לתאר את האירוע") :
         save.mutate({ ...f, occurred_at: localInputToIso(f.occurred_at) })} loading={save.isPending}>רישום</Button>
         <Button variant="secondary" onClick={() => onOpenChange(false)}>ביטול</Button></>}>
-      <div className="grid gap-4">
+      <div className="grid grid-cols-1 gap-4">
         <Field label="סוג אירוע">
           <Select value={f.event_type} onChange={set("event_type")}>
             {Object.entries(CUSTODY_TYPE).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
           </Select>
         </Field>
         <Field label="תיאור" required error={err}><Textarea value={f.description} onChange={set("description")} /></Field>
-        <div className="grid gap-4 md:grid-cols-2">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
           <Field label="מסר"><Input value={f.from_party} onChange={set("from_party")} /></Field>
           <Field label="מקבל"><Input value={f.to_party} onChange={set("to_party")} /></Field>
           <Field label="מיקום"><Input value={f.location} onChange={set("location")} /></Field>
@@ -126,7 +126,7 @@ function ExhibitCard({ ex, editable }: { ex: Exhibit; editable: boolean }) {
           {editable && <Button size="sm" variant="ghost" onClick={() => setEdit(true)} aria-label="עריכת מוצג"><Pencil /></Button>}
         </>} />
       <CardBody className="space-y-4">
-        <dl className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <dl className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <KV label="התקן מקור">{ex.source_device}</KV><KV label="מיקום">{ex.location}</KV>
           <KV label="שיטת רכישה">{ex.acquisition_method}</KV><KV label="נרכש">{fmtDateTime(ex.acquired_at)}</KV>
           <KV label="נרכש על ידי">{ex.acquired_by?.full_name}</KV><KV label="אסמכתת אחסון">{ex.storage_reference}</KV>
@@ -226,7 +226,7 @@ export default function CaseDetailPage() {
         )}
       </div>
       <Card className="p-5">
-        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <dl className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <KV label="חוקר אחראי">{cs.assigned_to?.full_name}</KV>
           <KV label="נפתח">{fmtDateTime(cs.opened_at)}</KV>
           <KV label="מועד אירוע">{fmtDateTime(cs.incident_date)}</KV>
