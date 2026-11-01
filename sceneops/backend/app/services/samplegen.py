@@ -31,9 +31,9 @@ def generate_clip(dst: Path, camera_label: str, start: datetime, duration: int,
         "[0]drawbox=x=0:y=230:w=640:h=130:color=0x2a3442:t=fill,"
         "drawbox=x=420:y=120:w=200:h=140:color=0x3a4250:t=fill[bg];"
         f"[bg][1]overlay=x='{expr}':y=250:eval=frame,noise=alls=8:allf=t,"
-        f"drawtext=fontfile=DejaVuSans.ttf:text='{camera_label}  {clock}':x=12:y=12:fontsize=16:"
+        f"drawtext=fontfile=DejaVuSans.ttf:text='{camera_label}  {clock}':x=12:y=h-th-12:fontsize=15:"
         "fontcolor=white:box=1:boxcolor=black@0.5,"
-        f"drawtext=fontfile=DejaVuSans.ttf:text='{label}':x=w-tw-12:y=h-th-12:fontsize=14:fontcolor=yellow@0.8"
+        f"drawtext=fontfile=DejaVuSans.ttf:text='{label}':x=w-tw-12:y=h-th-14:fontsize=13:fontcolor=yellow@0.8"
     )
     ct = (creation_time or start).strftime("%Y-%m-%dT%H:%M:%SZ")
     args = [ffmpeg, "-y", "-v", "error",

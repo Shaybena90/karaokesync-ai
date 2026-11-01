@@ -48,7 +48,8 @@ def _finish(db: Session, job: Job, status: JobStatus, error: str = "") -> None:
         ex = db.get(Exhibit, job.exhibit_id)
         if ex:
             ex.status = ExhibitStatus.processed if status == JobStatus.succeeded else ExhibitStatus.registered
-    audit.record(db, f"job.{status.value}", f"משימה #{job.id} ({job.title}) – {status.value}",
+    from ..services.labels import JOB_STATUS  # noqa: PLC0415
+    audit.record(db, f"job.{status.value}", f"{job.title} – {JOB_STATUS[status.value]} (משימה #{job.id})",
                  actor=f"worker:{job.worker_id}", entity_type="job", entity_id=job.id,
                  details={"error": error[:500]} if error else {})
     db.commit()
