@@ -14,6 +14,8 @@ import { cn } from "@/lib/utils";
 import { Dropdown } from "./ui/dropdown";
 import { Emblem } from "./Emblem";
 import { Loading } from "./ui/misc";
+import { DEMO } from "@/lib/demo";
+import { toast } from "sonner";
 
 const NAV = [
   { to: "/", label: "מרכז שליטה", icon: Home, end: true },
@@ -111,6 +113,11 @@ function Header({ onMenu }: { onMenu: () => void }) {
           <div className="hidden sm:block whitespace-nowrap text-[13px] md:text-[15px] text-ink-2">מערכת לניהול חקירות מדיה ומצלמות</div>
         </div>
       </div>
+      {DEMO && (
+        <span role="note" title="נתוני הדגמה בדויים שהופקו על ידי המערכת. פעולות שינוי מושבתות בגרסה זו."
+          className="hidden sm:inline-flex items-center rounded-full border border-warn/60 bg-warn/10 px-3 py-1 text-xs font-semibold text-warn">
+          גרסת תצוגה · קריאה בלבד</span>
+      )}
       <div className="flex-1" />
       {/* צד שמאל: חיבור מרחוק, התראות, משתמש */}
       <div className="flex items-center gap-1 md:gap-3">
@@ -164,6 +171,9 @@ export function Layout() {
   const { user } = useAuth();
   useLiveEvents(!!user);
   useEffect(() => setOpen(false), [loc.pathname]);
+  useEffect(() => {
+    if (DEMO) toast.info("גרסת תצוגה: ניתן לעבור בכל המסכים ולצפות בנתוני ההדגמה. פעולות שינוי מושבתות.", { duration: 8000 });
+  }, []);
   return (
     <div className="min-h-screen bg-bg text-ink">
       <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:start-2 focus:z-50 focus:rounded focus:bg-accent focus:px-3 focus:py-2">
@@ -184,7 +194,7 @@ export function Layout() {
             </aside>
           </div>
         )}
-        <main id="main" className="flex-1 min-w-0 lg:ms-[268px] px-3 py-5 md:px-6 md:py-6 xl:px-8">
+        <main id="main" className="flex-1 min-w-0 lg:ms-[268px] px-4 py-5 md:px-6 md:py-6 xl:px-8">
           <Suspense fallback={<Loading />}><Outlet /></Suspense>
         </main>
       </div>

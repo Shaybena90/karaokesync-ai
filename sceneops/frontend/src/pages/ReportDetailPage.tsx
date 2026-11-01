@@ -3,6 +3,12 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { ArrowRight, CheckCircle2, FileDown, FileText, History, RefreshCw, Send, XCircle } from "lucide-react";
 import { api, fileUrl } from "@/lib/api";
+import { DEMO } from "@/lib/demo";
+import { toast } from "sonner";
+
+const noDocx = (e: { preventDefault: () => void }) => {
+  if (DEMO) { e.preventDefault(); toast.info("הורדת DOCX זמינה בהרצה המקומית של המערכת. בגרסת התצוגה ניתן לפתוח את קובץ ה-PDF."); }
+};
 import { useAuth } from "@/lib/auth";
 import { useAction } from "@/lib/queries";
 import { fmtDateTime, shortHash } from "@/lib/format";
@@ -50,7 +56,7 @@ export default function ReportDetailPage() {
         <div className="flex flex-wrap gap-2">
           {cur && <>
             <Button variant="secondary" asChild><a href={fileUrl(`/api/reports/${id}/download/${cur.revision}/pdf`)} target="_blank" rel="noreferrer"><FileDown />PDF</a></Button>
-            <Button variant="secondary" asChild><a href={fileUrl(`/api/reports/${id}/download/${cur.revision}/docx`)}><FileDown />DOCX</a></Button>
+            <Button variant="secondary" asChild><a href={fileUrl(`/api/reports/${id}/download/${cur.revision}/docx`) || "#"} onClick={noDocx}><FileDown />DOCX</a></Button>
           </>}
           {can("investigator") && ["draft", "rejected"].includes(r.status) && <Button onClick={() => submit.mutate(undefined)} loading={submit.isPending}><Send />הגשה לבדיקה</Button>}
           {can("investigator") && r.status === "in_review" && <>
@@ -116,7 +122,7 @@ export default function ReportDetailPage() {
                   <p className="mt-1 text-[11px] text-ink-3">PDF SHA-256: <Ltr mono>{shortHash(v.pdf_sha256, 10)}</Ltr></p>
                   <div className="mt-2 flex gap-2">
                     <a className="text-xs text-accent hover:underline" href={fileUrl(`/api/reports/${id}/download/${v.revision}/pdf`)} target="_blank" rel="noreferrer">PDF</a>
-                    <a className="text-xs text-accent hover:underline" href={fileUrl(`/api/reports/${id}/download/${v.revision}/docx`)}>DOCX</a>
+                    <a className="text-xs text-accent hover:underline" href={fileUrl(`/api/reports/${id}/download/${v.revision}/docx`) || "#"} onClick={noDocx}>DOCX</a>
                     {v.job_id && <Link className="text-xs text-ink-3 hover:text-accent" to={`/automation?job=${v.job_id}`}>משימה #{v.job_id}</Link>}
                   </div>
                 </div>

@@ -1,3 +1,5 @@
+import { DEMO, DEMO_READONLY_MSG, demoFile, demoGet } from "./demo";
+
 /** לקוח API: מוסיף אסימון התחברות, מתרגם שגיאות לעברית ומטפל בפקיעת התחברות. */
 const TOKEN_KEY = "sceneops.token";
 
@@ -45,6 +47,15 @@ const STATUS_HE: Record<number, string> = {
 };
 
 export async function api<T = unknown>(path: string, opts: RequestInit & { json?: unknown } = {}): Promise<T> {
+  if (DEMO) {
+    const method = (opts.method ?? "GET").toUpperCase();
+    if (method !== "GET") throw new ApiError(403, DEMO_READONLY_MSG);
+    try {
+      return structuredClone(demoGet(path)) as T;
+    } catch (e) {
+      throw new ApiError(404, (e as Error).message);
+    }
+  }
   const headers = new Headers(opts.headers);
   const token = getToken();
   if (token) headers.set("Authorization", `Bearer ${token}`);
@@ -76,6 +87,7 @@ export async function api<T = unknown>(path: string, opts: RequestInit & { json?
 
 /** כתובת לקובץ מוגן (תמונה/וידאו/הורדה) – האסימון מועבר בפרמטר כי תגיות מדיה אינן שולחות כותרות. */
 export function fileUrl(path: string): string {
+  if (DEMO) return demoFile(path);
   const t = getToken();
   const sep = path.includes("?") ? "&" : "?";
   return t ? `${path}${sep}token=${encodeURIComponent(t)}` : path;

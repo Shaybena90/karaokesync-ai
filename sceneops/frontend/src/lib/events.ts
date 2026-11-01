@@ -1,12 +1,13 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { fileUrl, getToken } from "./api";
+import { DEMO } from "./demo";
 
 /** חיבור SSE: עדכוני משימות והתראות בזמן אמת, עם ריענון שאילתות TanStack Query. */
 export function useLiveEvents(enabled: boolean) {
   const qc = useQueryClient();
   useEffect(() => {
-    if (!enabled || !getToken() || typeof EventSource === "undefined") return;
+    if (DEMO || !enabled || !getToken() || typeof EventSource === "undefined") return;
     const es = new EventSource(fileUrl("/api/events/stream"));
     let timer: ReturnType<typeof setTimeout> | null = null;
     const refresh = () => {

@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { api, getToken, setToken, setUnauthorizedHandler } from "./api";
+import { DEMO } from "./demo";
 import type { Role, User } from "./types";
 
 interface AuthCtx {
@@ -27,6 +28,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     setUnauthorizedHandler(clear);
+    if (DEMO) {
+      api<User>("/api/auth/me").then(setUser).finally(() => setLoading(false));
+      return;
+    }
     if (!getToken()) {
       setLoading(false);
       return;
@@ -44,6 +49,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const logout = useCallback(async () => {
+    if (DEMO) return;
     try {
       await api("/api/auth/logout", { method: "POST" });
     } finally {

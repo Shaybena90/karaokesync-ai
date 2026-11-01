@@ -10,3 +10,4 @@ frontend/playwright-report/
 __pycache__/
 *.pyc
 .pytest_cache/
+frontend/dist-demo/
