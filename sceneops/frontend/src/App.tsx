@@ -1,21 +1,23 @@
+import { lazy, Suspense } from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "@/lib/auth";
 import { Layout } from "@/components/Layout";
 import { Loading } from "@/components/ui/misc";
 import LoginPage from "@/pages/LoginPage";
-import DashboardPage from "@/pages/DashboardPage";
-import CasesPage from "@/pages/CasesPage";
-import CaseDetailPage from "@/pages/CaseDetailPage";
-import CamerasPage from "@/pages/CamerasPage";
-import MediaLabPage from "@/pages/MediaLabPage";
-import MediaDetailPage from "@/pages/MediaDetailPage";
-import AutomationPage from "@/pages/AutomationPage";
-import ReportsPage from "@/pages/ReportsPage";
-import ReportDetailPage from "@/pages/ReportDetailPage";
-import RemotePage from "@/pages/RemotePage";
-import NotificationsPage from "@/pages/NotificationsPage";
-import SettingsPage from "@/pages/SettingsPage";
-import NotFoundPage from "@/pages/NotFoundPage";
+
+const DashboardPage = lazy(() => import("@/pages/DashboardPage"));
+const CasesPage = lazy(() => import("@/pages/CasesPage"));
+const CaseDetailPage = lazy(() => import("@/pages/CaseDetailPage"));
+const CamerasPage = lazy(() => import("@/pages/CamerasPage"));
+const MediaLabPage = lazy(() => import("@/pages/MediaLabPage"));
+const MediaDetailPage = lazy(() => import("@/pages/MediaDetailPage"));
+const AutomationPage = lazy(() => import("@/pages/AutomationPage"));
+const ReportsPage = lazy(() => import("@/pages/ReportsPage"));
+const ReportDetailPage = lazy(() => import("@/pages/ReportDetailPage"));
+const RemotePage = lazy(() => import("@/pages/RemotePage"));
+const NotificationsPage = lazy(() => import("@/pages/NotificationsPage"));
+const SettingsPage = lazy(() => import("@/pages/SettingsPage"));
+const NotFoundPage = lazy(() => import("@/pages/NotFoundPage"));
 
 export default function App() {
   const { user, loading } = useAuth();
@@ -28,6 +30,7 @@ export default function App() {
     );
   }
   return (
+    <Suspense fallback={<Loading />}>
     <Routes>
       <Route path="/login" element={<Navigate to="/" replace />} />
       <Route element={<Layout />}>
@@ -46,5 +49,6 @@ export default function App() {
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
+    </Suspense>
   );
 }

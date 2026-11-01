@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { Suspense, useEffect, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -13,6 +13,7 @@ import type { Health } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { Dropdown } from "./ui/dropdown";
 import { Emblem } from "./Emblem";
+import { Loading } from "./ui/misc";
 
 const NAV = [
   { to: "/", label: "מרכז שליטה", icon: Home, end: true },
@@ -184,7 +185,7 @@ export function Layout() {
           </div>
         )}
         <main id="main" className="flex-1 min-w-0 lg:ms-[268px] px-3 py-5 md:px-6 md:py-6 xl:px-8">
-          <Outlet />
+          <Suspense fallback={<Loading />}><Outlet /></Suspense>
         </main>
       </div>
     </div>
