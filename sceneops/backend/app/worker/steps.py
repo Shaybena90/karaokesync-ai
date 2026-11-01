@@ -489,7 +489,7 @@ def step_sim_export(ctx: StepContext) -> None:
     ctx.db.add(src)
     ctx.db.flush()
     ctx.job.params = {**p, "source_id": src.id}
-    ctx.custody(ex, CustodyType.exported, f"[סימולציה] ייצוא {len(files)} קטעים מ-{cam.name}; "
+    ctx.custody(ex.id, CustodyType.exported, f"[סימולציה] ייצוא {len(files)} קטעים מ-{cam.name}; "
                                           f"אסמכתת הרשאה: {p.get('authorization_ref', '')}")
     audit.record(ctx.db, "camera.export_sim", f"ייצוא מדומה מ-{cam.name}", actor="worker", entity_type="camera",
                  entity_id=cam.id, details={"job": ctx.job.id, "channels": p["channels"], "files": len(files)})

@@ -120,6 +120,10 @@ def run_job(db: Session, job: Job, worker_id: str) -> JobStatus:
                         s.status = StepStatus.skipped
                 _finish(db, job, JobStatus.failed, f"{step.name}: {msg}")
                 return job.status
+    skipped = [s.name for s in job.steps if s.status == StepStatus.skipped]
+    if skipped:
+        _finish(db, job, JobStatus.failed, "שלבים לא בוצעו בשל תלויות שלא הושלמו: " + ", ".join(skipped))
+        return job.status
     _finish(db, job, JobStatus.succeeded)
     return job.status
 

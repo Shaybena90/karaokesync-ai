@@ -141,7 +141,7 @@ def retry(db: Session, job: Job, user: User, ip: str = "") -> None:
     job.finished_at = None
     job.attempts = 0
     for st in job.steps:
-        if st.status in (StepStatus.failed, StepStatus.cancelled, StepStatus.running):
+        if st.status != StepStatus.succeeded:  # כולל שלבים שדולגו בעקבות הכשל
             st.status = StepStatus.pending
             st.attempts = 0
             st.error = ""

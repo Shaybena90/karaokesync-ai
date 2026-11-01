@@ -135,3 +135,61 @@ def test_state_machine_rejects_invalid_transition():
     job = Job(workflow="hash", title="x", status=JobStatus.succeeded)
     with pytest.raises(queue.InvalidTransition):
         queue.transition(job, JobStatus.running)
+
+
+def test_simulated_camera_export_pipeline(client, noa):
+    import pytest
+    if not HAS_FFMPEG:
+        pytest.skip("FFmpeg נדרש לייצוא מדומה")
+    ex = noa_exhibit(client, noa)
+    cams = client.get("/api/cameras", headers=noa).json()
+    cam = next(c for c in cams if c["authorization_ref"] and c["adapter"] == "simulated")
+    r = client.post(f"/api/cameras/{cam['id']}/export", headers=noa, json={
+        "exhibit_id": ex["id"], "channels": [1], "start": "2025-01-25T22:00:00", "end": "2025-01-25T22:00:30",
+        "authorization_ref": "צו בדיקה", "credential_confirmed": True})
+    assert r.status_code == 200, r.text
+    assert r.json()["is_simulation"] is True
+    _drain()
+    job = client.get(f"/api/jobs/{r.json()['id']}", headers=noa).json()
+    assert job["status"] == "succeeded", job
+    custody = client.get(f"/api/exhibits/{ex['id']}/custody", headers=noa).json()
+    assert any(c["event_type"] == "exported" and "סימולציה" in c["description"] for c in custody)
+
+
+def test_stale_running_job_is_requeued_and_resumes(client, noa):
+    from datetime import timedelta
+    from app.db import utcnow
+    ex = noa_exhibit(client, noa)
+    jid = client.post("/api/jobs", headers=noa, json={"workflow": "index", "exhibit_id": ex["id"]}).json()["id"]
+    with SessionLocal() as db:
+        job = queue.claim_next(db, "crashed-worker")
+        assert job.id == jid
+        job.steps[0].status = StepStatus.succeeded  # השלב הראשון הושלם לפני הקריסה
+        job.steps[1].status = StepStatus.running
+        job.lease_until = utcnow() - timedelta(seconds=5)
+        db.commit()
+        assert queue.recover_stale(db) == 1
+        db.refresh(job)
+        assert job.status == JobStatus.queued and job.steps[1].status == StepStatus.pending
+    _drain()
+    detail = client.get(f"/api/jobs/{jid}", headers=noa).json()
+    assert detail["status"] == "succeeded"
+    assert detail["steps"][0]["attempts"] == 0  # לא הורץ שוב – המשך מהשלב שלא הושלם
+
+
+def test_retry_resets_steps_skipped_after_failure(client, noa):
+    ex = noa_exhibit(client, noa)
+    jid = client.post("/api/jobs", headers=noa, json={"workflow": "working_copy", "exhibit_id": ex["id"]}).json()["id"]
+    with SessionLocal() as db:
+        job = db.get(Job, jid)
+        job.status = JobStatus.failed
+        job.steps[0].status = StepStatus.failed
+        for st in job.steps[1:]:
+            st.status = StepStatus.skipped
+        db.commit()
+    assert client.post(f"/api/jobs/{jid}/retry", headers=noa).json()["status"] == "queued"
+    steps = client.get(f"/api/jobs/{jid}", headers=noa).json()["steps"]
+    assert all(s["status"] == "pending" for s in steps)
+    _drain()
+    steps = client.get(f"/api/jobs/{jid}", headers=noa).json()["steps"]
+    assert all(s["status"] == "succeeded" for s in steps)
