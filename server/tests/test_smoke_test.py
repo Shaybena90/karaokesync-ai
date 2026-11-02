@@ -44,6 +44,10 @@ def deployment(**broken):
             p = req.url.path
             if p == "/rest/v1/projects":
                 return httpx.Response(200, json=[{"id": "x"}] if broken.get("rls_off") else [])
+            if p == "/rest/v1/sync_jobs":
+                if broken.get("no_sync_table"):
+                    return httpx.Response(404, json={"message": 'relation "public.sync_jobs" does not exist'})
+                return httpx.Response(200, json=[])
             if p.startswith("/rest/v1/rpc/"):
                 return httpx.Response(200 if broken.get("rpc_open") else 401, json={})
             if p.startswith("/storage/v1/object/public/"):
@@ -79,6 +83,7 @@ def test_healthy_deployment_passes(capsys, monkeypatch):
     ({"rpc_open": True}, "queue functions not callable"),
     ({"public_bucket": True}, "storage bucket 'audio' is private"),
     ({"autoconfirm": True}, "email confirmation required"),
+    ({"no_sync_table": True}, "automatic sync migration was run"),
 ])
 def test_broken_deployment_is_caught(capsys, monkeypatch, flag, expected):
     code, out = run(capsys, monkeypatch, **flag)

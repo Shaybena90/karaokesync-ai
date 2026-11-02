@@ -68,6 +68,18 @@ export interface ExportJob {
   finished_at: string | null
 }
 
+export interface SyncJob {
+  id: string
+  project_id: string
+  words: string[]
+  window_start_ms: number
+  window_end_ms: number
+  status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
+  result: { start_ms: number; end_ms: number; confidence: number | null }[] | null
+  error_code: string | null
+  created_at: string
+}
+
 export interface Limits {
   max_upload_bytes: number
   max_audio_duration_seconds: number

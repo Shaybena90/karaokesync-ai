@@ -19,10 +19,11 @@ import uuid
 
 from ..config import Settings, get_settings
 from ..logging_setup import setup_logging
-from ..supabase_client import SupabaseClient
+from ..supabase_client import SupabaseClient, SupabaseError
 from .cleanup import run_retention
 from .errors import JobLost, PipelineError
 from .export_pipeline import run_export
+from .line_sync import run_line_sync
 from .pipeline import run_pipeline
 
 log = logging.getLogger("karaokesync.worker")
@@ -33,7 +34,8 @@ CLEANUP_INTERVAL_SECONDS = 3600
 class Heartbeat:
     """Keeps the job lease alive in a background thread and relays progress.
 
-    `kind` is "processing" (AI pipeline) or "export" (video render)."""
+    `kind` is "processing" (AI pipeline), "export" (video render) or "sync"
+    (automatic sync of words typed in the editor)."""
 
     MIN_BEAT_INTERVAL = 3.0
 
@@ -73,8 +75,8 @@ class Heartbeat:
             base = {"p_job_id": self.job_id, "p_worker_id": self.worker_id, "p_lease_seconds": self.lease,
                     "p_progress": self.progress}
             try:
-                if self.kind == "export":
-                    ok = self.sb.rpc("heartbeat_export_job", base)
+                if self.kind in ("export", "sync"):
+                    ok = self.sb.rpc(f"heartbeat_{self.kind}_job", base)
                 else:
                     ok = self.sb.rpc("heartbeat_processing_job", {**base, "p_stage": self.stage})
                 if ok is False:
@@ -89,9 +91,14 @@ class Heartbeat:
 
 
 def process_one(sb: SupabaseClient, settings: Settings, worker_id: str) -> bool:
-    """Claim and run a single job (AI processing first, then video exports).
-    Returns False if both queues were empty."""
+    """Claim and run a single job. Editor syncs come first (someone is waiting
+    for a few seconds of work), then AI processing, then video exports.
+    Returns False if every queue was empty."""
     lease = settings.worker_lease_seconds
+    syncs = _claim_sync(sb, worker_id, lease)
+    if syncs:
+        _run_sync(sb, settings, worker_id, syncs[0])
+        return True
     jobs = sb.rpc("claim_processing_job", {"p_worker_id": worker_id, "p_lease_seconds": lease})
     if jobs:
         _run_processing(sb, settings, worker_id, jobs[0])
@@ -101,6 +108,25 @@ def process_one(sb: SupabaseClient, settings: Settings, worker_id: str) -> bool:
         _run_export(sb, settings, worker_id, exports[0])
         return True
     return False
+
+
+_sync_unavailable = False
+
+
+def _claim_sync(sb: SupabaseClient, worker_id: str, lease: int) -> list:
+    """Claim an editor sync job. If the database does not have the sync queue yet
+    (its SQL file was not run), keep processing songs and say so once."""
+    global _sync_unavailable
+    if _sync_unavailable:
+        return []
+    try:
+        return sb.rpc("claim_sync_job", {"p_worker_id": worker_id, "p_lease_seconds": lease}) or []
+    except SupabaseError as exc:
+        if exc.status_code != 404:
+            raise
+        _sync_unavailable = True
+        log.warning("automatic sync is off: run supabase/migrations/20261102000001_sync_jobs.sql in Supabase")
+        return []
 
 
 def _run_processing(sb: SupabaseClient, settings: Settings, worker_id: str, job: dict) -> None:
@@ -141,6 +167,25 @@ def _run_export(sb: SupabaseClient, settings: Settings, worker_id: str, job: dic
         except Exception as exc:
             log.exception("export=%s unexpected error: %s", job["id"], type(exc).__name__)
             _fail(sb, "fail_export_job", job, worker_id, "internal_error", True)
+
+
+def _run_sync(sb: SupabaseClient, settings: Settings, worker_id: str, job: dict) -> None:
+    log.info("claimed sync=%s project=%s words=%d", job["id"], job["project_id"], len(job["words"]))
+    with Heartbeat(sb, job["id"], worker_id, settings.worker_lease_seconds, kind="sync") as hb:
+        try:
+            result = run_line_sync(job, sb, settings, hb.report_progress)
+            if hb.lost.is_set():
+                raise JobLost(job["id"])
+            ok = sb.rpc("complete_sync_job", {"p_job_id": job["id"], "p_worker_id": worker_id, "p_result": result})
+            log.info("sync=%s %s", job["id"], "succeeded" if ok else "lost before completion")
+        except JobLost:
+            log.warning("sync=%s lease lost; dropping result", job["id"])
+        except PipelineError as exc:
+            log.warning("sync=%s failed code=%s retryable=%s", job["id"], exc.code, exc.retryable)
+            _fail(sb, "fail_sync_job", job, worker_id, exc.code, exc.retryable)
+        except Exception as exc:
+            log.exception("sync=%s unexpected error: %s", job["id"], type(exc).__name__)
+            _fail(sb, "fail_sync_job", job, worker_id, "internal_error", True)
 
 
 def _fail(sb: SupabaseClient, fn: str, job: dict, worker_id: str, code: str, retryable: bool) -> None:

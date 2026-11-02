@@ -76,6 +76,9 @@ export class MockBackend {
     word('b0000000-0000-0000-0000-000000000006', 'aaaaaaaa-0000-0000-0000-000000000002', 'טוב', 13100, 14000, 6),
   ]
   exportJobs: Row[] = []
+  syncJobs: Row[] = []
+  /** Error code the mock worker reports for sync jobs (null = success). */
+  syncError: string | null = null
   lyricSaves: { p_expected_version: number; p_lines: { words: { text: string; start_ms: number; end_ms: number }[] }[] }[] = []
   stylePatches: Row[] = []
   apiCalls: string[] = []
@@ -115,6 +118,10 @@ export class MockBackend {
       const [op, ...rest] = expr.split('.')
       const value = rest.join('.')
       if (op === 'eq') out = out.filter((r) => String(r[key]) === value)
+      if (op === 'in') {
+        const values = value.replace(/^\(|\)$/g, '').split(',').map((v) => v.replace(/^"|"$/g, ''))
+        out = out.filter((r) => values.includes(String(r[key])))
+      }
     }
     const order = url.searchParams.get('order')
     if (order?.startsWith('created_at.desc')) out = [...out].reverse()
@@ -154,6 +161,7 @@ export class MockBackend {
     if (p === '/rest/v1/lyric_lines') return rows(this.lines)
     if (p === '/rest/v1/lyric_words') return rows(this.words)
     if (p === '/rest/v1/export_jobs') return rows(this.exportJobs)
+    if (p === '/rest/v1/sync_jobs') return rows(this.syncJobs)
     if (p === '/rest/v1/rpc/save_lyrics') {
       const body = JSON.parse(req.postData() ?? '{}')
       const project = this.project(body.p_project_id)
@@ -247,6 +255,23 @@ export class MockBackend {
       this.exportJobs.unshift(job)
       setTimeout(() => Object.assign(job, { status: 'running', progress: 42 }), 1000)
       setTimeout(() => Object.assign(job, { status: 'succeeded', progress: 100, output_path: `${UID}/${PID}/e1.mp4` }), 3000)
+      return this.json(route, job, 201)
+    }
+    const syncMatch = /^\/projects\/([^/]+)\/sync-jobs$/.exec(p)
+    if (syncMatch && method === 'POST') {
+      const body = JSON.parse(req.postData() ?? '{}')
+      const job: Row = { id: `s${this.syncJobs.length + 1}`, project_id: syncMatch[1], words: body.words,
+        window_start_ms: body.window_start_ms, window_end_ms: body.window_end_ms, status: 'queued', result: null,
+        error_code: null, created_at: new Date().toISOString() }
+      this.syncJobs.push(job)
+      // The mock worker: words 400 ms apart, starting 300 ms into the window.
+      setTimeout(() => Object.assign(job, { status: 'running' }), 500)
+      setTimeout(() => {
+        if (this.syncError) return Object.assign(job, { status: 'failed', error_code: this.syncError })
+        const result = (body.words as string[]).map((_, k) => ({
+          start_ms: body.window_start_ms + 300 + k * 400, end_ms: body.window_start_ms + 650 + k * 400, confidence: 0.9 }))
+        Object.assign(job, { status: 'succeeded', result })
+      }, 1500)
       return this.json(route, job, 201)
     }
     return this.json(route, { detail: 'not_found' }, 404)

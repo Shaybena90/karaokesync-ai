@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, u
 import { Link, Navigate, useParams } from 'react-router-dom'
 import type WaveSurfer from 'wavesurfer.js'
 import { LinesList } from '../components/editor/LinesList'
+import { TapSyncPanel } from '../components/editor/TapSyncPanel'
 import { WaveformTimeline } from '../components/editor/WaveformTimeline'
 import { WordInspector } from '../components/editor/WordInspector'
 import { Alert, Spinner } from '../components/ui'
@@ -9,6 +10,8 @@ import { useI18n } from '../i18n/I18nProvider'
 import type { MessageKey } from '../i18n/he'
 import { directionOf, formatDuration } from '../lib/format'
 import {
+  applyLineTimes,
+  applyTapTimes,
   deleteWord,
   findWord,
   flatWords,
@@ -22,11 +25,15 @@ import {
   setWordTiming,
   shiftTiming,
   splitLineAt,
+  syncWindow,
   type DocLine,
   type LyricsDoc,
+  type WordTime,
 } from '../lib/lyricsDoc'
 import { activeWordIndex } from '../lib/sync'
 import { useLyrics } from '../lib/useLyrics'
+import { useLineSync } from '../lib/useLineSync'
+import { useMediaQuery } from '../lib/useMediaQuery'
 import { useLyricsAutosave, type SaveStatus } from '../lib/useLyricsAutosave'
 import { useProjectLive } from '../lib/useProjectLive'
 import { useSignedAudio } from '../lib/useSignedAudio'
@@ -68,6 +75,12 @@ export function EditorPage() {
   }, [initialized, lines, project, markSaved])
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [tapLineId, setTapLineId] = useState<string | null>(null)
+  const tapActive = useRef(false)
+  // Off as soon as the line is gone too (merged into another one, or undone).
+  useLayoutEffect(() => {
+    tapActive.current = tapLineId !== null && doc.some((l) => l.id === tapLineId)
+  }, [tapLineId, doc])
   const [zoom, setZoom] = useState(120)
   const [rate, setRate] = useState(1)
   const [playing, setPlaying] = useState(false)
@@ -83,6 +96,8 @@ export function EditorPage() {
   const playingChip = useRef<HTMLButtonElement | null>(null)
 
   const lyricDir = directionOf(project?.language)
+  // The word / tap panel is mounted once: beside the lyrics on wide screens, as a sheet otherwise.
+  const wide = useMediaQuery('(min-width: 1024px)')
 
   // ------------------------------------------------------------ edit helpers
   const edit = useCallback((fn: (d: LyricsDoc) => LyricsDoc) => {
@@ -181,9 +196,60 @@ export function EditorPage() {
   )
   const onMergeNext = useCallback((lineId: string) => edit((d) => mergeWithNext(d, lineId)), [edit])
 
+  // ------------------------------------------------------ automatic sync
+  const onSyncResult = useCallback(
+    (lineId: string, texts: string[], times: WordTime[]) => {
+      const next = applyLineTimes(docRef.current, lineId, texts, times)
+      if (!next) return false
+      edit(() => next)
+      return true
+    },
+    [edit],
+  )
+  const lineSync = useLineSync(id, onSyncResult)
+  const { start: startSync, fail: failSync } = lineSync
+  const onAutoSync = useCallback(
+    (line: DocLine) => {
+      const window = syncWindow(docRef.current, line.id, audioDuration())
+      if (!window) return failSync(line.id, 'invalid_sync_window')
+      void startSync(line.id, line.words.map((w) => w.text), window)
+    },
+    [audioDuration, startSync, failSync],
+  )
+
+  // ------------------------------------------------------------ tap sync
+  const onTapSync = useCallback((line: DocLine) => {
+    setSelectedId(null)
+    setTapLineId(line.id)
+  }, [])
+  const startTapPlayback = useCallback(() => {
+    const ws = wsRef.current
+    const d = docRef.current
+    const i = d.findIndex((l) => l.id === tapLineId)
+    if (!ws || i < 0) return
+    // A moment before the line: right after the previous line, or 3 s ahead.
+    const prevEnd = i > 0 ? lineEnd(d[i - 1]) : 0
+    const from = Math.max(0, prevEnd - 500, lineStart(d[i]) - 3000)
+    setLoop(null)
+    ws.setTime(from / 1000)
+    void ws.play()
+  }, [tapLineId])
+  const closeTap = useCallback(() => {
+    wsRef.current?.pause()
+    setTapLineId(null)
+  }, [])
+  const finishTap = useCallback(
+    (taps: number[], lastEndMs?: number) => {
+      if (tapLineId) edit((d) => applyTapTimes(d, tapLineId, taps, lastEndMs))
+      closeTap()
+    },
+    [tapLineId, edit, closeTap],
+  )
+
   // -------------------------------------------------------------- keyboard
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (tapActive.current) return // the tap panel owns the keyboard
       const typing = (e.target as HTMLElement).closest('input, textarea, select')
       const mod = e.ctrlKey || e.metaKey
       if (mod && e.key.toLowerCase() === 'z') {
@@ -235,7 +301,22 @@ export function EditorPage() {
         ? 'text-red-300'
         : 'text-white/60'
 
-  const inspector = selected ? (
+  const tapIndex = tapLineId ? doc.findIndex((l) => l.id === tapLineId) : -1
+  const tapPanel =
+    tapIndex >= 0 ? (
+      <TapSyncPanel
+        key={tapLineId}
+        line={doc[tapIndex]}
+        lineNumber={tapIndex + 1}
+        lyricDir={lyricDir}
+        currentTimeMs={nowMs}
+        onStart={startTapPlayback}
+        onFinish={finishTap}
+        onCancel={closeTap}
+      />
+    ) : null
+
+  const inspector = tapPanel ?? (selected ? (
     <WordInspector
       key={`${selected.word.id}:${selected.word.text}`}
       word={selected.word}
@@ -260,10 +341,10 @@ export function EditorPage() {
       onLoop={() => loopRange(selected.word.start_ms, selected.word.end_ms)}
       onClose={() => setSelectedId(null)}
     />
-  ) : null
+  ) : null)
 
   return (
-    <div className={`pt-4 ${selected ? 'pb-[52vh] sm:pe-80 sm:pb-10 lg:pe-0' : 'pb-10'}`}>
+    <div className={`pt-4 ${inspector ? 'pb-[52vh] sm:pe-80 sm:pb-10 lg:pe-0' : 'pb-10'}`}>
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
         <Link to={`/projects/${id}`} className="inline-flex min-h-11 items-center gap-1 text-sm text-white/60 hover:text-white">
@@ -392,6 +473,10 @@ export function EditorPage() {
               onLoopLine={onLoopLine}
               onShiftLine={onShiftLine}
               onMergeNext={onMergeNext}
+              syncStates={lineSync.states}
+              onAutoSync={onAutoSync}
+              onTapSync={onTapSync}
+              onDismissSync={lineSync.dismiss}
             />
           )}
         </div>
@@ -399,10 +484,10 @@ export function EditorPage() {
         {/* Desktop: side panel. Portrait phones: bottom sheet. Landscape phones / tablets: side drawer. */}
         <aside className="hidden lg:block">
           <div className="glass sticky top-[17rem] rounded-3xl p-4">
-            {inspector ?? <p className="text-sm text-white/50">{t('editor.selectHint')}</p>}
+            {(wide && inspector) || <p className="text-sm text-white/50">{t('editor.selectHint')}</p>}
           </div>
         </aside>
-        {inspector && (
+        {inspector && !wide && (
           <div className="fixed inset-x-0 bottom-0 z-40 max-h-[50vh] overflow-y-auto rounded-t-3xl border-t border-white/10 bg-ink-900/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-2xl backdrop-blur-xl sm:inset-x-auto sm:end-0 sm:top-16 sm:max-h-none sm:w-80 sm:rounded-none sm:rounded-s-3xl sm:border-t-0 sm:border-s lg:hidden">
             {inspector}
           </div>

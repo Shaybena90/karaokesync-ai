@@ -236,6 +236,85 @@ export function mergeWithNext(doc: LyricsDoc, lineId: string): LyricsDoc {
   return [...doc.slice(0, i), merged, ...doc.slice(i + 2)]
 }
 
+// ------------------------------------------------------------ automatic sync
+export const MAX_SYNC_WINDOW_MS = 60_000
+
+/**
+ * The stretch of the song where a line can be sung: from the end of the
+ * previous line to the start of the next one. Longer than a minute (a long
+ * instrumental gap) → a minute around where the line is now.
+ */
+export function syncWindow(doc: LyricsDoc, lineId: string, durationMs?: number): { start: number; end: number } | null {
+  const i = doc.findIndex((l) => l.id === lineId)
+  if (i < 0) return null
+  const songEnd = durationMs && durationMs > 0 ? Math.round(durationMs) : lineEnd(doc[i]) + 30_000
+  let start = i > 0 ? lineEnd(doc[i - 1]) : 0
+  let end = i < doc.length - 1 ? lineStart(doc[i + 1]) : songEnd
+  if (end - start > MAX_SYNC_WINDOW_MS) {
+    const middle = (lineStart(doc[i]) + lineEnd(doc[i])) / 2
+    start = Math.max(start, Math.round(middle - MAX_SYNC_WINDOW_MS / 2))
+    end = Math.min(end, start + MAX_SYNC_WINDOW_MS)
+  }
+  return end - start >= 200 ? { start, end } : null
+}
+
+export interface WordTime {
+  start_ms: number
+  end_ms: number
+  confidence: number | null
+}
+
+/** Keep every start between the previous and the next word's start (the save rule). */
+function settleLine(doc: LyricsDoc, lineIndex: number, words: DocWord[]): LyricsDoc {
+  const before = flatWords(doc.slice(0, lineIndex))
+  const after = flatWords(doc.slice(lineIndex + 1))
+  let floor = before.length ? before[before.length - 1].start_ms : 0
+  const ceiling = after.length ? after[0].start_ms : Number.POSITIVE_INFINITY
+  const settled = words.map((w) => {
+    const start = Math.min(Math.max(w.start_ms, floor), ceiling)
+    floor = start
+    return { ...w, start_ms: start, end_ms: Math.max(w.end_ms, start) }
+  })
+  return doc.map((l, i) => (i === lineIndex ? { ...l, words: settled } : l))
+}
+
+/**
+ * Apply the worker's timings to a line. Returns null if the line was edited
+ * meanwhile (other words now), so a stale result is never applied.
+ */
+export function applyLineTimes(doc: LyricsDoc, lineId: string, texts: string[], times: WordTime[]): LyricsDoc | null {
+  const i = doc.findIndex((l) => l.id === lineId)
+  if (i < 0 || times.length !== texts.length) return null
+  const line = doc[i]
+  if (line.words.length !== texts.length || line.words.some((w, k) => w.text !== texts[k])) return null
+  const words = line.words.map((w, k) => ({
+    ...w,
+    start_ms: Math.max(0, Math.round(times[k].start_ms)),
+    end_ms: Math.max(0, Math.round(times[k].end_ms)),
+    confidence: times[k].confidence,
+  }))
+  return settleLine(doc, i, words)
+}
+
+/**
+ * Tap-to-sync: taps[k] is when word k starts. Each word lasts until the next
+ * tap; the last one until `lastEndMs` (or a short default). Words that were
+ * not tapped keep their timing, moved later if they would now come too early.
+ */
+export function applyTapTimes(doc: LyricsDoc, lineId: string, taps: number[], lastEndMs?: number): LyricsDoc {
+  const i = doc.findIndex((l) => l.id === lineId)
+  if (i < 0 || taps.length === 0) return doc
+  const line = doc[i]
+  const n = Math.min(taps.length, line.words.length)
+  const words = line.words.map((w, k) => {
+    if (k >= n) return w
+    const start = Math.max(0, Math.round(taps[k]))
+    const next = k + 1 < n ? taps[k + 1] : k + 1 === line.words.length && lastEndMs !== undefined ? lastEndMs : start + 600
+    return { ...w, start_ms: start, end_ms: Math.max(start, Math.round(next)), confidence: 1 }
+  })
+  return settleLine(doc, i, words)
+}
+
 // ------------------------------------------------------------- persistence
 /** Shape expected by the `save_lyrics` database function. */
 export function toSavePayload(doc: LyricsDoc) {

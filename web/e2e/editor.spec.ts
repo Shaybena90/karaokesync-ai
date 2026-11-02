@@ -126,3 +126,69 @@ test('an edit elsewhere stops saving instead of overwriting', async ({ page, bac
   await panel.getByRole('button', { name: 'סוף (שניות) +0.05' }).click()
   await expect(page.getByText('השמירה הופסקה')).toBeVisible()
 })
+
+test('automatic sync of a line', async ({ page, backend }) => {
+  await page.getByRole('button', { name: 'סנכרון אוטומטי של השורה' }).nth(1).click()
+  await expect(page.getByText(/ממתין לשרת העיבוד|מסנכרן את השורה/)).toBeVisible()
+  await expect(page.getByText('השורה סונכרנה')).toBeVisible({ timeout: 8000 })
+  // The window is the gap between the neighbouring lines.
+  expect(backend.syncJobs[0]).toMatchObject({ words: ['זה', 'שיר', 'קריוקי'], window_start_ms: 4000, window_end_ms: 12000 })
+  await waitForSave(backend, 1)
+  const line = backend.lyricSaves.at(-1)!.p_lines[1].words
+  expect(line.map((w) => [w.start_ms, w.end_ms])).toEqual([[4300, 4650], [4700, 5050], [5100, 5450]])
+
+  // Undo brings the old timing back.
+  await page.getByRole('button', { name: 'ביטול פעולה' }).click()
+  await waitForSave(backend, 2)
+  expect(backend.lyricSaves.at(-1)!.p_lines[1].words[0].start_ms).toBe(4500)
+})
+
+test('automatic sync failure is explained', async ({ page, backend }) => {
+  backend.syncError = 'sync_no_vocals'
+  await page.getByRole('button', { name: 'סנכרון אוטומטי של השורה' }).first().click()
+  await expect(page.getByText('לא נמצאה שירה בקטע הזה')).toBeVisible({ timeout: 8000 })
+  expect(backend.lyricSaves).toHaveLength(0)
+})
+
+test('tap to sync a line', async ({ page, backend }) => {
+  await page.getByRole('button', { name: 'סנכרון בהקשה' }).first().click()
+  const panel = page.getByTestId('tap-sync')
+  await expect(panel).toBeVisible()
+  const tap = panel.getByRole('button', { name: 'הקשה', exact: true })
+  await page.waitForTimeout(600)
+  await tap.click()
+  await expect(panel.getByText('המילה הבאה: עולם')).toBeVisible()
+  await page.waitForTimeout(500)
+  await tap.click()
+  await expect(panel.getByText('הקישו שוב בסוף המילה האחרונה')).toBeVisible()
+  await page.waitForTimeout(500)
+  await tap.click()
+  await expect(panel).toBeHidden()
+
+  await waitForSave(backend, 1)
+  const [a, b] = backend.lyricSaves.at(-1)!.p_lines[0].words
+  // Times come from the audio clock: playback started at 0, taps every ~0.5 s.
+  expect(a.start_ms).toBeGreaterThan(200)
+  expect(b.start_ms - a.start_ms).toBeGreaterThan(250)
+  expect(a.end_ms).toBe(b.start_ms)
+  expect(b.end_ms).toBeGreaterThan(b.start_ms)
+  expect(b.end_ms).toBeLessThan(4500) // still before the next line
+})
+
+test('tap sync can be cancelled without changes', async ({ page, backend }) => {
+  await page.getByRole('button', { name: 'סנכרון בהקשה' }).first().click()
+  const panel = page.getByTestId('tap-sync')
+  await panel.getByRole('button', { name: 'הקשה', exact: true }).click()
+  await panel.getByRole('button', { name: 'ביטול' }).last().click()
+  await expect(panel).toBeHidden()
+  await page.waitForTimeout(1500)
+  expect(backend.lyricSaves).toHaveLength(0)
+})
+
+test('the word panel is mounted once', async ({ page }) => {
+  await page.locator('.ks-chip', { hasText: 'שלום' }).click()
+  await expect(page.getByPlaceholder('המילה החסרה')).toHaveCount(1)
+  await page.getByRole('button', { name: 'סגירה' }).click()
+  await page.getByRole('button', { name: 'סנכרון בהקשה' }).first().click()
+  await expect(page.getByTestId('tap-sync')).toHaveCount(1)
+})

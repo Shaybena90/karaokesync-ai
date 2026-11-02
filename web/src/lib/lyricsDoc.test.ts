@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
+  applyLineTimes,
+  applyTapTimes,
   deleteWord,
   flatWords,
   historyReducer,
@@ -10,6 +12,7 @@ import {
   setWordTiming,
   shiftTiming,
   splitLineAt,
+  syncWindow,
   toSavePayload,
   type LyricsDoc,
 } from './lyricsDoc'
@@ -160,5 +163,65 @@ describe('validation, payload and history', () => {
     // a new edit clears the redo stack
     h = historyReducer(h, { type: 'apply', doc: splitLineAt(h.present, 'd') })
     expect(h.future).toEqual([])
+  })
+})
+
+describe('automatic sync', () => {
+  it('uses the gap between the neighbouring lines as the window', () => {
+    expect(syncWindow(doc, 'L2', 10_000)).toEqual({ start: 2000, end: 10_000 })
+    expect(syncWindow(doc, 'L1', 10_000)).toEqual({ start: 0, end: 3000 })
+    expect(syncWindow(doc, 'nope')).toBeNull()
+  })
+
+  it('limits a long gap to a minute around the line', () => {
+    const far: LyricsDoc = [doc[0], { id: 'L9', words: [{ id: 'z', text: 'x', start_ms: 100_000, end_ms: 101_000, confidence: 1 }] }]
+    const w = syncWindow(far, 'L9', 300_000)!
+    expect(w.end - w.start).toBe(60_000)
+    expect(w.start).toBeLessThan(100_000)
+    expect(w.end).toBeGreaterThan(101_000)
+  })
+
+  it('applies the worker timings to an unchanged line', () => {
+    const out = applyLineTimes(doc, 'L2', ['זה', 'שיר'], [
+      { start_ms: 2500, end_ms: 2900, confidence: 0.4 },
+      { start_ms: 2950, end_ms: 3600, confidence: 0.9 },
+    ])!
+    expect(times(out).slice(2)).toEqual(['2500-2900', '2950-3600'])
+    expect(out[1].words[0].confidence).toBe(0.4)
+    expect(isValidDoc(out)).toBe(true)
+  })
+
+  it('never applies a stale result', () => {
+    const edited = setWordText(doc, 'c', 'זהו')
+    const t = [{ start_ms: 1, end_ms: 2, confidence: 1 }, { start_ms: 3, end_ms: 4, confidence: 1 }]
+    expect(applyLineTimes(edited, 'L2', ['זה', 'שיר'], t)).toBeNull()
+    expect(applyLineTimes(doc, 'L2', ['זה'], t.slice(0, 1))).toBeNull()
+  })
+
+  it('keeps the song order even if the timings disagree with the neighbours', () => {
+    const out = applyLineTimes(doc, 'L2', ['זה', 'שיר'], [
+      { start_ms: 900, end_ms: 1000, confidence: 1 },
+      { start_ms: 800, end_ms: 1200, confidence: 1 },
+    ])!
+    expect(isValidDoc(out)).toBe(true)
+    expect(out[1].words[0].start_ms).toBe(1500) // not before the previous word
+  })
+})
+
+describe('tap sync', () => {
+  it('turns taps into word timings', () => {
+    const out = applyTapTimes(doc, 'L2', [2600, 3100], 3900)
+    expect(times(out).slice(2)).toEqual(['2600-3100', '3100-3900'])
+    expect(isValidDoc(out)).toBe(true)
+  })
+
+  it('keeps untapped words after the tapped ones', () => {
+    const out = applyTapTimes(doc, 'L2', [3500])
+    expect(times(out).slice(2)).toEqual(['3500-4100', '3500-3800'])
+    expect(isValidDoc(out)).toBe(true)
+  })
+
+  it('ignores an empty session', () => {
+    expect(applyTapTimes(doc, 'L2', [])).toBe(doc)
   })
 })

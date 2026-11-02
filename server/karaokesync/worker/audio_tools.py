@@ -17,10 +17,22 @@ def _ffmpeg() -> str:
     return path
 
 
-def to_working_wav(src: Path, dest: Path, sample_rate: int = 16000, timeout: float = 600) -> Path:
-    """Convert any supported input to 16 kHz mono 16-bit PCM — the format speech models expect."""
+def to_working_wav(
+    src: Path, dest: Path, sample_rate: int = 16000, timeout: float = 600, start_ms: int | None = None, end_ms: int | None = None
+) -> Path:
+    """Convert any supported input to 16 kHz mono 16-bit PCM — the format speech models expect.
+
+    With start_ms/end_ms only that part is kept. The cut is placed after the
+    input (output seeking): FFmpeg decodes from the beginning, so the cut is
+    sample-exact even for VBR MP3 files, matching what the full pipeline saw.
+    """
+    cut: list[str] = []
+    if start_ms is not None:
+        cut += ["-ss", f"{start_ms / 1000:.3f}"]
+    if end_ms is not None:
+        cut += ["-t", f"{(end_ms - (start_ms or 0)) / 1000:.3f}"]
     cmd = [_ffmpeg(), "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
-           "-i", str(src), "-vn", "-ac", "1", "-ar", str(sample_rate), "-c:a", "pcm_s16le", str(dest)]
+           "-i", str(src), *cut, "-vn", "-ac", "1", "-ar", str(sample_rate), "-c:a", "pcm_s16le", str(dest)]
     try:
         result = subprocess.run(cmd, capture_output=True, timeout=timeout, check=False)
     except subprocess.TimeoutExpired as exc:

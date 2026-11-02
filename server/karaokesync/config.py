@@ -36,6 +36,7 @@ class Settings(BaseSettings):
     max_uploads_per_day: int = 20
     max_active_jobs_per_user: int = 2
     max_retries_per_day: int = 10
+    max_syncs_per_day: int = 300
 
     # Retention
     audio_retention_days: int = 30

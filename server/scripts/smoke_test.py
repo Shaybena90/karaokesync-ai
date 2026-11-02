@@ -100,6 +100,11 @@ def check_supabase(client: httpx.Client, supabase_url: str, anon_key: str, googl
     r.check(rpc.status_code in (401, 403, 404), "queue functions not callable from the browser", f"HTTP {rpc.status_code}")
     export_fn = client.post(f"{supabase_url}/rest/v1/rpc/claim_export_job", headers=h, json={"p_worker_id": "smoke", "p_lease_seconds": 1})
     r.check(export_fn.status_code in (401, 403, 404), "export queue not callable from the browser", f"HTTP {export_fn.status_code}")
+    sync_fn = client.post(f"{supabase_url}/rest/v1/rpc/claim_sync_job", headers=h, json={"p_worker_id": "smoke", "p_lease_seconds": 1})
+    r.check(sync_fn.status_code in (401, 403, 404), "sync queue not callable from the browser", f"HTTP {sync_fn.status_code}")
+    sync_rows = client.get(f"{supabase_url}/rest/v1/sync_jobs?select=id&limit=1", headers=h)
+    r.check(not (sync_rows.status_code == 404 or "does not exist" in sync_rows.text),
+            "automatic sync migration was run (sync_jobs exists)", "run 20261102000001_sync_jobs.sql")
     save = client.post(f"{supabase_url}/rest/v1/rpc/save_lyrics", headers=h, json={})
     r.check(save.status_code != 404 or "save_lyrics" not in save.text, "editor migration was run (save_lyrics exists)")
     for bucket in ("audio", "exports"):
