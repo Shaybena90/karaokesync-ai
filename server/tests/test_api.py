@@ -190,6 +190,8 @@ def test_delete_removes_files_and_rows(client, fake_sb, alice, tmp_path):
 
 @pytest.mark.parametrize("error,status,code", [
     (SupabaseError(503, "project paused"), 503, "database_unavailable"),
+    (httpx.ReadTimeout("timed out", request=httpx.Request("GET", "https://x.supabase.co/rest/v1/projects")), 503,
+     "database_unavailable"),
     (httpx.ConnectError("no route"), 503, "database_unavailable"),
     (ZeroDivisionError(), 500, "internal_error"),
 ])

@@ -71,7 +71,12 @@ def create_app() -> FastAPI:
         try:
             return await call_next(request)
         except (SupabaseError, httpx.HTTPError) as exc:
-            log.error("database unavailable on %s %s: %s", request.method, request.url.path, type(exc).__name__)
+            # Only the Supabase path (e.g. /rest/v1/projects): never query strings, headers or bodies.
+            try:
+                upstream = exc.request.url.path if isinstance(exc, httpx.RequestError) else str(exc)[:80]
+            except RuntimeError:  # an httpx error without a request attached
+                upstream = "?"
+            log.error("database unavailable on %s %s: %s (%s)", request.method, request.url.path, type(exc).__name__, upstream)
             return JSONResponse({"detail": "database_unavailable"}, status_code=503)
         except Exception:
             log.exception("unexpected error on %s %s", request.method, request.url.path)
