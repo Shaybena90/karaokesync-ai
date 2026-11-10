@@ -73,7 +73,10 @@ def create_app() -> FastAPI:
         except (SupabaseError, httpx.HTTPError) as exc:
             # Only the Supabase path (e.g. /rest/v1/projects): never query strings, headers or bodies.
             try:
-                upstream = exc.request.url.path if isinstance(exc, httpx.RequestError) else str(exc)[:80]
+                if isinstance(exc, httpx.RequestError):
+                    upstream = exc.request.url.path
+                else:
+                    upstream = f"{exc.path or '?'} {str(exc)[:80]}"
             except RuntimeError:  # an httpx error without a request attached
                 upstream = "?"
             log.error("database unavailable on %s %s: %s (%s)", request.method, request.url.path, type(exc).__name__, upstream)

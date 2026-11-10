@@ -16,10 +16,11 @@ from .config import Settings
 
 
 class SupabaseError(Exception):
-    def __init__(self, status_code: int, message: str, code: str | None = None):
+    def __init__(self, status_code: int, message: str, code: str | None = None, path: str | None = None):
         super().__init__(f"{status_code}: {message}")
         self.status_code = status_code
         self.code = code
+        self.path = path  # Supabase URL path only (e.g. /rest/v1/projects), for logs
 
 
 @dataclass(frozen=True)
@@ -54,7 +55,11 @@ class SupabaseClient:
             message = body.get("message") or body.get("msg") or message
         except ValueError:
             pass
-        raise SupabaseError(resp.status_code, str(message), str(code) if code else None)
+        try:
+            path = resp.request.url.path
+        except RuntimeError:  # a response built without a request (tests)
+            path = None
+        raise SupabaseError(resp.status_code, str(message), str(code) if code else None, path)
 
     # ------------------------------------------------------------------- auth
     def get_user(self, access_token: str) -> AuthUser | None:
