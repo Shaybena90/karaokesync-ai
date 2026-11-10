@@ -272,6 +272,7 @@ export const en: Record<MessageKey, string> = {
   'error.worker_lost': 'The processing server stopped in the middle of the job.',
   'error.internal_error': 'Internal processing error.',
   'error.upload_abandoned': 'The upload was not completed.',
+  'error.database_unavailable': 'The database (Supabase) is not available right now. If the Supabase project was paused after a week without use, open it and click Restore project.',
   'error.sync_no_vocals': 'No singing was found here. Move the line close to where it is sung, or try tap to sync.',
   'error.invalid_sync_window': 'There is not enough time between the lines to sync. Try tap to sync.',
   'error.sync_too_many_words': 'This line has too many words. Split it into two lines and try again.',

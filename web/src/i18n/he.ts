@@ -270,6 +270,7 @@ export const he = {
   'error.worker_lost': 'שרת העיבוד הפסיק לפעול באמצע העבודה.',
   'error.internal_error': 'שגיאה פנימית בעיבוד.',
   'error.upload_abandoned': 'ההעלאה לא הושלמה.',
+  'error.database_unavailable': 'מסד הנתונים (Supabase) אינו זמין כרגע. אם הפרויקט ב-Supabase הושהה אחרי שבוע בלי שימוש, היכנסו אליו ולחצו Restore project.',
   'error.sync_no_vocals': 'לא נמצאה שירה בקטע הזה. מקמו את השורה קרוב למקום שבו היא מושרת, או נסו סנכרון בהקשה.',
   'error.invalid_sync_window': 'אין מספיק זמן בין השורות כדי לסנכרן. נסו סנכרון בהקשה.',
   'error.sync_too_many_words': 'יש יותר מדי מילים בשורה. פצלו אותה לשתי שורות ונסו שוב.',

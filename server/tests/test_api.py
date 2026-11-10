@@ -1,6 +1,9 @@
 """API tests: authentication, ownership (permissions), quotas, validation, idempotency."""
 
+import httpx
 import pytest
+
+from karaokesync.supabase_client import SupabaseError
 
 from .conftest import make_audio, needs_ffmpeg
 
@@ -183,3 +186,21 @@ def test_delete_removes_files_and_rows(client, fake_sb, alice, tmp_path):
     assert fake_sb.objects["audio"] == {}
     assert fake_sb.tables["projects"] == []
     assert fake_sb.tables["audio_files"] == []
+
+
+@pytest.mark.parametrize("error,status,code", [
+    (SupabaseError(503, "project paused"), 503, "database_unavailable"),
+    (httpx.ConnectError("no route"), 503, "database_unavailable"),
+    (ZeroDivisionError(), 500, "internal_error"),
+])
+def test_unexpected_errors_reach_the_website(client, fake_sb, alice, monkeypatch, error, status, code):
+    """A failure must still carry CORS headers, or the browser hides it and the
+    site wrongly says the API server is down."""
+    def broken(*a, **kw):
+        raise error
+
+    monkeypatch.setattr(fake_sb, "count", broken)
+    resp = client.post("/uploads", json={"file_name": "a.mp3", "size_bytes": 1000, "mime_type": "audio/mpeg"},
+                       headers={**AUTH, "Origin": "http://localhost:5173"})
+    assert resp.status_code == status and resp.json() == {"detail": code}
+    assert resp.headers["access-control-allow-origin"] == "http://localhost:5173"

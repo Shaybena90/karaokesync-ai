@@ -11,8 +11,10 @@ import logging
 import uuid
 from datetime import datetime, timedelta, timezone
 
+import httpx
 from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
 from ..audio_validation import (
@@ -61,6 +63,20 @@ def create_app() -> FastAPI:
         docs_url="/docs" if settings.app_env != "production" else None,
         redoc_url=None,
     )
+    # Registered before CORS so it runs inside it: an unexpected failure still
+    # carries CORS headers, and the website shows what went wrong instead of
+    # "the API server is unavailable".
+    @app.middleware("http")
+    async def unexpected_errors(request, call_next):
+        try:
+            return await call_next(request)
+        except (SupabaseError, httpx.HTTPError) as exc:
+            log.error("database unavailable on %s %s: %s", request.method, request.url.path, type(exc).__name__)
+            return JSONResponse({"detail": "database_unavailable"}, status_code=503)
+        except Exception:
+            log.exception("unexpected error on %s %s", request.method, request.url.path)
+            return JSONResponse({"detail": "internal_error"}, status_code=500)
+
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origin_list,
