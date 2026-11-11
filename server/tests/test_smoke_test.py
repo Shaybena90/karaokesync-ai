@@ -44,6 +44,8 @@ def deployment(**broken):
             p = req.url.path
             if p == "/rest/v1/projects":
                 return httpx.Response(200, json=[{"id": "x"}] if broken.get("rls_off") else [])
+            if p == "/rest/v1/background_media":
+                return httpx.Response(200, json=[])
             if p == "/rest/v1/sync_jobs":
                 if broken.get("no_sync_table"):
                     return httpx.Response(404, json={"message": 'relation "public.sync_jobs" does not exist'})

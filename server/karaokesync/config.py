@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     supabase_service_role_key: str = Field(default="", alias="SUPABASE_SERVICE_ROLE_KEY")
     audio_bucket: str = "audio"
     exports_bucket: str = "exports"
+    backgrounds_bucket: str = "backgrounds"
 
     # API
     cors_origins: str = "http://localhost:5173"
@@ -37,6 +38,12 @@ class Settings(BaseSettings):
     max_active_jobs_per_user: int = 2
     max_retries_per_day: int = 10
     max_syncs_per_day: int = 300
+
+    # Video backgrounds (animated GIF / short video / image)
+    max_background_mb: int = 30
+    max_background_seconds: int = 60
+    max_backgrounds_per_project: int = 10
+    max_background_uploads_per_day: int = 30
 
     # Retention
     audio_retention_days: int = 30

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { Link, Navigate, useParams } from 'react-router-dom'
 import { KaraokePlayer, type VideoAspect } from '../components/player/KaraokePlayer'
+import { BackgroundPanel } from '../components/style/BackgroundPanel'
 import { ExportPanel } from '../components/style/ExportPanel'
 import { StyleControls } from '../components/style/StyleControls'
 import { Alert, Spinner } from '../components/ui'
@@ -8,6 +9,7 @@ import { useI18n } from '../i18n/I18nProvider'
 import { ApiError } from '../lib/api'
 import { normalizeStyle, type SubtitleStyle } from '../lib/subtitleStyle'
 import { supabase } from '../lib/supabase'
+import { useBackgroundMedia } from '../lib/useBackgroundMedia'
 import { useProjectLive } from '../lib/useProjectLive'
 
 type SaveState = 'saved' | 'saving' | 'error'
@@ -21,6 +23,8 @@ export function StylePage() {
   const [aspect, setAspect] = useState<VideoAspect>('16:9')
   const [saveState, setSaveState] = useState<SaveState>('saved')
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { media, reload: reloadMedia } = useBackgroundMedia(id)
+  const positionRef = useRef(0)
 
   // Initialise once from the stored style (later realtime reloads do not overwrite edits).
   useEffect(() => {
@@ -102,6 +106,8 @@ export function StylePage() {
             language={project.language}
             style={style}
             videoFrame={aspect}
+            backgroundMedia={media}
+            positionRef={positionRef}
           />
           <p className="text-center text-xs text-white/40">{t('style.previewNote')}</p>
         </div>
@@ -109,6 +115,17 @@ export function StylePage() {
         <div className="space-y-5">
           <div className="glass rounded-3xl p-4">
             <StyleControls style={style} onChange={change} />
+          </div>
+          <div className="glass rounded-3xl p-4">
+            <BackgroundPanel
+              projectId={project.id}
+              style={style}
+              onChange={change}
+              media={media}
+              reloadMedia={reloadMedia}
+              songMs={audio?.duration_ms ?? 0}
+              positionRef={positionRef}
+            />
           </div>
           <div className="glass rounded-3xl p-4">
             <h2 className="mb-4 font-display text-lg font-semibold">{t('export.title')}</h2>

@@ -49,6 +49,9 @@ const CORS = {
   'access-control-expose-headers': 'Content-Disposition',
 }
 
+/** A 1×1 red PNG, served for background pictures. */
+const RED_PNG = Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8DwHwAFBQIAX8jx0gAAAABJRU5ErkJggg==', 'base64')
+
 export class MockBackend {
   projects: Row[] = [
     {
@@ -77,6 +80,9 @@ export class MockBackend {
   ]
   exportJobs: Row[] = []
   syncJobs: Row[] = []
+  backgroundMedia: Row[] = []
+  /** Error code the mock API gives when verifying a background (null = accepted). */
+  backgroundError: string | null = null
   /** Error code the mock worker reports for sync jobs (null = success). */
   syncError: string | null = null
   lyricSaves: { p_expected_version: number; p_lines: { words: { text: string; start_ms: number; end_ms: number }[] }[] }[] = []
@@ -162,6 +168,7 @@ export class MockBackend {
     if (p === '/rest/v1/lyric_words') return rows(this.words)
     if (p === '/rest/v1/export_jobs') return rows(this.exportJobs)
     if (p === '/rest/v1/sync_jobs') return rows(this.syncJobs)
+    if (p === '/rest/v1/background_media') return rows(this.backgroundMedia)
     if (p === '/rest/v1/rpc/save_lyrics') {
       const body = JSON.parse(req.postData() ?? '{}')
       const project = this.project(body.p_project_id)
@@ -176,6 +183,14 @@ export class MockBackend {
     if (p.startsWith('/storage/v1/object/upload/sign/')) {
       this.uploads.push({ path: p, contentType: req.headers()['content-type'] ?? '', size: req.postDataBuffer()?.length ?? 0 })
       return this.json(route, { Key: p })
+    }
+    if (p === '/storage/v1/object/sign/backgrounds') {
+      // createSignedUrls (batch)
+      const { paths } = JSON.parse(req.postData() ?? '{}') as { paths: string[] }
+      return this.json(route, paths.map((path) => ({ path, signedURL: `/__bg?token=t&p=${encodeURIComponent(path)}`, error: null })))
+    }
+    if (p.startsWith('/storage/v1/__bg')) {
+      return route.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'image/png' }, body: RED_PNG })
     }
     if (p.startsWith('/storage/v1/object/sign/exports/')) return this.json(route, { signedURL: '/__video?token=t' })
     if (p.startsWith('/storage/v1/object/sign/')) return this.json(route, { signedURL: '/__audio?token=t' })
@@ -256,6 +271,31 @@ export class MockBackend {
       setTimeout(() => Object.assign(job, { status: 'running', progress: 42 }), 1000)
       setTimeout(() => Object.assign(job, { status: 'succeeded', progress: 100, output_path: `${UID}/${PID}/e1.mp4` }), 3000)
       return this.json(route, job, 201)
+    }
+    const bgInit = /^\/projects\/([^/]+)\/backgrounds$/.exec(p)
+    if (bgInit && method === 'POST') {
+      const body = JSON.parse(req.postData() ?? '{}')
+      const ext = (body.file_name as string).split('.').pop()!.toLowerCase()
+      const id = `0b4f8f5e-3c1d-4b8a-9e2f-${String(this.backgroundMedia.length + 1).padStart(12, '0')}`
+      const media: Row = { id, project_id: bgInit[1], storage_path: `${UID}/${bgInit[1]}/${id}.${ext}`, original_name: body.file_name,
+        format: ext === 'jpeg' ? 'jpg' : ext, kind: null, duration_ms: null, width: null, height: null, status: 'pending',
+        error_code: null, created_at: new Date().toISOString() }
+      this.backgroundMedia.push(media)
+      return this.json(route, { media, upload_url: `${SUPABASE}/storage/v1/object/upload/sign/backgrounds/${media.storage_path}?token=t`,
+        content_type: ext === 'gif' ? 'image/gif' : 'image/png' }, 201)
+    }
+    const bgDone = /^\/backgrounds\/([^/]+)\/complete$/.exec(p)
+    if (bgDone && method === 'POST') {
+      const media = this.backgroundMedia.find((m) => m.id === bgDone[1])!
+      if (this.backgroundError) Object.assign(media, { status: 'rejected', error_code: this.backgroundError })
+      else Object.assign(media, { status: 'verified', kind: media.format === 'png' ? 'image' : 'video',
+        duration_ms: media.format === 'gif' ? 10000 : null, width: 64, height: 36 })
+      return this.json(route, media)
+    }
+    const bgDel = /^\/backgrounds\/([^/]+)$/.exec(p)
+    if (bgDel && method === 'DELETE') {
+      this.backgroundMedia = this.backgroundMedia.filter((m) => m.id !== bgDel[1])
+      return route.fulfill({ status: 204, headers: CORS })
     }
     const syncMatch = /^\/projects\/([^/]+)\/sync-jobs$/.exec(p)
     if (syncMatch && method === 'POST') {

@@ -31,7 +31,7 @@ export function StyleControls({ style, onChange }: Props) {
               <button
                 key={name}
                 type="button"
-                onClick={() => onChange(PRESETS[name])}
+                onClick={() => onChange({ ...PRESETS[name], backgrounds: style.backgrounds })}
                 aria-pressed={active}
                 className={`rounded-2xl p-2 text-center transition active:scale-[0.98] ${
                   active ? 'ring-2 ring-violet-400' : 'ring-1 ring-white/10 hover:ring-white/30'

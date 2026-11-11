@@ -6,6 +6,7 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
   type CSSProperties,
+  type MutableRefObject,
   type ReactNode,
 } from 'react'
 import { useI18n } from '../../i18n/I18nProvider'
@@ -16,7 +17,9 @@ import { wordFill } from '../../lib/sync'
 import type { LyricLine } from '../../lib/types'
 import { useLyrics } from '../../lib/useLyrics'
 import { useSignedAudio } from '../../lib/useSignedAudio'
-import { DEFAULT_STYLE, styleVars, type SubtitleStyle } from '../../lib/subtitleStyle'
+import { DEFAULT_STYLE, clipWindow, styleVars, type SubtitleStyle } from '../../lib/subtitleStyle'
+import { useBackgroundMedia, type LoadedBackground } from '../../lib/useBackgroundMedia'
+import { BackgroundLayers, type BackgroundLayer, type BackgroundSync } from './BackgroundLayers'
 import { Spinner } from '../ui'
 import { LyricsStage } from './LyricsStage'
 import { useFullscreen } from './useFullscreen'
@@ -31,6 +34,10 @@ interface Props {
   style?: SubtitleStyle
   /** Show the lyrics inside a frame with the export video's aspect ratio (style/export page). */
   videoFrame?: VideoAspect
+  /** Background files, when the page already loads them (style page); otherwise the player loads them. */
+  backgroundMedia?: LoadedBackground[]
+  /** Receives the song position (ms) on every frame — e.g. for "use the current position" buttons. */
+  positionRef?: MutableRefObject<number>
 }
 
 export type VideoAspect = '16:9' | '9:16' | '1:1'
@@ -58,6 +65,8 @@ export function KaraokePlayer({
   variant = 'embedded',
   style = DEFAULT_STYLE,
   videoFrame,
+  backgroundMedia,
+  positionRef,
 }: Props) {
   const { t, dir: uiDir } = useI18n()
   const { lines, error: lyricsError } = useLyrics(projectId)
@@ -80,6 +89,21 @@ export function KaraokePlayer({
   const [audioError, setAudioError] = useState(false)
   const { isFullscreen, toggle: toggleFullscreen, pseudo } = useFullscreen(containerRef)
   useWakeLock(playing)
+
+  // -------------------------------------------------------- backgrounds
+  const clips = style.backgrounds
+  const own = useBackgroundMedia(projectId, !backgroundMedia && clips.length > 0)
+  const media = backgroundMedia ?? own.media
+  const bgSync = useRef<BackgroundSync | null>(null)
+  const bgLayers = useMemo<BackgroundLayer[]>(() => {
+    const songMs = durationMs > 0 ? durationMs : Number.MAX_SAFE_INTEGER
+    return clips.flatMap((clip, i) => {
+      const m = media.find((x) => x.id === clip.media_id)
+      const window = clipWindow(clip, songMs)
+      if (!m?.url || !window) return []
+      return [{ key: `${i}:${m.id}`, url: m.url, element: m.kind === 'image' || m.format === 'gif' ? 'img' : 'video', ...window }]
+    })
+  }, [clips, media, durationMs])
 
   const lyricDir = directionOf(language)
   const wordsById = useMemo(() => {
@@ -115,7 +139,9 @@ export function KaraokePlayer({
       seekRef.current.setAttribute('aria-valuetext', formatDuration(now))
     }
     if (timeRef.current) timeRef.current.textContent = formatDuration(now)
-  }, [lines, wordsById, style.animation])
+    if (positionRef) positionRef.current = now
+    bgSync.current?.(now, !audio.paused)
+  }, [lines, wordsById, style.animation, positionRef])
 
   // Animation loop only while playing; single renders on seek/pause/load.
   useEffect(() => {
@@ -131,6 +157,11 @@ export function KaraokePlayer({
     raf = requestAnimationFrame(loop)
     return () => cancelAnimationFrame(raf)
   }, [playing, renderFrame])
+
+  // Backgrounds load asynchronously: place them as soon as they are there.
+  useEffect(() => {
+    if (!playing) renderFrame()
+  }, [bgLayers, playing, renderFrame])
 
   const registerWord = useCallback(
     (id: string, el: HTMLSpanElement | null) => {
@@ -285,7 +316,7 @@ export function KaraokePlayer({
       tabIndex={-1}
       onKeyDown={variant === 'embedded' && !isFullscreen ? onKeyDown : undefined}
       style={stageVars}
-      className={`karaoke-theme flex flex-col overflow-hidden outline-none ${frame && !isFullscreen ? '' : 'bg-[image:var(--k-bg)]'} ${
+      className={`karaoke-theme relative isolate flex flex-col overflow-hidden outline-none ${frame && !isFullscreen ? '' : 'bg-[image:var(--k-bg)]'} ${
         isFullscreen
           ? `${pseudo ? 'fixed inset-0 z-50' : 'h-full w-full'} px-4 pt-[max(1rem,env(safe-area-inset-top))] pb-[max(1rem,env(safe-area-inset-bottom))]`
           : frame
@@ -295,6 +326,7 @@ export function KaraokePlayer({
               : 'rounded-3xl px-4 py-5 ring-1 ring-white/5'
       }`}
     >
+      {!(frame && !isFullscreen) && <BackgroundLayers layers={bgLayers} syncRef={bgSync} />}
       {isFullscreen && (
         <p className="truncate text-center text-sm text-white/50" dir="auto">
           {title}
@@ -304,9 +336,10 @@ export function KaraokePlayer({
       {/* Lyrics */}
       {frame && !isFullscreen ? (
         <div
-          className="relative mx-auto max-w-full overflow-hidden rounded-2xl bg-[image:var(--k-bg)] ring-1 ring-white/10 [container-type:inline-size]"
+          className="relative isolate mx-auto max-w-full overflow-hidden rounded-2xl bg-[image:var(--k-bg)] ring-1 ring-white/10 [container-type:inline-size]"
           style={{ aspectRatio: frame.ratio, ...(videoFrame === '16:9' ? { width: '100%' } : { height: '62vh' }) }}
         >
+          <BackgroundLayers layers={bgLayers} syncRef={bgSync} />
           <div
             className={`absolute inset-0 flex flex-col items-center ${justify}`}
             style={{ paddingBlock: frame.padY, paddingInline: '6cqi' }}

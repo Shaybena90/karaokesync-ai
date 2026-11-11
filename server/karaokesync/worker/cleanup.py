@@ -6,7 +6,7 @@ import logging
 from datetime import datetime, timedelta, timezone
 
 from ..config import Settings
-from ..supabase_client import SupabaseClient
+from ..supabase_client import SupabaseClient, SupabaseError
 
 log = logging.getLogger("karaokesync.cleanup")
 
@@ -52,6 +52,26 @@ def run_retention(sb: SupabaseClient, settings: Settings, now: datetime | None =
         sb.update("export_jobs", {"id": f"eq.{export['id']}"}, {"output_path": None, "error_code": "expired"})
         removed += 1
 
+    # 4. Video backgrounds: abandoned uploads, and files kept as long as the audio.
+    try:
+        removed += _expire_backgrounds(sb, settings, now, abandoned_before, expire_before)
+    except SupabaseError as exc:
+        if exc.status_code != 404:  # 404: the backgrounds SQL file was not run yet
+            raise
+
     if removed:
         log.info("retention removed %d item(s)", removed)
+    return removed
+
+
+def _expire_backgrounds(sb: SupabaseClient, settings: Settings, now: datetime, abandoned_before: str, expire_before: str) -> int:
+    removed = 0
+    for params in (
+        {"status": "eq.pending", "created_at": f"lt.{abandoned_before}"},
+        {"status": "neq.pending", "created_at": f"lt.{expire_before}"},
+    ):
+        for media in sb.select("background_media", {**params, "select": "id,storage_path", "limit": "200"}):
+            sb.remove_objects(settings.backgrounds_bucket, [media["storage_path"]])
+            sb.delete("background_media", {"id": f"eq.{media['id']}"})
+            removed += 1
     return removed

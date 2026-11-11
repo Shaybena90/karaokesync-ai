@@ -10,10 +10,10 @@ from pathlib import Path
 from ..config import Settings
 from ..exports.ass import build_ass
 from ..exports.measure import measurer_for
-from ..exports.video import ASPECTS, RESOLUTIONS, canvas_for, render_mp4
+from ..exports.video import ASPECTS, RESOLUTIONS, BackgroundLayer, canvas_for, render_mp4
 from ..fonts import ensure_font
 from ..lyrics_data import load_lyrics
-from ..styles import parse_style
+from ..styles import SubtitleStyle, parse_style
 from ..supabase_client import SupabaseClient, SupabaseError
 from .errors import PipelineError
 
@@ -63,10 +63,13 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
         ass_text = build_ass(lines, style, project.get("language"), canvas, measurer_for(str(font)), title=project["title"])
 
         duration_ms = int(audio.get("duration_ms") or (max(l["end_ms"] for l in lines) + 3000))
-        report(5)
+        report(4)
+        layers = _download_backgrounds(sb, settings, project, style, duration_ms, workdir)
+        report(6)
         out = render_mp4(
             workdir, source, ass_text, font, style, canvas, duration_ms,
-            on_progress=lambda frac: report(5 + int(frac * 88)),
+            on_progress=lambda frac: report(6 + int(frac * 87)),
+            backgrounds=layers,
         )
 
         report(95)
@@ -81,3 +84,37 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
         return path
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
+
+
+def _download_backgrounds(
+    sb: SupabaseClient, settings: Settings, project: dict, style: SubtitleStyle, duration_ms: int, workdir: Path
+) -> list[BackgroundLayer]:
+    """The style is edited in the browser, so a clip is only used if its file is
+    verified AND belongs to this project. Missing files are skipped, not fatal."""
+    clips = [(clip, clip.window(duration_ms)) for clip in style.backgrounds]
+    clips = [(clip, window) for clip, window in clips if window]
+    if not clips:
+        return []
+    ids = sorted({clip.media_id for clip, _ in clips})
+    rows = sb.select("background_media", {
+        "id": f"in.({','.join(ids)})", "project_id": f"eq.{project['id']}", "status": "eq.verified",
+        "select": "id,storage_path,format,kind",
+    })
+    media = {row["id"]: row for row in rows}
+    files: dict[str, Path] = {}
+    layers = []
+    for clip, (start, end) in clips:
+        row = media.get(clip.media_id)
+        if not row:
+            log.warning("background %s skipped (missing or not this project's)", clip.media_id)
+            continue
+        if row["id"] not in files:
+            local = workdir / f"bg-{len(files)}.{row['format']}"
+            try:
+                url = sb.create_signed_url(settings.backgrounds_bucket, row["storage_path"], 300)
+                sb.download_to(url, str(local), settings.max_background_mb * 1024 * 1024)
+            except SupabaseError as exc:
+                raise PipelineError("download_failed", retryable=exc.status_code >= 500) from exc
+            files[row["id"]] = local
+        layers.append(BackgroundLayer(files[row["id"]], row["kind"] or "video", start, end))
+    return layers

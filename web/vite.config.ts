@@ -29,7 +29,7 @@ function contentSecurityPolicy(env: Record<string, string>): Plugin {
     "script-src 'self'",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com", // inline: wavesurfer's shadow-DOM styles
     "font-src 'self' https://fonts.gstatic.com data:",
-    "img-src 'self' data: blob:",
+    `img-src 'self' data: blob: ${supabase}`, // background pictures/GIFs (signed URLs)
     `media-src 'self' blob: ${supabase}`,
     `connect-src 'self' ${supabase} ${supabaseWs} ${api}`,
     "worker-src 'self' blob:",

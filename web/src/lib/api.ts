@@ -1,5 +1,5 @@
 import { supabase, supabaseAnonKey } from './supabase'
-import type { ExportJob, Limits, SyncJob } from './types'
+import type { BackgroundMedia, ExportJob, Limits, SyncJob } from './types'
 
 const API_URL = ((import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:8000').replace(/\/$/, '')
 
@@ -78,6 +78,13 @@ export const api = {
       body: JSON.stringify({ format: 'mp4', aspect, resolution }),
     }),
   deleteExport: (exportId: string) => request<void>(`/exports/${exportId}`, { method: 'DELETE' }),
+  initBackground: (projectId: string, file: File) =>
+    request<{ media: BackgroundMedia; upload_url: string; content_type: string }>(`/projects/${projectId}/backgrounds`, {
+      method: 'POST',
+      body: JSON.stringify({ file_name: file.name, size_bytes: file.size }),
+    }),
+  completeBackground: (mediaId: string) => request<BackgroundMedia>(`/backgrounds/${mediaId}/complete`, { method: 'POST' }),
+  deleteBackground: (mediaId: string) => request<void>(`/backgrounds/${mediaId}`, { method: 'DELETE' }),
   createSyncJob: (projectId: string, words: string[], windowStartMs: number, windowEndMs: number) =>
     request<SyncJob>(`/projects/${projectId}/sync-jobs`, {
       method: 'POST',

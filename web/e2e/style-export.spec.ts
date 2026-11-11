@@ -57,3 +57,66 @@ test('the player uses the saved style', async ({ page, backend }) => {
   const active = await page.evaluate(() => getComputedStyle(document.querySelector('.karaoke-theme')!).getPropertyValue('--k-active').trim())
   expect(active).toBe('#facc15')
 })
+
+// ------------------------------------------------------------- backgrounds
+const GIF = Buffer.from('R0lGODlhAQABAIAAAP8AAAAAACH5BAAAAAAALAAAAAABAAEAAAICRAEAOw==', 'base64')
+type Clip = { media_id: string; start_ms: number | null; end_ms: number | null }
+const lastClips = (backend: { stylePatches: Record<string, unknown>[] }) =>
+  (backend.stylePatches.at(-1)?.style as { backgrounds?: Clip[] } | undefined)?.backgrounds
+
+test('add a looping background for part of the song', async ({ page, backend }) => {
+  const panel = page.getByTestId('background-panel')
+  await panel.getByTestId('background-file').setInputFiles({ name: 'לולאה.gif', mimeType: 'image/gif', buffer: GIF })
+  await expect(panel.getByText('לולאה.gif')).toBeVisible()
+  await expect(panel.getByText('GIF מונפש · 0:10.0')).toBeVisible()
+  // Uploaded straight to the private bucket, then the whole song by default.
+  expect(backend.uploads.some((u) => u.path.includes('/upload/sign/backgrounds/'))).toBe(true)
+  await expect.poll(() => lastClips(backend)).toEqual([{ media_id: backend.backgroundMedia[0].id, start_ms: null, end_ms: null }])
+
+  // Shown in the preview, behind the lyrics.
+  const layer = page.getByTestId('background-layers').locator('img')
+  await expect(layer).toHaveCSS('opacity', '1')
+
+  // Only part of the song.
+  await panel.getByLabel('לכל אורך השיר').uncheck()
+  await expect.poll(() => lastClips(backend)?.[0]).toMatchObject({ start_ms: 0, end_ms: 10000 })
+  const to = panel.getByRole('textbox', { name: 'עד' })
+  await to.fill('0:05')
+  await to.press('Enter')
+  await expect.poll(() => lastClips(backend)?.[0]).toMatchObject({ start_ms: 0, end_ms: 5000 })
+  const from = panel.getByRole('textbox', { name: 'מ-' })
+  await from.fill('8')
+  await from.press('Enter')
+  // A start after the end moves the end, so the range stays valid.
+  await expect.poll(() => lastClips(backend)?.[0]).toMatchObject({ start_ms: 8000, end_ms: 9000 })
+  // The playhead is at 0, outside 8–9 s: hidden in the preview.
+  await expect(layer).toHaveCSS('opacity', '0')
+})
+
+test('a rejected background explains why', async ({ page, backend }) => {
+  backend.backgroundError = 'not_media'
+  const panel = page.getByTestId('background-panel')
+  await panel.getByTestId('background-file').setInputFiles({ name: 'fake.gif', mimeType: 'image/gif', buffer: Buffer.from('nope') })
+  await expect(panel.getByRole('alert')).toContainText('אינו תמונה או סרטון')
+  await page.waitForTimeout(800)
+  expect(lastClips(backend) ?? []).toEqual([])
+})
+
+test('removing a background deletes its file', async ({ page, backend }) => {
+  const panel = page.getByTestId('background-panel')
+  await panel.getByTestId('background-file').setInputFiles({ name: 'a.png', mimeType: 'image/png', buffer: GIF })
+  await expect(panel.getByText('תמונה', { exact: true })).toBeVisible()
+  await panel.getByRole('button', { name: 'הסרת הרקע' }).click()
+  await expect.poll(() => lastClips(backend)).toEqual([])
+  await expect.poll(() => backend.backgroundMedia.length).toBe(0)
+  await expect(page.getByTestId('background-layers')).toHaveCount(0)
+})
+
+test('the player shows the saved background', async ({ page, backend }) => {
+  const id = '0b4f8f5e-3c1d-4b8a-9e2f-000000000009'
+  backend.backgroundMedia.push({ id, project_id: PID, storage_path: `x/${PID}/${id}.gif`, original_name: 'a.gif', format: 'gif',
+    kind: 'video', duration_ms: 10000, width: 64, height: 36, status: 'verified', error_code: null, created_at: new Date().toISOString() })
+  backend.project().style = { backgrounds: [{ media_id: id, start_ms: null, end_ms: null }] }
+  await page.goto(`/projects/${PID}/play`)
+  await expect(page.getByTestId('background-layers').locator('img')).toHaveCSS('opacity', '1')
+})

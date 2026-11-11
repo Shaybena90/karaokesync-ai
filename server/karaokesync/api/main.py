@@ -32,6 +32,7 @@ from ..supabase_client import AuthUser, SupabaseClient, SupabaseError
 from .common import iso as _iso
 from .common import owned_project as _owned_project
 from .deps import get_supabase, rate_limited_user, settings_dep
+from .backgrounds import backgrounds_router
 from .exports import exports_router
 from .sync import sync_router
 
@@ -102,6 +103,7 @@ def create_app() -> FastAPI:
     app.include_router(_router())
     app.include_router(exports_router())
     app.include_router(sync_router())
+    app.include_router(backgrounds_router())
     return app
 
 
@@ -338,8 +340,13 @@ def _router() -> APIRouter:
     ) -> None:
         _owned_project(sb, project_id, user)
         prefix = f"{user.id}/{project_id}"
-        for bucket in (settings.audio_bucket, settings.exports_bucket):
-            sb.remove_objects(bucket, sb.list_objects(bucket, prefix))
+        for bucket in (settings.audio_bucket, settings.exports_bucket, settings.backgrounds_bucket):
+            try:
+                sb.remove_objects(bucket, sb.list_objects(bucket, prefix))
+            except SupabaseError as exc:
+                # The backgrounds bucket exists only once its SQL file was run.
+                if bucket != settings.backgrounds_bucket or exc.status_code not in (400, 404):
+                    raise
         # Cascades to audio_files, jobs, lyrics. A worker holding a job for this
         # project loses its lease on the next heartbeat and stops.
         sb.delete("projects", {"id": f"eq.{project_id}", "user_id": f"eq.{user.id}"})

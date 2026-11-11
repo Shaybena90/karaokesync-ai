@@ -22,6 +22,32 @@ FONTS: dict[str, int] = {  # family -> weight used
 
 HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 
+UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+MAX_BACKGROUNDS = 10
+
+
+class BackgroundClip(BaseModel):
+    """A background file shown behind the lyrics, looping, from start_ms to end_ms
+    (None = from the beginning / to the end of the song). Later clips are on top."""
+
+    media_id: str
+    start_ms: int | None = Field(None, ge=0)
+    end_ms: int | None = Field(None, ge=0)
+
+    @field_validator("media_id")
+    @classmethod
+    def _uuid(cls, v: str) -> str:
+        if not UUID.match(v.lower()):
+            raise ValueError("expected a uuid")
+        return v.lower()
+
+    def window(self, song_ms: int) -> tuple[int, int] | None:
+        """[start, end) in song time, or None when the clip covers nothing."""
+        start = self.start_ms or 0
+        end = song_ms if self.end_ms is None else min(self.end_ms, song_ms)
+        return (start, end) if end > start else None
+
+
 FontName = Literal["Heebo", "Rubik", "Assistant", "Secular One", "Varela Round", "Frank Ruhl Libre"]
 
 
@@ -41,6 +67,21 @@ class SubtitleStyle(BaseModel):
     background_color2: str = "#3b0764"
     animation: Literal["fill", "word", "none"] = "fill"
     show_next_line: bool = True
+    backgrounds: list[BackgroundClip] = Field(default_factory=list)
+
+    @field_validator("backgrounds", mode="before")
+    @classmethod
+    def _clips(cls, v: Any) -> list[BackgroundClip]:
+        """Keep the valid clips, drop the rest (the style is edited in the browser)."""
+        if not isinstance(v, list):
+            return []
+        clips = []
+        for item in v[:MAX_BACKGROUNDS]:
+            try:
+                clips.append(BackgroundClip.model_validate(item))
+            except ValidationError:
+                continue
+        return clips
 
     @field_validator("text_color", "highlight_color", "outline_color", "background_color", "background_color2")
     @classmethod

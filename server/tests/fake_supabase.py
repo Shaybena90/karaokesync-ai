@@ -32,10 +32,10 @@ class FakeSupabase:
     def __init__(self):
         self.tables: dict[str, list[dict]] = {
             "projects": [], "audio_files": [], "processing_jobs": [],
-            "lyric_lines": [], "lyric_words": [], "export_jobs": [], "sync_jobs": [],
+            "lyric_lines": [], "lyric_words": [], "export_jobs": [], "sync_jobs": [], "background_media": [],
         }
         self.tokens: dict[str, AuthUser] = {}
-        self.objects: dict[str, dict[str, Path]] = {"audio": {}, "exports": {}}
+        self.objects: dict[str, dict[str, Path]] = {"audio": {}, "exports": {}, "backgrounds": {}}
         self.signed_upload_paths: list[str] = []
 
     # auth
@@ -78,6 +78,10 @@ class FakeSupabase:
             row.setdefault("output_path", None)
             if any(j["project_id"] == row["project_id"] and j["status"] in ("queued", "running") for j in self.tables[table]):
                 raise SupabaseError(409, "duplicate key", "23505")
+        if table == "background_media":
+            row.setdefault("status", "pending")
+            row.setdefault("kind", None)
+            row.setdefault("duration_ms", None)
         if table == "sync_jobs":
             row.setdefault("status", "queued")
             row.setdefault("result", None)
@@ -100,7 +104,7 @@ class FakeSupabase:
         doomed = {r["id"] for r in self._filter(table, params)}
         self.tables[table] = [r for r in self.tables[table] if r["id"] not in doomed]
         if table == "projects":  # emulate ON DELETE CASCADE
-            for child in ("audio_files", "processing_jobs", "lyric_lines", "lyric_words", "export_jobs", "sync_jobs"):
+            for child in ("audio_files", "processing_jobs", "lyric_lines", "lyric_words", "export_jobs", "sync_jobs", "background_media"):
                 self.tables[child] = [r for r in self.tables[child] if r["project_id"] not in doomed]
 
     def rpc(self, fn, args):

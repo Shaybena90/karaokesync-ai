@@ -80,6 +80,21 @@ export interface SyncJob {
   created_at: string
 }
 
+export interface BackgroundMedia {
+  id: string
+  project_id: string
+  storage_path: string
+  original_name: string
+  format: 'gif' | 'mp4' | 'webm' | 'mov' | 'png' | 'jpg'
+  kind: 'image' | 'video' | null
+  duration_ms: number | null
+  width: number | null
+  height: number | null
+  status: 'pending' | 'verified' | 'rejected' | 'deleted'
+  error_code: string | null
+  created_at: string
+}
+
 export interface Limits {
   max_upload_bytes: number
   max_audio_duration_seconds: number

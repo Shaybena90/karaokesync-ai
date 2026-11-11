@@ -107,7 +107,10 @@ def check_supabase(client: httpx.Client, supabase_url: str, anon_key: str, googl
             "automatic sync migration was run (sync_jobs exists)", "run 20261102000001_sync_jobs.sql")
     save = client.post(f"{supabase_url}/rest/v1/rpc/save_lyrics", headers=h, json={})
     r.check(save.status_code != 404 or "save_lyrics" not in save.text, "editor migration was run (save_lyrics exists)")
-    for bucket in ("audio", "exports"):
+    bg_rows = client.get(f"{supabase_url}/rest/v1/background_media?select=id&limit=1", headers=h)
+    r.check(not (bg_rows.status_code == 404 or "does not exist" in bg_rows.text),
+            "backgrounds migration was run (background_media exists)", "run 20261111000001_backgrounds.sql")
+    for bucket in ("audio", "exports", "backgrounds"):
         public = client.get(f"{supabase_url}/storage/v1/object/public/{bucket}/smoke-test.txt")
         r.check(public.status_code != 200, f"storage bucket '{bucket}' is private")
         listing = client.post(f"{supabase_url}/storage/v1/object/list/{bucket}", headers=h, json={"prefix": ""})

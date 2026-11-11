@@ -18,6 +18,18 @@ export type Position = 'top' | 'center' | 'bottom'
 export type Animation = 'fill' | 'word' | 'none'
 export type PresetName = 'classic' | 'neon' | 'tiktok' | 'custom'
 
+/**
+ * A background file shown behind the lyrics, looping, from start_ms to end_ms
+ * (null = from the beginning / to the end of the song). Later clips are on top.
+ */
+export interface BackgroundClip {
+  media_id: string
+  start_ms: number | null
+  end_ms: number | null
+}
+
+export const MAX_BACKGROUNDS = 10
+
 export interface SubtitleStyle {
   preset: PresetName
   font: FontName
@@ -34,6 +46,7 @@ export interface SubtitleStyle {
   background_color2: string
   animation: Animation
   show_next_line: boolean
+  backgrounds: BackgroundClip[]
 }
 
 export const DEFAULT_STYLE: SubtitleStyle = {
@@ -52,6 +65,7 @@ export const DEFAULT_STYLE: SubtitleStyle = {
   background_color2: '#3b0764',
   animation: 'fill',
   show_next_line: true,
+  backgrounds: [],
 }
 
 export const PRESETS: Record<Exclude<PresetName, 'custom'>, SubtitleStyle> = {
@@ -90,6 +104,30 @@ export const PRESETS: Record<Exclude<PresetName, 'custom'>, SubtitleStyle> = {
 }
 
 const HEX = /^#[0-9a-fA-F]{6}$/
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Keep the valid clips, drop the rest (same rule as the server). */
+function normalizeClips(raw: unknown): BackgroundClip[] {
+  if (!Array.isArray(raw)) return []
+  const ms = (v: unknown) => (v === null || v === undefined ? null : Number.isInteger(v) && (v as number) >= 0 ? (v as number) : undefined)
+  const clips: BackgroundClip[] = []
+  for (const item of raw.slice(0, MAX_BACKGROUNDS)) {
+    if (!item || typeof item !== 'object') continue
+    const r = item as Record<string, unknown>
+    const start = ms(r.start_ms)
+    const end = ms(r.end_ms)
+    if (typeof r.media_id !== 'string' || !UUID.test(r.media_id) || start === undefined || end === undefined) continue
+    clips.push({ media_id: r.media_id.toLowerCase(), start_ms: start, end_ms: end })
+  }
+  return clips
+}
+
+/** [start, end) of a clip in song time, or null when it covers nothing. */
+export function clipWindow(clip: BackgroundClip, songMs: number): { start: number; end: number } | null {
+  const start = clip.start_ms ?? 0
+  const end = clip.end_ms === null ? songMs : Math.min(clip.end_ms, songMs)
+  return end > start ? { start, end } : null
+}
 
 /** Accept whatever is stored in the database and return a complete, valid style. */
 export function normalizeStyle(raw: unknown): SubtitleStyle {
@@ -118,6 +156,7 @@ export function normalizeStyle(raw: unknown): SubtitleStyle {
     background_color2: pick('background_color2', color),
     animation: pick('animation', oneOf(['fill', 'word', 'none'])),
     show_next_line: pick('show_next_line', bool),
+    backgrounds: normalizeClips(r.backgrounds),
   }
 }
 
