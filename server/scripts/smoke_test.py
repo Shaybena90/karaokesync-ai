@@ -110,6 +110,11 @@ def check_supabase(client: httpx.Client, supabase_url: str, anon_key: str, googl
     bg_rows = client.get(f"{supabase_url}/rest/v1/background_media?select=id&limit=1", headers=h)
     r.check(not (bg_rows.status_code == 404 or "does not exist" in bg_rows.text),
             "backgrounds migration was run (background_media exists)", "run 20261111000001_backgrounds.sql")
+    instr_fn = client.post(f"{supabase_url}/rest/v1/rpc/claim_instrumental_job", headers=h, json={"p_worker_id": "smoke", "p_lease_seconds": 1})
+    r.check(instr_fn.status_code in (401, 403, 404), "melody-only queue not callable from the browser", f"HTTP {instr_fn.status_code}")
+    instr_rows = client.get(f"{supabase_url}/rest/v1/instrumental_jobs?select=id&limit=1", headers=h)
+    r.check(not (instr_rows.status_code == 404 or "does not exist" in instr_rows.text),
+            "melody-only migration was run (instrumental_jobs exists)", "run 20261112000001_instrumentals.sql")
     for bucket in ("audio", "exports", "backgrounds"):
         public = client.get(f"{supabase_url}/storage/v1/object/public/{bucket}/smoke-test.txt")
         r.check(public.status_code != 200, f"storage bucket '{bucket}' is private")

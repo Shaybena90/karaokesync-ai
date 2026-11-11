@@ -48,9 +48,19 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
     workdir = Path(tempfile.mkdtemp(prefix=f"export-{job['id'][:8]}-", dir=settings.worker_tmp_dir))
     try:
         report(3)
-        source = workdir / f"audio.{audio['storage_path'].rsplit('.', 1)[-1]}"
+        track = audio["storage_path"]
+        if options.get("audio") == "instrumental":
+            # The melody-only track: same timeline as the song, without the singer.
+            rows = sb.select("instrumental_jobs", {
+                "project_id": f"eq.{project['id']}", "audio_file_id": f"eq.{audio['id']}", "status": "eq.succeeded",
+                "output_path": "not.is.null", "select": "output_path", "order": "created_at.desc", "limit": "1",
+            })
+            if not rows:
+                raise PipelineError("instrumental_not_ready", retryable=False)
+            track = rows[0]["output_path"]
+        source = workdir / f"audio.{track.rsplit('.', 1)[-1]}"
         try:
-            url = sb.create_signed_url(settings.audio_bucket, audio["storage_path"], 300)
+            url = sb.create_signed_url(settings.audio_bucket, track, 300)
             sb.download_to(url, str(source), settings.max_upload_bytes)
         except SupabaseError as exc:
             raise PipelineError("download_failed", retryable=exc.status_code >= 500) from exc

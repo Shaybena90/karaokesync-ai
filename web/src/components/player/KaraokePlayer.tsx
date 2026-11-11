@@ -16,10 +16,12 @@ import { computeView, sameView, wordState, type KaraokeView } from '../../lib/ka
 import { wordFill } from '../../lib/sync'
 import type { LyricLine } from '../../lib/types'
 import { useLyrics } from '../../lib/useLyrics'
+import { useInstrumental, type InstrumentalState } from '../../lib/useInstrumental'
 import { useSignedAudio } from '../../lib/useSignedAudio'
 import { DEFAULT_STYLE, clipWindow, styleVars, type SubtitleStyle } from '../../lib/subtitleStyle'
 import { useBackgroundMedia, type LoadedBackground } from '../../lib/useBackgroundMedia'
 import { BackgroundLayers, type BackgroundLayer, type BackgroundSync } from './BackgroundLayers'
+import { VocalsControl } from './VocalsControl'
 import { Spinner } from '../ui'
 import { LyricsStage } from './LyricsStage'
 import { useFullscreen } from './useFullscreen'
@@ -38,6 +40,8 @@ interface Props {
   backgroundMedia?: LoadedBackground[]
   /** Receives the song position (ms) on every frame — e.g. for "use the current position" buttons. */
   positionRef?: MutableRefObject<number>
+  /** Melody-only state, when the page shares it with other parts (style page); otherwise the player follows it. */
+  instrumental?: InstrumentalState
 }
 
 export type VideoAspect = '16:9' | '9:16' | '1:1'
@@ -67,10 +71,16 @@ export function KaraokePlayer({
   videoFrame,
   backgroundMedia,
   positionRef,
+  instrumental: sharedInstrumental,
 }: Props) {
   const { t, dir: uiDir } = useI18n()
   const { lines, error: lyricsError } = useLyrics(projectId)
-  const { url, failed: urlFailed, refresh } = useSignedAudio(storagePath)
+  // With the singer, or the melody-only track (same timeline, so the lyrics stay in sync).
+  const ownInstrumental = useInstrumental(projectId, !sharedInstrumental && Boolean(storagePath))
+  const instrumental = sharedInstrumental ?? ownInstrumental
+  const [vocalsOff, setVocalsOff] = useState(false)
+  const playPath = vocalsOff && instrumental.ready ? instrumental.job!.output_path : storagePath
+  const { url, failed: urlFailed, refresh } = useSignedAudio(playPath)
 
   const audioRef = useRef<HTMLAudioElement>(null)
   const clockRef = useRef<{ audio: HTMLAudioElement; clock: AudioClock } | null>(null)
@@ -256,9 +266,19 @@ export function KaraokePlayer({
     if (restore) {
       restoreRef.current = null
       audio.currentTime = restore.time
+      clockRef.current?.clock.reset()
       if (restore.play) void audio.play().catch(() => undefined)
     }
     renderFrame()
+  }
+
+  /** Switch between the song and the melody-only track at the same position. */
+  const setVocals = (off: boolean) => {
+    if (off === vocalsOff) return
+    const audio = audioRef.current
+    if (audio) restoreRef.current = { time: audio.currentTime, play: !audio.paused }
+    setReady(false)
+    setVocalsOff(off)
   }
 
   /** The signed URL may expire during a long session: get a new one and resume. */
@@ -466,6 +486,15 @@ export function KaraokePlayer({
               onError={onAudioError}
             />
           )}
+          <VocalsControl
+            job={instrumental.job}
+            ready={instrumental.ready}
+            requesting={instrumental.requesting}
+            error={instrumental.error}
+            vocalsOff={vocalsOff && instrumental.ready}
+            onRequest={() => void instrumental.request()}
+            onToggle={setVocals}
+          />
         </div>
       ) : (
         <p className="text-center text-sm text-white/50">{t('project.audioGone')}</p>

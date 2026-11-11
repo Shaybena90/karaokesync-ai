@@ -45,7 +45,7 @@ test('video export: request, progress, download', async ({ page, backend }) => {
   await page.getByRole('radio', { name: '720p' }).click()
   await page.getByRole('button', { name: /יצירת סרטון/ }).click()
   await expect(page.getByText(/בתור ליצירה|יוצר סרטון/)).toBeVisible()
-  expect(backend.exportJobs[0].options).toEqual({ aspect: '9:16', resolution: 720 })
+  expect(backend.exportJobs[0].options).toEqual({ aspect: '9:16', resolution: 720, audio: 'original' })
   await page.getByRole('button', { name: /הורדת הסרטון/ }).click({ timeout: 15000 })
   await expect.poll(() => backend.apiCalls.find((c) => c.startsWith('VIDEO'))).toBe('VIDEO download=שיר בדיקה.mp4')
 })

@@ -149,24 +149,26 @@ def test_run_line_sync_cuts_the_window(fake_sb, project, tmp_path, monkeypatch):
     assert progress == sorted(progress) and not any((tmp_path / "work").iterdir())
 
 
-def test_worker_keeps_processing_without_the_sync_queue(monkeypatch):
-    class NoSyncQueue:
+def test_worker_keeps_processing_without_the_newer_queues(monkeypatch):
+    class OldDatabase:
         def __init__(self):
             self.calls = []
 
         def rpc(self, fn, args):
             self.calls.append(fn)
-            if fn == "claim_sync_job":
+            if fn in ("claim_sync_job", "claim_instrumental_job"):
                 raise SupabaseError(404, "Could not find the function", "PGRST202")
             return []
 
-    monkeypatch.setattr(runner, "_sync_unavailable", False)
-    sb = NoSyncQueue()
+    monkeypatch.setattr(runner, "_unavailable", set())
+    sb = OldDatabase()
     from karaokesync.config import get_settings
 
     assert runner.process_one(sb, get_settings(), "w1") is False
     assert runner.process_one(sb, get_settings(), "w1") is False
-    assert sb.calls == ["claim_sync_job", "claim_processing_job", "claim_export_job", "claim_processing_job", "claim_export_job"]
+    # Each missing queue is tried once, then skipped; songs and exports keep working.
+    assert sb.calls == ["claim_sync_job", "claim_processing_job", "claim_instrumental_job", "claim_export_job",
+                        "claim_processing_job", "claim_export_job"]
 
 
 def test_sync_errors_are_reported(fake_sb, project, monkeypatch):

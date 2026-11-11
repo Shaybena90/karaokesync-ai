@@ -52,7 +52,18 @@ def run_retention(sb: SupabaseClient, settings: Settings, now: datetime | None =
         sb.update("export_jobs", {"id": f"eq.{export['id']}"}, {"output_path": None, "error_code": "expired"})
         removed += 1
 
-    # 4. Video backgrounds: abandoned uploads, and files kept as long as the audio.
+    # 4. Melody-only tracks: kept as long as the song itself.
+    try:
+        for job in sb.select("instrumental_jobs", {"output_path": "not.is.null", "created_at": f"lt.{expire_before}",
+                                                   "select": "id,output_path", "limit": "200"}):
+            sb.remove_objects(settings.audio_bucket, [job["output_path"]])
+            sb.update("instrumental_jobs", {"id": f"eq.{job['id']}"}, {"output_path": None, "error_code": "expired"})
+            removed += 1
+    except SupabaseError as exc:
+        if exc.status_code != 404:  # 404: the melody-only SQL file was not run yet
+            raise
+
+    # 5. Video backgrounds: abandoned uploads, and files kept as long as the audio.
     try:
         removed += _expire_backgrounds(sb, settings, now, abandoned_before, expire_before)
     except SupabaseError as exc:

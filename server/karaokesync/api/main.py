@@ -34,6 +34,7 @@ from .common import owned_project as _owned_project
 from .deps import get_supabase, rate_limited_user, settings_dep
 from .backgrounds import backgrounds_router
 from .exports import exports_router
+from .instrumental import instrumental_router
 from .sync import sync_router
 
 log = logging.getLogger("karaokesync.api")
@@ -104,6 +105,7 @@ def create_app() -> FastAPI:
     app.include_router(exports_router())
     app.include_router(sync_router())
     app.include_router(backgrounds_router())
+    app.include_router(instrumental_router())
     return app
 
 

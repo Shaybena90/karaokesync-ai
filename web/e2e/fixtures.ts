@@ -81,6 +81,7 @@ export class MockBackend {
   exportJobs: Row[] = []
   syncJobs: Row[] = []
   backgroundMedia: Row[] = []
+  instrumentalJobs: Row[] = []
   /** Error code the mock API gives when verifying a background (null = accepted). */
   backgroundError: string | null = null
   /** Error code the mock worker reports for sync jobs (null = success). */
@@ -131,6 +132,8 @@ export class MockBackend {
     }
     const order = url.searchParams.get('order')
     if (order?.startsWith('created_at.desc')) out = [...out].reverse()
+    const limit = url.searchParams.get('limit')
+    if (limit) out = out.slice(0, Number(limit))
     return out
   }
 
@@ -169,6 +172,7 @@ export class MockBackend {
     if (p === '/rest/v1/export_jobs') return rows(this.exportJobs)
     if (p === '/rest/v1/sync_jobs') return rows(this.syncJobs)
     if (p === '/rest/v1/background_media') return rows(this.backgroundMedia)
+    if (p === '/rest/v1/instrumental_jobs') return rows(this.instrumentalJobs)
     if (p === '/rest/v1/rpc/save_lyrics') {
       const body = JSON.parse(req.postData() ?? '{}')
       const project = this.project(body.p_project_id)
@@ -193,7 +197,11 @@ export class MockBackend {
       return route.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'image/png' }, body: RED_PNG })
     }
     if (p.startsWith('/storage/v1/object/sign/exports/')) return this.json(route, { signedURL: '/__video?token=t' })
-    if (p.startsWith('/storage/v1/object/sign/')) return this.json(route, { signedURL: '/__audio?token=t' })
+    if (p.startsWith('/storage/v1/object/sign/')) {
+      // The object path travels in the URL so tests can see which file is playing.
+      const object = p.replace('/storage/v1/object/sign/audio/', '')
+      return this.json(route, { signedURL: `/__audio?token=t&p=${encodeURIComponent(object)}` })
+    }
     if (p.startsWith('/storage/v1/__video')) {
       this.apiCalls.push(`VIDEO download=${url.searchParams.get('download')}`)
       return route.fulfill({ status: 200, headers: { 'content-type': 'video/mp4' }, body: 'x' })
@@ -265,12 +273,22 @@ export class MockBackend {
     const exportsMatch = /^\/projects\/([^/]+)\/exports$/.exec(p)
     if (exportsMatch && method === 'POST') {
       const body = JSON.parse(req.postData() ?? '{}')
-      const job: Row = { id: 'e1', project_id: exportsMatch[1], format: 'mp4', options: { aspect: body.aspect, resolution: body.resolution },
+      const job: Row = { id: 'e1', project_id: exportsMatch[1], format: 'mp4', options: { aspect: body.aspect, resolution: body.resolution, audio: body.audio },
         status: 'queued', progress: 0, output_path: null, error_code: null, created_at: new Date().toISOString(), finished_at: null }
       this.exportJobs.unshift(job)
       setTimeout(() => Object.assign(job, { status: 'running', progress: 42 }), 1000)
       setTimeout(() => Object.assign(job, { status: 'succeeded', progress: 100, output_path: `${UID}/${PID}/e1.mp4` }), 3000)
       return this.json(route, job, 201)
+    }
+    const instr = /^\/projects\/([^/]+)\/instrumental$/.exec(p)
+    if (instr && method === 'POST') {
+      const job: Row = { id: `i${this.instrumentalJobs.length + 1}`, project_id: instr[1], audio_file_id: 'A1', status: 'queued',
+        progress: 0, output_path: null, error_code: null, created_at: new Date().toISOString() }
+      this.instrumentalJobs.push(job)
+      // The mock worker: running at 40%, then done.
+      setTimeout(() => Object.assign(job, { status: 'running', progress: 40 }), 500)
+      setTimeout(() => Object.assign(job, { status: 'succeeded', progress: 100, output_path: `${UID}/${instr[1]}/instrumental-${job.id}.mp3` }), 2500)
+      return this.json(route, job)
     }
     const bgInit = /^\/projects\/([^/]+)\/backgrounds$/.exec(p)
     if (bgInit && method === 'POST') {

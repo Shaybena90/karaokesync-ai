@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     max_backgrounds_per_project: int = 10
     max_background_uploads_per_day: int = 30
 
+    # Melody only (vocals removed with Demucs on the worker)
+    max_instrumentals_per_day: int = 10
+
     # Retention
     audio_retention_days: int = 30
     abandoned_upload_hours: int = 24

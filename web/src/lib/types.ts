@@ -59,7 +59,7 @@ export interface ExportJob {
   id: string
   project_id: string
   format: 'srt' | 'lrc' | 'ass' | 'mp4'
-  options: { aspect?: '16:9' | '9:16' | '1:1'; resolution?: number }
+  options: { aspect?: '16:9' | '9:16' | '1:1'; resolution?: number; audio?: 'original' | 'instrumental' }
   status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
   progress: number
   output_path: string | null
@@ -91,6 +91,17 @@ export interface BackgroundMedia {
   width: number | null
   height: number | null
   status: 'pending' | 'verified' | 'rejected' | 'deleted'
+  error_code: string | null
+  created_at: string
+}
+
+export interface InstrumentalJob {
+  id: string
+  project_id: string
+  audio_file_id: string
+  status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
+  progress: number
+  output_path: string | null
   error_code: string | null
   created_at: string
 }

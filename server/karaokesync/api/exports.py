@@ -27,6 +27,7 @@ from ..styles import parse_style
 from ..supabase_client import AuthUser, SupabaseClient, SupabaseError
 from .common import iso, owned_project
 from .deps import get_supabase, rate_limited_user, settings_dep
+from .instrumental import latest_instrumental
 
 ACTIVE = "(queued,running)"
 MAX_ACTIVE_EXPORTS_PER_USER = 2
@@ -42,6 +43,8 @@ class ExportRequest(BaseModel):
     format: Literal["mp4"] = "mp4"
     aspect: Literal["16:9", "9:16", "1:1"] = "16:9"
     resolution: Literal[720, 1080] = 1080
+    # "instrumental" = the melody-only track (the singer's voice removed)
+    audio: Literal["original", "instrumental"] = "original"
 
 
 def _require_lyrics(sb: SupabaseClient, project: dict) -> list[dict]:
@@ -114,6 +117,10 @@ def exports_router() -> APIRouter:
         )
         if not audio:
             raise HTTPException(status.HTTP_409_CONFLICT, detail="audio_missing")
+        if body.audio == "instrumental":
+            track = latest_instrumental(sb, project_id, audio[0]["id"])
+            if not track or track["status"] != "succeeded" or not track.get("output_path"):
+                raise HTTPException(status.HTTP_409_CONFLICT, detail="instrumental_not_ready")
 
         existing = sb.select("export_jobs", {"project_id": f"eq.{project_id}", "status": f"in.{ACTIVE}", "select": "*"})
         if existing:
@@ -127,6 +134,7 @@ def exports_router() -> APIRouter:
         options = {
             "aspect": body.aspect,
             "resolution": body.resolution,
+            "audio": body.audio,
             # Snapshot: later style edits do not change a render that is already queued.
             "style": parse_style(project.get("style")).model_dump(),
         }

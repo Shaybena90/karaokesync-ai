@@ -10,6 +10,7 @@ import { ApiError } from '../lib/api'
 import { normalizeStyle, type SubtitleStyle } from '../lib/subtitleStyle'
 import { supabase } from '../lib/supabase'
 import { useBackgroundMedia } from '../lib/useBackgroundMedia'
+import { useInstrumental } from '../lib/useInstrumental'
 import { useProjectLive } from '../lib/useProjectLive'
 
 type SaveState = 'saved' | 'saving' | 'error'
@@ -25,6 +26,8 @@ export function StylePage() {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { media, reload: reloadMedia } = useBackgroundMedia(id)
   const positionRef = useRef(0)
+  // One melody-only state for the player switch and the export option.
+  const instrumental = useInstrumental(id, audio?.status === 'verified')
 
   // Initialise once from the stored style (later realtime reloads do not overwrite edits).
   useEffect(() => {
@@ -108,6 +111,7 @@ export function StylePage() {
             videoFrame={aspect}
             backgroundMedia={media}
             positionRef={positionRef}
+            instrumental={instrumental}
           />
           <p className="text-center text-xs text-white/40">{t('style.previewNote')}</p>
         </div>
@@ -136,6 +140,7 @@ export function StylePage() {
               onAspectChange={setAspect}
               canRenderVideo={Boolean(storagePath)}
               beforeExport={save}
+              instrumental={instrumental}
             />
           </div>
         </div>

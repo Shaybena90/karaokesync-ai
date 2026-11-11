@@ -23,6 +23,7 @@ from ..supabase_client import SupabaseClient, SupabaseError
 from .cleanup import run_retention
 from .errors import JobLost, PipelineError
 from .export_pipeline import run_export
+from .instrumental import run_instrumental
 from .line_sync import run_line_sync
 from .pipeline import run_pipeline
 
@@ -34,8 +35,8 @@ CLEANUP_INTERVAL_SECONDS = 3600
 class Heartbeat:
     """Keeps the job lease alive in a background thread and relays progress.
 
-    `kind` is "processing" (AI pipeline), "export" (video render) or "sync"
-    (automatic sync of words typed in the editor)."""
+    `kind` is "processing" (AI pipeline), "export" (video render), "sync"
+    (automatic sync of words typed in the editor) or "instrumental" (melody only)."""
 
     MIN_BEAT_INTERVAL = 3.0
 
@@ -75,7 +76,7 @@ class Heartbeat:
             base = {"p_job_id": self.job_id, "p_worker_id": self.worker_id, "p_lease_seconds": self.lease,
                     "p_progress": self.progress}
             try:
-                if self.kind in ("export", "sync"):
+                if self.kind in ("export", "sync", "instrumental"):
                     ok = self.sb.rpc(f"heartbeat_{self.kind}_job", base)
                 else:
                     ok = self.sb.rpc("heartbeat_processing_job", {**base, "p_stage": self.stage})
@@ -92,16 +93,21 @@ class Heartbeat:
 
 def process_one(sb: SupabaseClient, settings: Settings, worker_id: str) -> bool:
     """Claim and run a single job. Editor syncs come first (someone is waiting
-    for a few seconds of work), then AI processing, then video exports.
+    for a few seconds of work), then AI processing, then melody-only tracks,
+    then video exports (which may need a melody-only track).
     Returns False if every queue was empty."""
     lease = settings.worker_lease_seconds
-    syncs = _claim_sync(sb, worker_id, lease)
+    syncs = _claim_optional(sb, "claim_sync_job", worker_id, lease)
     if syncs:
         _run_sync(sb, settings, worker_id, syncs[0])
         return True
     jobs = sb.rpc("claim_processing_job", {"p_worker_id": worker_id, "p_lease_seconds": lease})
     if jobs:
         _run_processing(sb, settings, worker_id, jobs[0])
+        return True
+    instrumentals = _claim_optional(sb, "claim_instrumental_job", worker_id, lease)
+    if instrumentals:
+        _run_instrumental(sb, settings, worker_id, instrumentals[0])
         return True
     exports = sb.rpc("claim_export_job", {"p_worker_id": worker_id, "p_lease_seconds": lease})
     if exports:
@@ -110,22 +116,26 @@ def process_one(sb: SupabaseClient, settings: Settings, worker_id: str) -> bool:
     return False
 
 
-_sync_unavailable = False
+# Queues added after the first release, and the SQL file that creates each.
+OPTIONAL_QUEUES = {
+    "claim_sync_job": "20261102000001_sync_jobs.sql (automatic sync)",
+    "claim_instrumental_job": "20261112000001_instrumentals.sql (melody only)",
+}
+_unavailable: set[str] = set()
 
 
-def _claim_sync(sb: SupabaseClient, worker_id: str, lease: int) -> list:
-    """Claim an editor sync job. If the database does not have the sync queue yet
-    (its SQL file was not run), keep processing songs and say so once."""
-    global _sync_unavailable
-    if _sync_unavailable:
+def _claim_optional(sb: SupabaseClient, fn: str, worker_id: str, lease: int) -> list:
+    """Claim from a newer queue. If the database does not have it yet (its SQL
+    file was not run), keep processing songs and say so once."""
+    if fn in _unavailable:
         return []
     try:
-        return sb.rpc("claim_sync_job", {"p_worker_id": worker_id, "p_lease_seconds": lease}) or []
+        return sb.rpc(fn, {"p_worker_id": worker_id, "p_lease_seconds": lease}) or []
     except SupabaseError as exc:
         if exc.status_code != 404:
             raise
-        _sync_unavailable = True
-        log.warning("automatic sync is off: run supabase/migrations/20261102000001_sync_jobs.sql in Supabase")
+        _unavailable.add(fn)
+        log.warning("%s is off: run supabase/migrations/%s in Supabase", fn, OPTIONAL_QUEUES[fn])
         return []
 
 
@@ -146,6 +156,27 @@ def _run_processing(sb: SupabaseClient, settings: Settings, worker_id: str, job:
         except Exception as exc:
             log.exception("job=%s unexpected error: %s", job["id"], type(exc).__name__)
             _fail(sb, "fail_processing_job", job, worker_id, "internal_error", True)
+
+
+def _run_instrumental(sb: SupabaseClient, settings: Settings, worker_id: str, job: dict) -> None:
+    log.info("claimed instrumental=%s project=%s attempt=%s", job["id"], job["project_id"], job["attempts"])
+    with Heartbeat(sb, job["id"], worker_id, settings.worker_lease_seconds, kind="instrumental") as hb:
+        try:
+            path = run_instrumental(job, sb, settings, hb.report_progress)
+            if hb.lost.is_set():
+                raise JobLost(job["id"])
+            ok = sb.rpc("complete_instrumental_job", {"p_job_id": job["id"], "p_worker_id": worker_id, "p_output_path": path})
+            if not ok:  # project deleted or job re-claimed meanwhile: do not leave an orphan file
+                sb.remove_objects(settings.audio_bucket, [path])
+            log.info("instrumental=%s %s", job["id"], "succeeded" if ok else "lost before completion")
+        except JobLost:
+            log.warning("instrumental=%s lease lost; dropping result", job["id"])
+        except PipelineError as exc:
+            log.warning("instrumental=%s failed code=%s retryable=%s", job["id"], exc.code, exc.retryable)
+            _fail(sb, "fail_instrumental_job", job, worker_id, exc.code, exc.retryable)
+        except Exception as exc:
+            log.exception("instrumental=%s unexpected error: %s", job["id"], type(exc).__name__)
+            _fail(sb, "fail_instrumental_job", job, worker_id, "internal_error", True)
 
 
 def _run_export(sb: SupabaseClient, settings: Settings, worker_id: str, job: dict) -> None:

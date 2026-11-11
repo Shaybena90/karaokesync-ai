@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { errorKey, useI18n } from '../../i18n/I18nProvider'
 import { ApiError, api, downloadTextExport, safeFileName, type TextExportFormat } from '../../lib/api'
 import { supabase } from '../../lib/supabase'
+import type { InstrumentalState } from '../../lib/useInstrumental'
 import type { ExportJob } from '../../lib/types'
 import type { VideoAspect } from '../player/KaraokePlayer'
 import { Alert, Button, ProgressBar, Spinner } from '../ui'
@@ -15,14 +16,17 @@ interface Props {
   canRenderVideo: boolean
   /** Persist pending style edits first, so the export uses what the preview shows. */
   beforeExport: () => Promise<void>
+  /** The song's melody-only track (shared with the player on the same page). */
+  instrumental: InstrumentalState
 }
 
 const TEXT_FORMATS: TextExportFormat[] = ['srt', 'lrc', 'ass']
 
 /** Subtitle downloads + MP4 render queue for one project. */
-export function ExportPanel({ projectId, title, aspect, onAspectChange, canRenderVideo, beforeExport }: Props) {
+export function ExportPanel({ projectId, title, aspect, onAspectChange, canRenderVideo, beforeExport, instrumental }: Props) {
   const { t, locale } = useI18n()
   const [resolution, setResolution] = useState<'720' | '1080'>('1080')
+  const [noVocals, setNoVocals] = useState(false)
   const [jobs, setJobs] = useState<ExportJob[]>([])
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -115,12 +119,23 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
           onChange={onAspectChange}
         />
         <Segmented value={resolution} options={[['720', '720p'], ['1080', '1080p']]} onChange={setResolution} />
+        <label className={`flex min-h-10 items-center gap-2 text-sm ${instrumental.ready ? '' : 'opacity-50'}`}>
+          <input
+            type="checkbox"
+            checked={noVocals && instrumental.ready}
+            disabled={!instrumental.ready}
+            onChange={(e) => setNoVocals(e.target.checked)}
+            className="size-5 accent-violet-500"
+          />
+          🎵 {t('export.noVocals')}
+        </label>
+        {!instrumental.ready && canRenderVideo && <p className="-mt-2 text-xs text-white/40">{t('export.noVocalsHint')}</p>}
         <Button
           className="w-full"
           disabled={!canRenderVideo || busy !== null || active}
           onClick={() => run('mp4', async () => {
             await beforeExport()
-            await api.createVideoExport(projectId, aspect, Number(resolution))
+            await api.createVideoExport(projectId, aspect, Number(resolution), noVocals && instrumental.ready ? 'instrumental' : 'original')
             await load()
           })}
         >
@@ -139,6 +154,7 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
               <div className="flex items-center justify-between gap-2 text-sm">
                 <span>
                   🎬 <span dir="ltr">{job.options.aspect} · {job.options.resolution}p</span>
+                  {job.options.audio === 'instrumental' && ` · 🎵 ${t('vocals.off')}`}
                 </span>
                 <span className="text-xs text-white/50">{new Date(job.created_at).toLocaleString(locale)}</span>
               </div>

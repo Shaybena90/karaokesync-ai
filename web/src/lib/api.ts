@@ -1,5 +1,5 @@
 import { supabase, supabaseAnonKey } from './supabase'
-import type { BackgroundMedia, ExportJob, Limits, SyncJob } from './types'
+import type { BackgroundMedia, ExportJob, InstrumentalJob, Limits, SyncJob } from './types'
 
 const API_URL = ((import.meta.env.VITE_API_URL as string | undefined) || 'http://localhost:8000').replace(/\/$/, '')
 
@@ -72,11 +72,12 @@ export const api = {
   completeUpload: (projectId: string) => request<ProjectState>(`/uploads/${projectId}/complete`, { method: 'POST' }),
   retry: (projectId: string) => request<ProjectState>(`/projects/${projectId}/retry`, { method: 'POST' }),
   deleteProject: (projectId: string) => request<void>(`/projects/${projectId}`, { method: 'DELETE' }),
-  createVideoExport: (projectId: string, aspect: string, resolution: number) =>
+  createVideoExport: (projectId: string, aspect: string, resolution: number, audio: 'original' | 'instrumental' = 'original') =>
     request<ExportJob>(`/projects/${projectId}/exports`, {
       method: 'POST',
-      body: JSON.stringify({ format: 'mp4', aspect, resolution }),
+      body: JSON.stringify({ format: 'mp4', aspect, resolution, audio }),
     }),
+  requestInstrumental: (projectId: string) => request<InstrumentalJob>(`/projects/${projectId}/instrumental`, { method: 'POST' }),
   deleteExport: (exportId: string) => request<void>(`/exports/${exportId}`, { method: 'DELETE' }),
   initBackground: (projectId: string, file: File) =>
     request<{ media: BackgroundMedia; upload_url: string; content_type: string }>(`/projects/${projectId}/backgrounds`, {
