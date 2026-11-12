@@ -20,6 +20,7 @@ import uuid
 from ..config import Settings, get_settings
 from ..logging_setup import setup_logging
 from ..supabase_client import SupabaseClient, SupabaseError
+from . import gpu
 from .cleanup import run_retention
 from .errors import JobLost, PipelineError
 from .export_pipeline import run_export
@@ -31,7 +32,7 @@ log = logging.getLogger("karaokesync.worker")
 
 CLEANUP_INTERVAL_SECONDS = 3600
 # Shown when the worker starts, to tell an up-to-date worker from an old copy.
-WORKER_VERSION = "2026-11-12 (video size limit)"
+WORKER_VERSION = "2026-11-13 (GPU, pasted lyrics)"
 
 
 class Heartbeat:
@@ -245,6 +246,9 @@ def main() -> None:
     signal.signal(signal.SIGTERM, _stop)
 
     log.info("worker %s started (env=%s, version=%s)", worker_id, settings.app_env, WORKER_VERSION)
+    gpu.register_cuda_dlls()
+    for line in gpu.summary():
+        log.info(line)
     last_cleanup = 0.0
     while not stopping.is_set():
         try:

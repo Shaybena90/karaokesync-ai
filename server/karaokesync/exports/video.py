@@ -100,6 +100,13 @@ def bitrates_for(duration_ms: int, max_bytes: int | None) -> tuple[int, int] | N
     return max(150, int(video)), audio
 
 
+def encoder_args(encoder: str, video_cap: list[str]) -> list[str]:
+    """Same visual quality target on the CPU (x264 CRF 23) or the NVIDIA card (NVENC CQ 23)."""
+    if encoder == "h264_nvenc":
+        return ["-c:v", "h264_nvenc", "-preset", "p5", "-tune", "hq", "-rc", "vbr", "-cq", "23", "-b:v", "0", *video_cap]
+    return ["-c:v", "libx264", "-preset", "veryfast", "-crf", "23", *video_cap]
+
+
 def plan_chunks(duration_ms: int, workers: int, min_chunk_ms: int = 15_000) -> list[tuple[int, int]]:
     """Split the song into equal parts on whole frames (1/30 s) for parallel rendering."""
     count = max(1, min(workers, duration_ms // min_chunk_ms))
@@ -129,6 +136,7 @@ def render_mp4(
     backgrounds: list[BackgroundLayer] | None = None,
     max_bytes: int | None = None,
     workers: int | None = None,
+    encoder: str = "libx264",
 ) -> Path:
     """Render the video in parts at the same time (one FFmpeg per part), join
     them without re-encoding and add the song once.
@@ -184,7 +192,7 @@ def render_mp4(
                 "-framerate", "30", "-i", "base.png",
                 *bg_inputs,
                 "-filter_complex", graph, "-map", "[v]", "-an",
-                "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", *video_cap, "-pix_fmt", "yuv420p",
+                *encoder_args(encoder, video_cap), "-pix_fmt", "yuv420p",
                 "-threads", str(threads), "-r", "30",
                 "-t", f"{(t1 - t0) / 1000:.3f}",
                 "-progress", "pipe:1", "-nostats",

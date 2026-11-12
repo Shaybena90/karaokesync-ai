@@ -83,6 +83,7 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
             on_progress=lambda frac: report(6 + int(frac * 87)),
             backgrounds=layers,
             max_bytes=settings.max_export_mb * 1024 * 1024,
+            encoder=_video_encoder(settings),
         )
 
         report(95)
@@ -138,3 +139,11 @@ def _download_backgrounds(
             files[row["id"]] = local
         layers.append(BackgroundLayer(files[row["id"]], row["kind"] or "video", start, end, row.get("duration_ms")))
     return layers
+
+
+def _video_encoder(settings: Settings) -> str:
+    if settings.video_encoder != "auto":
+        return settings.video_encoder
+    from .gpu import nvenc_available
+
+    return "h264_nvenc" if nvenc_available() else "libx264"

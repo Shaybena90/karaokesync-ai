@@ -68,6 +68,8 @@ class Settings(BaseSettings):
     # Supabase's free plan stores files of up to 50 MB: videos are encoded to fit.
     # Raise it after raising the storage upload limit (Supabase Pro).
     max_export_mb: int = 48
+    # auto = the NVIDIA card's encoder (NVENC) when it works, else the CPU (libx264)
+    video_encoder: Literal["auto", "libx264", "h264_nvenc"] = "auto"
     export_retention_days: int = 7
     # Recognise the singing on the vocals alone (Demucs). "auto" = when Demucs is installed.
     # The rest of the music is kept as the song's melody-only track at the same time.
