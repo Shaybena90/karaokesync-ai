@@ -28,6 +28,11 @@ export const he = {
   'drop.hint': 'MP3 · WAV · M4A · עד {mb} MB · עד {min} דקות',
   'drop.active': 'שחררו כדי להעלות',
 
+  'upload.language': 'שפת השיר',
+  'upload.language.auto': 'זיהוי אוטומטי',
+  'upload.language.he': 'עברית',
+  'upload.language.en': 'English',
+  'upload.languageHint': 'כשבוחרים את השפה, הזיהוי מדויק יותר מזיהוי אוטומטי מתוך המוזיקה.',
   'upload.title': 'העלאת שיר',
   'upload.subtitle': 'הקובץ עולה ישירות לאחסון פרטי ומוצפן. רק לך יש גישה אליו.',
   'upload.checking': 'בודק את הקובץ…',
@@ -88,6 +93,7 @@ export const he = {
   'stage.transcribing': 'מזהה שפה ומתמלל מילים',
   'stage.aligning': 'מסנכרן כל מילה',
   'stage.building_lines': 'מחלק לשורות קריוקי',
+  'stage.saving_melody': 'שומר גם גרסה בלי הזמר',
   'stage.done': 'הסתיים',
 
   'flow.upload': 'העלאה',

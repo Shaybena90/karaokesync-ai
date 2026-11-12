@@ -57,7 +57,10 @@ class Settings(BaseSettings):
     worker_poll_seconds: float = 3.0
     worker_lease_seconds: int = 120
     worker_tmp_dir: str = str(ROOT_DIR / "server" / "tmp")
-    whisper_model: str = "large-v3"
+    whisper_model: str = "large-v3-turbo"
+    # Better models for specific languages, e.g. "he=ivrit-ai/whisper-large-v3-turbo-ct2".
+    # Comma separated; a model that cannot be loaded falls back to WHISPER_MODEL.
+    whisper_language_models: str = ""
     whisper_device: Literal["auto", "cpu", "cuda"] = "auto"
     whisper_compute_type: str = "auto"
     fonts_dir: str = str(ROOT_DIR / "server" / "fonts")
@@ -66,7 +69,10 @@ class Settings(BaseSettings):
     # Raise it after raising the storage upload limit (Supabase Pro).
     max_export_mb: int = 48
     export_retention_days: int = 7
-    enable_vocal_separation: bool = False
+    # Recognise the singing on the vocals alone (Demucs). "auto" = when Demucs is installed.
+    # The rest of the music is kept as the song's melody-only track at the same time.
+    vocal_separation: Literal["auto", "on", "off"] = "auto"
+    enable_vocal_separation: bool = False  # older setting: true = "on"
     demucs_model: str = "htdemucs"
 
     @property
@@ -76,6 +82,14 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    def language_models(self) -> dict[str, str]:
+        out = {}
+        for item in self.whisper_language_models.split(","):
+            lang, _, model = item.partition("=")
+            if lang.strip() and model.strip():
+                out[lang.strip().lower()] = model.strip()
+        return out
 
     def production_problems(self) -> list[str]:
         """Configuration mistakes that must stop a production server from starting."""

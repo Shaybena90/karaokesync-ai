@@ -62,12 +62,15 @@ export interface ProjectState {
 
 export type TextExportFormat = 'srt' | 'lrc' | 'ass'
 
+/** The song's language when the user knows it (more accurate than detecting it from music). */
+export type SongLanguage = 'he' | 'en'
+
 export const api = {
   limits: () => request<Limits>('/limits'),
-  initUpload: (file: File) =>
+  initUpload: (file: File, language: SongLanguage | null = null) =>
     request<UploadInit>('/uploads', {
       method: 'POST',
-      body: JSON.stringify({ file_name: file.name, size_bytes: file.size, mime_type: file.type }),
+      body: JSON.stringify({ file_name: file.name, size_bytes: file.size, mime_type: file.type, language }),
     }),
   completeUpload: (projectId: string) => request<ProjectState>(`/uploads/${projectId}/complete`, { method: 'POST' }),
   retry: (projectId: string) => request<ProjectState>(`/projects/${projectId}/retry`, { method: 'POST' }),

@@ -89,6 +89,8 @@ export class MockBackend {
   lyricSaves: { p_expected_version: number; p_lines: { words: { text: string; start_ms: number; end_ms: number }[] }[] }[] = []
   stylePatches: Row[] = []
   apiCalls: string[] = []
+  /** Bodies of POST /uploads (to check what the browser sends). */
+  uploadRequests: Row[] = []
   uploads: { path: string; contentType: string; size: number }[] = []
   forceSaveConflict = false
   /** What POST /uploads/:id/complete answers (to simulate server-side rejection). */
@@ -237,8 +239,9 @@ export class MockBackend {
     }
     if (p === '/uploads' && method === 'POST') {
       const body = JSON.parse(req.postData() ?? '{}')
+      this.uploadRequests.push(body)
       const id = '33333333-3333-3333-3333-333333333333'
-      this.projects.push({ id, user_id: UID, title: body.file_name.replace(/\.[^.]+$/, ''), status: 'awaiting_upload', language: null,
+      this.projects.push({ id, user_id: UID, title: body.file_name.replace(/\.[^.]+$/, ''), status: 'awaiting_upload', language: body.language ?? null,
         error_code: null, lyrics_version: 0, style: {}, created_at: new Date().toISOString(), updated_at: new Date().toISOString() })
       const ext = body.file_name.split('.').pop()
       this.audioFiles.push({ id: 'A2', project_id: id, storage_path: `${UID}/${id}/x.${ext}`, original_name: body.file_name,

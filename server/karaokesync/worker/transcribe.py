@@ -78,6 +78,10 @@ def load_wav_16k(path: Path):
     return np.frombuffer(frames, dtype="<i2").astype(np.float32) / 32768.0
 
 
+def pick_model(default: str, by_language: dict[str, str], language: str | None) -> str:
+    return by_language.get((language or "").lower(), default)
+
+
 def transcribe(
     audio: Path,
     model_name: str,
@@ -85,15 +89,32 @@ def transcribe(
     compute_type: str,
     language: str | None = None,
     on_progress=None,
+    language_models: dict[str, str] | None = None,
 ) -> Transcript:
+    """`language` is a hint (the user chose it): it skips detection, which can
+    go wrong on music. With `language_models`, a language gets its own model
+    (detected first with the default model when there is no hint)."""
+    samples = load_wav_16k(audio)
     model = _load_model(model_name, device, compute_type)
+    if language_models:
+        if not language:
+            language = model.detect_language(audio=samples[: 30 * 16000])[0]
+        special = pick_model(model_name, language_models, language)
+        if special != model_name:
+            try:
+                model = _load_model(special, device, compute_type)
+                log.info("using the %s model for language=%s", special, language)
+            except Exception as exc:  # unknown name, download failed...: the default still works
+                log.warning("could not load %s (%s); using %s", special, type(exc).__name__, model_name)
+                model = _load_model(model_name, device, compute_type)
     segments, info = model.transcribe(
-        load_wav_16k(audio),
+        samples,
         language=language,
         word_timestamps=True,
         vad_filter=True,
         beam_size=5,
         condition_on_previous_text=False,  # reduces hallucinated repetition on music
+        hallucination_silence_threshold=2.0,  # skip text "heard" in long instrumental gaps
     )
     words: list[Word] = []
     duration = max(float(info.duration or 0), 1.0)

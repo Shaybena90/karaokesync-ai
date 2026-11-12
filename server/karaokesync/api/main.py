@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import logging
 import uuid
+from typing import Literal
 from datetime import datetime, timedelta, timezone
 
 import httpx
@@ -117,6 +118,9 @@ class UploadInitRequest(BaseModel):
     size_bytes: int = Field(gt=0)
     mime_type: str = Field(default="", max_length=100)
     title: str | None = Field(default=None, max_length=200)
+    # The song's language, when the user knows it: recognition is more accurate
+    # than detecting it from music. None = detect automatically.
+    language: Literal["he", "en"] | None = None
 
 
 class UploadInitResponse(BaseModel):
@@ -221,7 +225,7 @@ def _router() -> APIRouter:
         _check_active_jobs_quota(sb, user, settings)
 
         title = (body.title or body.file_name.rsplit(".", 1)[0]).strip()[:200] or "Untitled"
-        project = sb.insert("projects", {"user_id": user.id, "title": title})
+        project = sb.insert("projects", {"user_id": user.id, "title": title, "language": body.language})
         audio_id = str(uuid.uuid4())
         path = f"{user.id}/{project['id']}/{audio_id}.{ext}"
         try:

@@ -71,3 +71,20 @@ test('projects list: open and delete a project', async ({ page, backend }) => {
   await expect(page.getByText('עדיין אין פרויקטים')).toBeVisible()
   expect(backend.apiCalls).toContain('DELETE /projects/11111111-1111-1111-1111-111111111111')
 })
+
+test('upload: the chosen song language is sent and remembered', async ({ page, backend }) => {
+  await page.goto('/upload')
+  const auto = page.getByRole('radio', { name: 'זיהוי אוטומטי' })
+  await expect(auto).toHaveAttribute('aria-checked', 'true')
+  await page.getByRole('radio', { name: 'עברית' }).click()
+  await page.locator('input[type=file]').setInputFiles({ name: 'song.wav', mimeType: 'audio/wav', buffer: makeWav(3) })
+  await expect(page).toHaveURL(/\/projects\/33333333/, { timeout: 15000 })
+  expect(backend.uploadRequests[0].language).toBe('he')
+  // Remembered for the next upload.
+  await page.goto('/upload')
+  await expect(page.getByRole('radio', { name: 'עברית' })).toHaveAttribute('aria-checked', 'true')
+  await page.getByRole('radio', { name: 'זיהוי אוטומטי' }).click()
+  await page.locator('input[type=file]').setInputFiles({ name: 'b.wav', mimeType: 'audio/wav', buffer: makeWav(3) })
+  await expect.poll(() => backend.uploadRequests.length).toBe(2)
+  expect(backend.uploadRequests[1].language).toBeNull()
+})

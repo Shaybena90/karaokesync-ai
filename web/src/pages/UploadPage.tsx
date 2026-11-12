@@ -4,7 +4,7 @@ import { Dropzone } from '../components/Dropzone'
 import { Alert, Button, Card, ProgressBar, Spinner } from '../components/ui'
 import { errorKey, useI18n } from '../i18n/I18nProvider'
 import type { MessageKey } from '../i18n/he'
-import { ApiError, api, uploadToSignedUrl } from '../lib/api'
+import { ApiError, api, type SongLanguage, uploadToSignedUrl } from '../lib/api'
 import { checkLocalFile, readDuration } from '../lib/audioFile'
 import { formatBytes, formatDuration } from '../lib/format'
 import { usePendingFile } from '../lib/pendingFile'
@@ -35,6 +35,22 @@ export function UploadPage() {
   const [file, setFile] = useState<File | null>(null)
   const [durationMs, setDurationMs] = useState<number | null>(null)
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' })
+  const [language, setLanguage] = useState<SongLanguage | 'auto'>(() => {
+    try {
+      const saved = localStorage.getItem('ks-song-language')
+      return saved === 'he' || saved === 'en' ? saved : 'auto'
+    } catch {
+      return 'auto'
+    }
+  })
+  const chooseLanguage = (value: SongLanguage | 'auto') => {
+    setLanguage(value)
+    try {
+      localStorage.setItem('ks-song-language', value)
+    } catch {
+      /* private mode: just not remembered */
+    }
+  }
   const abortRef = useRef<AbortController | null>(null)
   const projectRef = useRef<string | null>(null)
 
@@ -60,7 +76,7 @@ export function UploadPage() {
       try {
         // 2. ask the API for a one-time, path-restricted upload permission
         setPhase({ kind: 'preparing' })
-        const init = await api.initUpload(f)
+        const init = await api.initUpload(f, language === 'auto' ? null : language)
         projectRef.current = init.project_id
 
         // 3. upload straight to private storage
@@ -93,7 +109,7 @@ export function UploadPage() {
         setPhase({ kind: 'error', code })
       }
     },
-    [limits, navigate],
+    [limits, navigate, language],
   )
 
   // A file picked on the home page before signing in.
@@ -123,6 +139,28 @@ export function UploadPage() {
       <p className="mt-2 text-white/60">{t('upload.subtitle')}</p>
 
       <div className="mt-8 space-y-5">
+        {!file && (
+          <div>
+            <p id="song-language" className="mb-2 text-sm text-white/70">{t('upload.language')}</p>
+            <div role="radiogroup" aria-labelledby="song-language" className="grid grid-cols-3 gap-1 rounded-2xl bg-white/5 p-1">
+              {(['auto', 'he', 'en'] as const).map((value) => (
+                <button
+                  key={value}
+                  type="button"
+                  role="radio"
+                  aria-checked={language === value}
+                  onClick={() => chooseLanguage(value)}
+                  className={`min-h-11 rounded-xl px-2 text-sm font-semibold transition ${
+                    language === value ? 'bg-gradient-to-br from-violet-600 to-blue-600 text-white' : 'text-white/70 hover:bg-white/10'
+                  }`}
+                >
+                  {t(`upload.language.${value}`)}
+                </button>
+              ))}
+            </div>
+            <p className="mt-1.5 text-xs text-white/45">{t('upload.languageHint')}</p>
+          </div>
+        )}
         {!file && <Dropzone onFile={start} maxMb={maxMb} maxMinutes={maxMinutes} />}
 
         {file && (

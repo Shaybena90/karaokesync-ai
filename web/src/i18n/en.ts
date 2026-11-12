@@ -30,6 +30,11 @@ export const en: Record<MessageKey, string> = {
   'drop.hint': 'MP3 · WAV · M4A · up to {mb}MB · up to {min} minutes',
   'drop.active': 'Release to upload',
 
+  'upload.language': 'Song language',
+  'upload.language.auto': 'Detect',
+  'upload.language.he': 'עברית',
+  'upload.language.en': 'English',
+  'upload.languageHint': 'Choosing the language makes recognition more accurate than detecting it from the music.',
   'upload.title': 'Upload a song',
   'upload.subtitle': 'The file goes straight to private, encrypted storage. Only you can access it.',
   'upload.checking': 'Checking the file…',
@@ -90,6 +95,7 @@ export const en: Record<MessageKey, string> = {
   'stage.transcribing': 'Detecting language and transcribing',
   'stage.aligning': 'Syncing every word',
   'stage.building_lines': 'Building karaoke lines',
+  'stage.saving_melody': 'Also saving a version without the singer',
   'stage.done': 'Done',
 
   'flow.upload': 'Upload',
