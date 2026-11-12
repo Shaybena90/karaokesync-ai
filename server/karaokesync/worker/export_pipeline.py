@@ -118,7 +118,7 @@ def _download_backgrounds(
     ids = sorted({clip.media_id for clip, _ in clips})
     rows = sb.select("background_media", {
         "id": f"in.({','.join(ids)})", "project_id": f"eq.{project['id']}", "status": "eq.verified",
-        "select": "id,storage_path,format,kind",
+        "select": "id,storage_path,format,kind,duration_ms",
     })
     media = {row["id"]: row for row in rows}
     files: dict[str, Path] = {}
@@ -136,5 +136,5 @@ def _download_backgrounds(
             except SupabaseError as exc:
                 raise PipelineError("download_failed", retryable=exc.status_code >= 500) from exc
             files[row["id"]] = local
-        layers.append(BackgroundLayer(files[row["id"]], row["kind"] or "video", start, end))
+        layers.append(BackgroundLayer(files[row["id"]], row["kind"] or "video", start, end, row.get("duration_ms")))
     return layers

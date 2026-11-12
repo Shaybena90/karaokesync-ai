@@ -306,3 +306,60 @@ def test_video_with_a_busy_background_stays_under_the_limit(tmp_path):
     out = render_mp4(workdir, make_audio(tmp_path, "mp3", 6), ass, SYSTEM_FONT, SubtitleStyle(), Canvas(1280, 720), 6000,
                      backgrounds=[BackgroundLayer(busy, "video", 0, 6000)], max_bytes=limit)
     assert out.stat().st_size <= limit
+
+
+@needs_ffmpeg
+def test_parallel_parts_match_a_single_render(tmp_path, monkeypatch):
+    """The video is rendered in parts side by side; joined, it must be the same
+    video: same length, subtitles at the same moments, and a looping GIF that
+    continues across the seams instead of restarting."""
+    from karaokesync.exports import video
+    from karaokesync.exports.ass import Canvas, build_ass
+    from karaokesync.exports.measure import measurer_for
+    from karaokesync.styles import SubtitleStyle
+
+    from .conftest import make_audio
+    from .test_exports import SYSTEM_FONT
+
+    if SYSTEM_FONT is None:
+        pytest.skip("no font")
+    # Red for 0.3 s, then green for 0.4 s: a wrong loop position shows as a wrong colour.
+    gif = tmp_path / "rg.gif"
+    subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-y", "-f", "lavfi", "-i", "color=c=red:s=64x36:r=10:d=0.3",
+                    "-f", "lavfi", "-i", "color=c=0x00ff00:s=64x36:r=10:d=0.4", "-filter_complex", "[0][1]concat=n=2:v=1",
+                    str(gif)], check=True)
+    lines = [{"start_ms": t, "end_ms": t + 900, "words": [{"text": "שלום", "start_ms": t, "end_ms": t + 400},
+                                                           {"text": "עולם", "start_ms": t + 450, "end_ms": t + 900}]}
+             for t in range(500, 8000, 1500)]
+    canvas = Canvas(640, 360)
+    ass = build_ass(lines, SubtitleStyle(), "he", canvas, measurer_for(str(SYSTEM_FONT)))
+    song = make_audio(tmp_path, "mp3", 8)
+    layers = [video.BackgroundLayer(gif, "video", 1000, 7000, 700)]
+    from karaokesync.exports.video import plan_chunks as real_plan
+
+    monkeypatch.setattr(video, "plan_chunks", lambda d, w: real_plan(d, w, min_chunk_ms=1500))
+    assert len(video.plan_chunks(8000, 4)) == 4
+
+    outs = {}
+    for workers in (1, 4):
+        work = tmp_path / f"w{workers}"
+        work.mkdir()
+        outs[workers] = video.render_mp4(work, song, ass, SYSTEM_FONT, SubtitleStyle(), canvas, 8000,
+                                         backgrounds=layers, workers=workers)
+
+    def duration(p):
+        return float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(p)],
+                                    capture_output=True, text=True).stdout)
+
+    def frame(p, t):
+        return subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-ss", str(t), "-i", str(p), "-frames:v", "1",
+                               "-vf", "scale=64:36", "-f", "rawvideo", "-pix_fmt", "rgb24", "pipe:1"],
+                              capture_output=True, check=True).stdout
+
+    assert abs(duration(outs[1]) - duration(outs[4])) < 0.05
+    # Next to every seam (2 s, 4 s, 6 s), at moments in the middle of a red or green
+    # stretch of the GIF (on the exact switch, one frame decides the colour).
+    for t in (0.6, 1.85, 2.2, 3.95, 4.3, 5.0, 5.7, 6.05, 6.75, 7.5):
+        a, b = frame(outs[1], t), frame(outs[4], t)
+        diff = sum(abs(x - y) for x, y in zip(a, b)) / len(a)
+        assert diff < 6, f"frames differ at {t}s (mean difference {diff:.1f})"
