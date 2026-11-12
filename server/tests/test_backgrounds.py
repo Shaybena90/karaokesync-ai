@@ -255,3 +255,54 @@ def test_project_delete_works_before_the_backgrounds_migration(client, fake_sb, 
     monkeypatch.setattr(fake_sb, "list_objects", no_bucket)
     assert client.delete(f"/projects/{project['id']}", headers=AUTH).status_code == 204
     assert fake_sb.tables["projects"] == []
+
+
+# ------------------------------------------------------------ size limit
+def test_bitrate_budget_fits_the_storage_limit():
+    from karaokesync.exports.video import bitrates_for
+
+    video, audio = bitrates_for(240_000, 48 * 1024 * 1024)  # a 4-minute song, 48 MB
+    assert audio == 128 and 1300 < video < 1450
+    total_bytes = (video + audio) * 1000 / 8 * 240
+    assert total_bytes < 48 * 1024 * 1024 * 0.92
+    assert bitrates_for(240_000, None) is None
+    assert bitrates_for(3_600_000, 48 * 1024 * 1024)[0] == 150  # a floor, so text stays readable
+
+
+def test_storage_too_large_error_is_recognised():
+    import httpx
+
+    from karaokesync.supabase_client import SupabaseClient, SupabaseError
+
+    resp = httpx.Response(400, json={"statusCode": "413", "error": "Payload too large",
+                                     "message": "The object exceeded the maximum allowed size"},
+                          request=httpx.Request("POST", "https://x.supabase.co/storage/v1/object/exports/a.mp4"))
+    with pytest.raises(SupabaseError) as err:
+        SupabaseClient._raise_for(resp)
+    assert err.value.status_code == 413 and err.value.path == "/storage/v1/object/exports/a.mp4"
+
+
+@needs_ffmpeg
+def test_video_with_a_busy_background_stays_under_the_limit(tmp_path):
+    from karaokesync.exports.ass import Canvas
+    from karaokesync.exports.video import BackgroundLayer, render_mp4
+    from karaokesync.styles import SubtitleStyle
+
+    from .conftest import make_audio
+    from .test_exports import SYSTEM_FONT
+
+    if SYSTEM_FONT is None:
+        pytest.skip("no font")
+    busy = tmp_path / "busy.mp4"  # noise: the hardest thing to compress
+    subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-y", "-f", "lavfi",
+                    "-i", "testsrc2=s=640x360:r=30,noise=alls=40:allf=t", "-t", "2", "-c:v", "libx264", "-crf", "18", str(busy)],
+                   check=True)
+    ass = "[Script Info]\nScriptType: v4.00+\nPlayResX: 1280\nPlayResY: 720\n\n[V4+ Styles]\n" \
+          "Format: Name, Fontname, Fontsize\nStyle: Default,DejaVu Sans,40\n\n[Events]\n" \
+          "Format: Layer, Start, End, Style, Text\nDialogue: 0,0:00:00.00,0:00:06.00,Default,hello\n"
+    limit = 600 * 1024
+    workdir = tmp_path / "w"
+    workdir.mkdir()
+    out = render_mp4(workdir, make_audio(tmp_path, "mp3", 6), ass, SYSTEM_FONT, SubtitleStyle(), Canvas(1280, 720), 6000,
+                     backgrounds=[BackgroundLayer(busy, "video", 0, 6000)], max_bytes=limit)
+    assert out.stat().st_size <= limit

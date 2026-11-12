@@ -49,17 +49,22 @@ class SupabaseClient:
             return
         code = None
         message = resp.reason_phrase
+        status_code = resp.status_code
         try:
             body = resp.json()
             code = body.get("code") or body.get("error")
             message = body.get("message") or body.get("msg") or message
-        except ValueError:
+            # Storage answers HTTP 400 with the real status in the body,
+            # e.g. {"statusCode": "413", "error": "Payload too large"}.
+            if isinstance(body, dict) and str(body.get("statusCode", "")).isdigit():
+                status_code = int(body["statusCode"])
+        except (ValueError, AttributeError):
             pass
         try:
             path = resp.request.url.path
         except RuntimeError:  # a response built without a request (tests)
             path = None
-        raise SupabaseError(resp.status_code, str(message), str(code) if code else None, path)
+        raise SupabaseError(status_code, str(message), str(code) if code else None, path)
 
     # ------------------------------------------------------------------- auth
     def get_user(self, access_token: str) -> AuthUser | None:

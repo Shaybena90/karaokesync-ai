@@ -80,6 +80,7 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
             workdir, source, ass_text, font, style, canvas, duration_ms,
             on_progress=lambda frac: report(6 + int(frac * 87)),
             backgrounds=layers,
+            max_bytes=settings.max_export_mb * 1024 * 1024,
         )
 
         report(95)

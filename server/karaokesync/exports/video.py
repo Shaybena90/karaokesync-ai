@@ -68,6 +68,20 @@ def background_inputs_and_filters(layers: list[BackgroundLayer], canvas: Canvas,
     return inputs, ";".join(chains), label
 
 
+def bitrates_for(duration_ms: int, max_bytes: int | None) -> tuple[int, int] | None:
+    """(video kbps, audio kbps) that keep the whole file under max_bytes, or
+    None for no cap. 10% is kept for the container, and one second of video
+    for the encoder's buffer (it may spend that much above the rate)."""
+    if not max_bytes or duration_ms <= 0:
+        return None
+    seconds = duration_ms / 1000
+    budget_kbit = max_bytes * 8 / 1000 * 0.9
+    per_second = budget_kbit / seconds
+    audio = 192 if per_second >= 2000 else 128 if per_second >= 600 else 96
+    video = (budget_kbit - audio * seconds) / (seconds + 1)
+    return max(150, int(video)), audio
+
+
 def render_mp4(
     workdir: Path,
     audio: Path,
@@ -80,6 +94,7 @@ def render_mp4(
     on_progress: Callable[[float], None] | None = None,
     timeout_s: int = 3600,
     backgrounds: list[BackgroundLayer] | None = None,
+    max_bytes: int | None = None,
 ) -> Path:
     """Paths inside the filter graph are relative to `workdir` on purpose:
     Windows paths ("C:\\...") would need complex escaping in FFmpeg filters."""
@@ -91,6 +106,10 @@ def render_mp4(
     shutil.copy(font_file, fonts / font_file.name)
     (workdir / "subs.ass").write_text(ass_text, encoding="utf-8")
 
+    # Quality first (CRF), but never above the bitrate that fits the storage limit.
+    rates = bitrates_for(duration_ms, max_bytes)
+    video_cap = ["-maxrate", f"{rates[0]}k", "-bufsize", f"{rates[0]}k"] if rates else []
+    audio_kbps = rates[1] if rates else 192
     bg_inputs, bg_filters, base = background_inputs_and_filters(backgrounds or [], canvas)
     graph = f"{bg_filters};" if bg_filters else ""
     graph += f"[{base}]ass=filename=subs.ass:fontsdir=fonts[v]"
@@ -101,8 +120,8 @@ def render_mp4(
         *bg_inputs,
         "-filter_complex", graph,
         "-map", "[v]", "-map", "1:a:0",
-        "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p",
-        "-c:a", "aac", "-b:a", "192k",
+        "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", *video_cap, "-pix_fmt", "yuv420p",
+        "-c:a", "aac", "-b:a", f"{audio_kbps}k",
         "-t", f"{duration_ms / 1000:.3f}", "-shortest",
         "-movflags", "+faststart",
         "-progress", "pipe:1", "-nostats",
@@ -123,4 +142,6 @@ def render_mp4(
     out = workdir / out_name
     if proc.returncode != 0 or not out.exists() or out.stat().st_size == 0:
         raise PipelineError("render_failed", retryable=False)
+    if max_bytes and out.stat().st_size > max_bytes:
+        raise PipelineError("export_too_large", retryable=False)
     return out
