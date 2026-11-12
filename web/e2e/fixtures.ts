@@ -82,6 +82,12 @@ export class MockBackend {
   syncJobs: Row[] = []
   backgroundMedia: Row[] = []
   instrumentalJobs: Row[] = []
+  /** What GET /worker-status answers (admin = this user is the site owner). */
+  workerStatus: Row = {
+    available: true, online: true, paused: false, admin: false,
+    workers: [{ id: 'STUDIO-PC-1234-abcd', online: true, device: 'GPU (NVIDIA RTX A5000)', activity: 'processing', version: 'v',
+      last_seen: new Date().toISOString(), started_at: new Date().toISOString() }],
+  }
   /** Error code the mock API gives when verifying a background (null = accepted). */
   backgroundError: string | null = null
   /** Error code the mock worker reports for sync jobs (null = success). */
@@ -282,6 +288,16 @@ export class MockBackend {
       setTimeout(() => Object.assign(job, { status: 'running', progress: 42 }), 1000)
       setTimeout(() => Object.assign(job, { status: 'succeeded', progress: 100, output_path: `${UID}/${PID}/e1.mp4` }), 3000)
       return this.json(route, job, 201)
+    }
+    if (p === '/worker-status') {
+      const st = this.workerStatus
+      if (method === 'POST') {
+        if (!st.admin) return this.json(route, { detail: 'not_admin' }, 403)
+        st.paused = JSON.parse(req.postData() ?? '{}').paused
+        return this.json(route, { paused: st.paused })
+      }
+      const { workers, ...rest } = st
+      return this.json(route, st.admin ? st : rest)
     }
     const lyricsText = /^\/projects\/([^/]+)\/lyrics-text$/.exec(p)
     if (lyricsText && method === 'POST') {

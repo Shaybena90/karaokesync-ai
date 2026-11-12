@@ -30,6 +30,8 @@ class Settings(BaseSettings):
 
     # API
     cors_origins: str = "http://localhost:5173"
+    # Who may see the processing servers and pause them from the website (comma separated).
+    admin_emails: str = ""
 
     # Upload limits (also returned to the browser through GET /limits)
     max_upload_mb: int = 50
@@ -84,6 +86,10 @@ class Settings(BaseSettings):
     @property
     def cors_origin_list(self) -> list[str]:
         return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
+    def is_admin(self, email: str | None) -> bool:
+        admins = {e.strip().lower() for e in self.admin_emails.split(",") if e.strip()}
+        return bool(email) and email.lower() in admins
 
     def language_models(self) -> dict[str, str]:
         out = {}

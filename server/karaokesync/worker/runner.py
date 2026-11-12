@@ -32,7 +32,7 @@ log = logging.getLogger("karaokesync.worker")
 
 CLEANUP_INTERVAL_SECONDS = 3600
 # Shown when the worker starts, to tell an up-to-date worker from an old copy.
-WORKER_VERSION = "2026-11-13 (GPU, pasted lyrics)"
+WORKER_VERSION = "2026-11-14 (remote control)"
 
 
 class Heartbeat:
@@ -94,7 +94,7 @@ class Heartbeat:
             self._beat()
 
 
-def process_one(sb: SupabaseClient, settings: Settings, worker_id: str) -> bool:
+def process_one(sb: SupabaseClient, settings: Settings, worker_id: str, on_activity=None) -> bool:
     """Claim and run a single job. Editor syncs come first (someone is waiting
     for a few seconds of work), then AI processing, then melody-only tracks,
     then video exports (which may need a melody-only track).
@@ -102,21 +102,96 @@ def process_one(sb: SupabaseClient, settings: Settings, worker_id: str) -> bool:
     lease = settings.worker_lease_seconds
     syncs = _claim_optional(sb, "claim_sync_job", worker_id, lease)
     if syncs:
-        _run_sync(sb, settings, worker_id, syncs[0])
+        _activity(on_activity, "sync")
+        try:
+            _run_sync(sb, settings, worker_id, syncs[0])
+        finally:
+            _activity(on_activity, "idle")
         return True
     jobs = sb.rpc("claim_processing_job", {"p_worker_id": worker_id, "p_lease_seconds": lease})
     if jobs:
-        _run_processing(sb, settings, worker_id, jobs[0])
+        _activity(on_activity, "processing")
+        try:
+            _run_processing(sb, settings, worker_id, jobs[0])
+        finally:
+            _activity(on_activity, "idle")
         return True
     instrumentals = _claim_optional(sb, "claim_instrumental_job", worker_id, lease)
     if instrumentals:
-        _run_instrumental(sb, settings, worker_id, instrumentals[0])
+        _activity(on_activity, "melody")
+        try:
+            _run_instrumental(sb, settings, worker_id, instrumentals[0])
+        finally:
+            _activity(on_activity, "idle")
         return True
     exports = sb.rpc("claim_export_job", {"p_worker_id": worker_id, "p_lease_seconds": lease})
     if exports:
-        _run_export(sb, settings, worker_id, exports[0])
+        _activity(on_activity, "export")
+        try:
+            _run_export(sb, settings, worker_id, exports[0])
+        finally:
+            _activity(on_activity, "idle")
         return True
     return False
+
+
+def _activity(callback, kind: str) -> None:
+    if callback:
+        callback(kind)
+
+
+class Presence:
+    """Tells the website this worker is alive and what it does (the job kind
+    only, never song titles), every 15 s from a background thread, so it keeps
+    reporting during long jobs. The answer says whether the owner paused
+    processing from the website."""
+
+    INTERVAL = 15
+
+    def __init__(self, sb: SupabaseClient, worker_id: str, version: str, device: str):
+        self.sb, self.worker_id, self.version, self.device = sb, worker_id, version, device
+        self.activity = "idle"
+        self.paused = threading.Event()
+        self.available = True
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._loop, daemon=True)
+
+    def start(self) -> None:
+        self.check_in()
+        self._thread.start()
+
+    def stop(self) -> None:
+        self._stop.set()
+
+    def set_activity(self, kind: str) -> None:
+        if kind != self.activity:
+            self.activity = kind
+            self.check_in()
+
+    def check_in(self) -> None:
+        if not self.available:
+            return
+        try:
+            paused = self.sb.rpc("worker_checkin", {"p_worker_id": self.worker_id, "p_version": self.version,
+                                                    "p_device": self.device, "p_activity": self.activity})
+        except SupabaseError as exc:
+            if exc.status_code == 404:
+                self.available = False
+                log.warning("remote control is off: run supabase/migrations/20261114000001_worker_control.sql")
+            return
+        except Exception as exc:  # network blip: try again next time
+            log.warning("check-in failed: %s", type(exc).__name__)
+            return
+        if paused and not self.paused.is_set():
+            log.info("paused from the website: finishing the current job, then waiting")
+            self.paused.set()
+        elif not paused and self.paused.is_set():
+            log.info("resumed from the website")
+            self.paused.clear()
+
+    def _loop(self) -> None:
+        while not self._stop.wait(self.INTERVAL):
+            self.check_in()
 
 
 # Queues added after the first release, and the SQL file that creates each.
@@ -249,17 +324,28 @@ def main() -> None:
     gpu.register_cuda_dlls()
     for line in gpu.summary():
         log.info(line)
+    card = gpu.torch_gpu()
+    device = f"GPU ({card})" if card or gpu.whisper_gpus() else "CPU"
+    presence = Presence(sb, worker_id, WORKER_VERSION, device)
+    presence.start()
     last_cleanup = 0.0
-    while not stopping.is_set():
-        try:
-            if time.monotonic() - last_cleanup > CLEANUP_INTERVAL_SECONDS:
-                run_retention(sb, settings)
-                last_cleanup = time.monotonic()
-            if not process_one(sb, settings, worker_id):
+    try:
+        while not stopping.is_set():
+            if presence.paused.is_set():
                 stopping.wait(settings.worker_poll_seconds)
-        except Exception as exc:
-            log.error("worker loop error: %s", type(exc).__name__)
-            stopping.wait(10)
+                continue
+            try:
+                if time.monotonic() - last_cleanup > CLEANUP_INTERVAL_SECONDS:
+                    run_retention(sb, settings)
+                    last_cleanup = time.monotonic()
+                if not process_one(sb, settings, worker_id, presence.set_activity):
+                    stopping.wait(settings.worker_poll_seconds)
+            except Exception as exc:
+                log.error("worker loop error: %s", type(exc).__name__)
+                stopping.wait(10)
+    finally:
+        presence.stop()
+        presence.set_activity("stopped")
     log.info("worker stopped")
 
 

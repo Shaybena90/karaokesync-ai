@@ -37,6 +37,7 @@ from .backgrounds import backgrounds_router
 from .exports import exports_router
 from .instrumental import instrumental_router
 from .sync import sync_router
+from .worker_status import worker_status_router
 
 log = logging.getLogger("karaokesync.api")
 
@@ -107,6 +108,7 @@ def create_app() -> FastAPI:
     app.include_router(sync_router())
     app.include_router(backgrounds_router())
     app.include_router(instrumental_router())
+    app.include_router(worker_status_router())
     return app
 
 

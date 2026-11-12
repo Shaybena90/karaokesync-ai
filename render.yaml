@@ -28,6 +28,8 @@ services:
         sync: false
       - key: CORS_ORIGINS        # your website address, e.g. https://karaokesync.vercel.app
         sync: false
+      - key: ADMIN_EMAILS        # your email: who may see and pause the processing server
+        sync: false
       - key: MAX_UPLOAD_MB
         value: "50"
       - key: MAX_AUDIO_DURATION_SECONDS

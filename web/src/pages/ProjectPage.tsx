@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { KaraokePlayer } from '../components/player/KaraokePlayer'
 import { StatusBadge } from '../components/StatusBadge'
 import { PastedLyricsPanel } from '../components/PastedLyricsPanel'
+import { useWorkerStatus } from '../lib/useWorkerStatus'
 import { Alert, Button, ButtonLink, Card, ProgressBar, Spinner } from '../components/ui'
 import { errorKey, isMessageKey, useI18n } from '../i18n/I18nProvider'
 import type { MessageKey } from '../i18n/he'
@@ -34,6 +35,7 @@ export function ProjectPage() {
   const { t, locale } = useI18n()
   const navigate = useNavigate()
   const { project, audio, job, loading, notFound, reload } = useProjectLive(id)
+  const worker = useWorkerStatus(project?.status === 'queued')
   const [actionError, setActionError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
 
@@ -144,6 +146,11 @@ export function ProjectPage() {
               <ProgressBar value={job.progress / 100} />
             </div>
             {project.status === 'queued' && <p className="mt-4 text-xs text-white/50">{t('project.waitingWorker')}</p>}
+            {project.status === 'queued' && worker.status?.available && (worker.status.paused || worker.status.online === false) && (
+              <p className="mt-2 text-sm text-amber-200" role="status">
+                {worker.status.paused ? t('worker.queuedPaused') : t('worker.queuedOffline')}
+              </p>
+            )}
           </Card>
         )}
 

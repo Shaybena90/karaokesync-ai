@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { StatusBadge } from '../components/StatusBadge'
 import { Alert, ButtonLink, Spinner } from '../components/ui'
+import { useWorkerStatus } from '../lib/useWorkerStatus'
 import { errorKey, useI18n } from '../i18n/I18nProvider'
 import { ApiError, api } from '../lib/api'
 import { formatDuration } from '../lib/format'
@@ -53,6 +54,9 @@ export function ProjectsPage() {
         <h1 className="font-display text-3xl font-bold sm:text-4xl">{t('projects.title')}</h1>
         <ButtonLink to="/upload">+ {t('projects.new')}</ButtonLink>
       </div>
+      <div className="mt-2">
+        <WorkerPill />
+      </div>
 
       {error && (
         <div className="mt-6">
@@ -102,5 +106,18 @@ export function ProjectsPage() {
         </ul>
       )}
     </div>
+  )
+}
+
+/** "Processing server: on / off / paused" - a link to the processing server page. */
+function WorkerPill() {
+  const { t } = useI18n()
+  const { status } = useWorkerStatus()
+  if (!status?.available) return null
+  const label = status.paused ? `⏸ ${t('worker.paused')}` : status.online ? `🟢 ${t('worker.online')}` : `⚪ ${t('worker.offline')}`
+  return (
+    <Link to="/worker" className="inline-flex min-h-9 items-center rounded-full bg-white/5 px-3 text-xs text-white/70 hover:bg-white/10">
+      {t('worker.label')}: {label}
+    </Link>
   )
 }

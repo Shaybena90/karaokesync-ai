@@ -32,7 +32,7 @@ class FakeSupabase:
     def __init__(self):
         self.tables: dict[str, list[dict]] = {
             "projects": [], "audio_files": [], "processing_jobs": [],
-            "lyric_lines": [], "lyric_words": [], "export_jobs": [], "sync_jobs": [], "background_media": [], "instrumental_jobs": [],
+            "lyric_lines": [], "lyric_words": [], "export_jobs": [], "sync_jobs": [], "background_media": [], "instrumental_jobs": [], "workers": [], "worker_control": [{"id": 1, "paused": False}],
         }
         self.tokens: dict[str, AuthUser] = {}
         self.objects: dict[str, dict[str, Path]] = {"audio": {}, "exports": {}, "backgrounds": {}}

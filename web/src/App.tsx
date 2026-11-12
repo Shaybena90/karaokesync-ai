@@ -18,6 +18,7 @@ const PlayerPage = named(() => import('./pages/PlayerPage'), 'PlayerPage')
 const ProjectPage = named(() => import('./pages/ProjectPage'), 'ProjectPage')
 const ProjectsPage = named(() => import('./pages/ProjectsPage'), 'ProjectsPage')
 const StylePage = named(() => import('./pages/StylePage'), 'StylePage')
+const WorkerPage = named(() => import('./pages/WorkerPage'), 'WorkerPage')
 const UploadPage = named(() => import('./pages/UploadPage'), 'UploadPage')
 
 const pageFallback = (
@@ -46,6 +47,7 @@ export default function App() {
                 <Route path="projects/:id/play" element={<RequireAuth><PlayerPage /></RequireAuth>} />
                 <Route path="projects/:id/edit" element={<RequireAuth><EditorPage /></RequireAuth>} />
                 <Route path="projects/:id/style" element={<RequireAuth><StylePage /></RequireAuth>} />
+                <Route path="worker" element={<RequireAuth><WorkerPage /></RequireAuth>} />
                 <Route path="*" element={<HomePage />} />
               </Route>
             </Routes>

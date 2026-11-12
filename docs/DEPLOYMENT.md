@@ -94,6 +94,11 @@
 
 > 💡 Worker שרץ גם שומר על פרויקט ה-Supabase החינמי "פעיל", כך שהוא לא יושהה אחרי שבוע.
 
+### שליטה מרחוק (מהטלפון)
+1. **Render ← karaokesync-api ← Environment:** הוסיפו `ADMIN_EMAILS` = האימייל שאיתו אתם נכנסים לאתר. רק הוא יוכל להשהות ולהמשיך את העיבוד.
+2. במחשב של ה-Worker: `scripts\windows\8-autostart-worker.bat` (פעם אחת) — ה-Worker יעלה לבד בכל כניסה ל-Windows ויחזור לפעול אם ייפול.
+3. באתר: **הפרויקטים שלי ← שרת העיבוד** — רואים אם הוא פעיל, על איזה מחשב ומה הוא עושה, ואפשר להשהות/להמשיך.
+
 ## שלב 5 (רשות) — כניסה עם Google
 
 1. Google Cloud Console ← צרו OAuth Client ID מסוג Web, עם Authorized redirect URI: ‏`https://<project>.supabase.co/auth/v1/callback`.

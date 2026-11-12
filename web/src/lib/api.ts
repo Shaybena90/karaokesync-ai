@@ -62,6 +62,25 @@ export interface ProjectState {
 
 export type TextExportFormat = 'srt' | 'lrc' | 'ass'
 
+export interface WorkerInfo {
+  id: string
+  online: boolean
+  device: string | null
+  activity: string | null
+  version: string | null
+  last_seen: string
+  started_at: string
+}
+
+/** Processing server status. `workers` only for the owner (ADMIN_EMAILS). */
+export interface WorkerStatus {
+  available: boolean
+  online: boolean | null
+  paused: boolean
+  admin: boolean
+  workers?: WorkerInfo[]
+}
+
 /** The song's language when the user knows it (more accurate than detecting it from music). */
 export type SongLanguage = 'he' | 'en'
 
@@ -72,6 +91,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ file_name: file.name, size_bytes: file.size, mime_type: file.type, language, lyrics_text: lyricsText }),
     }),
+  workerStatus: () => request<WorkerStatus>('/worker-status'),
+  setWorkerPaused: (paused: boolean) => request<{ paused: boolean }>('/worker-status', { method: 'POST', body: JSON.stringify({ paused }) }),
   usePastedLyrics: (projectId: string, text: string | null) =>
     request<ProjectState>(`/projects/${projectId}/lyrics-text`, { method: 'POST', body: JSON.stringify({ text }) }),
   completeUpload: (projectId: string) => request<ProjectState>(`/uploads/${projectId}/complete`, { method: 'POST' }),
