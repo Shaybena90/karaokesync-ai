@@ -67,11 +67,13 @@ export type SongLanguage = 'he' | 'en'
 
 export const api = {
   limits: () => request<Limits>('/limits'),
-  initUpload: (file: File, language: SongLanguage | null = null) =>
+  initUpload: (file: File, language: SongLanguage | null = null, lyricsText: string | null = null) =>
     request<UploadInit>('/uploads', {
       method: 'POST',
-      body: JSON.stringify({ file_name: file.name, size_bytes: file.size, mime_type: file.type, language }),
+      body: JSON.stringify({ file_name: file.name, size_bytes: file.size, mime_type: file.type, language, lyrics_text: lyricsText }),
     }),
+  usePastedLyrics: (projectId: string, text: string | null) =>
+    request<ProjectState>(`/projects/${projectId}/lyrics-text`, { method: 'POST', body: JSON.stringify({ text }) }),
   completeUpload: (projectId: string) => request<ProjectState>(`/uploads/${projectId}/complete`, { method: 'POST' }),
   retry: (projectId: string) => request<ProjectState>(`/projects/${projectId}/retry`, { method: 'POST' }),
   deleteProject: (projectId: string) => request<void>(`/projects/${projectId}`, { method: 'DELETE' }),

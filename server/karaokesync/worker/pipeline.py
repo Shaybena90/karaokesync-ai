@@ -16,7 +16,8 @@ from . import alignment
 from .audio_tools import encode_mp3, separate_stems, to_working_wav
 from .errors import PipelineError
 from .lines import lines_to_payload, split_into_lines
-from .transcribe import transcribe
+from .pasted_lyrics import align_pasted, parse_lyrics
+from .transcribe import load_model_for, load_wav_16k, transcribe
 
 log = logging.getLogger("karaokesync.pipeline")
 
@@ -92,7 +93,11 @@ def run_pipeline(job: dict, sb: SupabaseClient, settings: Settings, report: Repo
 
         # 4-6. transcription + language (the user's choice, when given)
         report("transcribing", 40)
-        project = sb.select("projects", {"id": f"eq.{job['project_id']}", "select": "language"})
+        try:
+            project = sb.select("projects", {"id": f"eq.{job['project_id']}", "select": "language,lyrics_text"})
+        except SupabaseError:  # the pasted-lyrics SQL file was not run yet
+            project = sb.select("projects", {"id": f"eq.{job['project_id']}", "select": "language"})
+        pasted = parse_lyrics((project[0].get("lyrics_text") if project else None) or "")
         transcript = transcribe(
             working,
             settings.whisper_model,
@@ -102,17 +107,26 @@ def run_pipeline(job: dict, sb: SupabaseClient, settings: Settings, report: Repo
             on_progress=lambda frac: report("transcribing", 40 + int(frac * 45)),
             language_models=settings.language_models(),
         )
-        if not transcript.words:
-            # Never invent lyrics: an empty result is reported as a failure.
-            raise PipelineError("no_lyrics_detected", retryable=False)
+        if pasted:
+            # 7-9. the user's own lyrics: keep their words and lines, find when each word is sung
+            report("aligning_pasted", 86)
+            model = load_model_for(transcript.language, settings.whisper_model, settings.whisper_device,
+                                   settings.whisper_compute_type, settings.language_models())
+            lines = align_pasted(pasted, transcript.words, load_wav_16k(working), model, transcript.language,
+                                 on_progress=lambda frac: report("aligning_pasted", 86 + int(frac * 10)))
+            method = "pasted"
+        else:
+            if not transcript.words:
+                # Never invent lyrics: an empty result is reported as a failure.
+                raise PipelineError("no_lyrics_detected", retryable=False)
 
-        # 7-8. alignment
-        report("aligning", 88)
-        words, method = alignment.align(transcript.words, transcript.language)
+            # 7-8. alignment
+            report("aligning", 88)
+            words, method = alignment.align(transcript.words, transcript.language)
 
-        # 9. lines
-        report("building_lines", 95)
-        lines = split_into_lines(words)
+            # 9. lines
+            report("building_lines", 95)
+            lines = split_into_lines(words)
         payload = lines_to_payload(lines, transcript.language)
         if rest is not None:
             # The separation already made the melody-only track: keep it, so

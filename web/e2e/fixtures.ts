@@ -283,6 +283,15 @@ export class MockBackend {
       setTimeout(() => Object.assign(job, { status: 'succeeded', progress: 100, output_path: `${UID}/${PID}/e1.mp4` }), 3000)
       return this.json(route, job, 201)
     }
+    const lyricsText = /^\/projects\/([^/]+)\/lyrics-text$/.exec(p)
+    if (lyricsText && method === 'POST') {
+      const body = JSON.parse(req.postData() ?? '{}')
+      const project = this.project(lyricsText[1])
+      Object.assign(project, { lyrics_text: body.text?.trim() || null, status: 'queued', error_code: null })
+      this.jobs.push({ id: 'J2', project_id: project.id, status: 'queued', stage: 'queued', progress: 0, attempts: 0, max_attempts: 3,
+        error_code: null, created_at: new Date().toISOString() })
+      return this.json(route, { project_id: project.id, status: 'queued', job_id: 'J2', duration_ms: null, error_code: null })
+    }
     const instr = /^\/projects\/([^/]+)\/instrumental$/.exec(p)
     if (instr && method === 'POST') {
       const job: Row = { id: `i${this.instrumentalJobs.length + 1}`, project_id: instr[1], audio_file_id: 'A1', status: 'queued',

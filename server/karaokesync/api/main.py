@@ -121,6 +121,17 @@ class UploadInitRequest(BaseModel):
     # The song's language, when the user knows it: recognition is more accurate
     # than detecting it from music. None = detect automatically.
     language: Literal["he", "en"] | None = None
+    # The song's lyrics, when the user pastes them: kept word for word, only timed.
+    lyrics_text: str | None = Field(default=None, max_length=20000)
+
+
+class LyricsTextRequest(BaseModel):
+    text: str | None = Field(default=None, max_length=20000)
+
+
+def _clean_lyrics(text: str | None) -> str | None:
+    text = (text or "").replace("\r\n", "\n").strip()
+    return text or None
 
 
 class UploadInitResponse(BaseModel):
@@ -225,7 +236,10 @@ def _router() -> APIRouter:
         _check_active_jobs_quota(sb, user, settings)
 
         title = (body.title or body.file_name.rsplit(".", 1)[0]).strip()[:200] or "Untitled"
-        project = sb.insert("projects", {"user_id": user.id, "title": title, "language": body.language})
+        new_project = {"user_id": user.id, "title": title, "language": body.language}
+        if _clean_lyrics(body.lyrics_text):  # only then: works before the lyrics SQL file was run
+            new_project["lyrics_text"] = _clean_lyrics(body.lyrics_text)
+        project = sb.insert("projects", new_project)
         audio_id = str(uuid.uuid4())
         path = f"{user.id}/{project['id']}/{audio_id}.{ext}"
         try:
@@ -335,6 +349,32 @@ def _router() -> APIRouter:
         _check_active_jobs_quota(sb, user, settings)
 
         job = _enqueue(sb, project, audio)
+        return ProjectStateResponse(project_id=project_id, status="queued", job_id=job["id"])
+
+    @router.post("/projects/{project_id}/lyrics-text", response_model=ProjectStateResponse)
+    def use_pasted_lyrics(
+        project_id: str,
+        body: LyricsTextRequest,
+        user: AuthUser = Depends(rate_limited_user),
+        sb: SupabaseClient = Depends(get_supabase),
+        settings: Settings = Depends(settings_dep),
+    ) -> ProjectStateResponse:
+        """Save pasted lyrics (or clear them) and process the song again with them."""
+        project = _owned_project(sb, project_id, user)
+        audio = _latest_audio(sb, project_id)
+        if audio["status"] != "verified":
+            raise HTTPException(status.HTTP_409_CONFLICT, detail="reupload_required")
+        if _active_job(sb, audio["id"]):
+            raise HTTPException(status.HTTP_409_CONFLICT, detail="already_processing")
+        since = _iso(datetime.now(timezone.utc) - timedelta(days=1))
+        jobs_today = sb.count("processing_jobs", {"user_id": f"eq.{user.id}", "created_at": f"gte.{since}"})
+        if jobs_today >= settings.max_uploads_per_day + settings.max_retries_per_day:
+            raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, detail="daily_processing_limit")
+        _check_active_jobs_quota(sb, user, settings)
+
+        sb.update("projects", {"id": f"eq.{project_id}", "user_id": f"eq.{user.id}"}, {"lyrics_text": _clean_lyrics(body.text)})
+        job = _enqueue(sb, project, audio)
+        log.info("pasted lyrics project=%s job=%s", project_id, job["id"])
         return ProjectStateResponse(project_id=project_id, status="queued", job_id=job["id"])
 
     @router.delete("/projects/{project_id}", status_code=204)

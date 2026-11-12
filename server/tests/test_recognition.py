@@ -119,7 +119,7 @@ def test_a_language_gets_its_own_model_with_a_safe_fallback(tmp_path, monkeypatc
 
     loaded.clear()
     tr.transcribe(wav, "large-v3-turbo", "cpu", "int8", language="en", language_models={"he": "ivrit/model"})
-    assert loaded == ["large-v3-turbo"]  # English: the default model
+    assert set(loaded) == {"large-v3-turbo"}  # English: the default model (cached, so asking twice is free)
 
     loaded.clear()
     out = tr.transcribe(wav, "large-v3-turbo", "cpu", "int8", language="he", language_models={"he": "broken/model"})
@@ -143,3 +143,86 @@ def test_upload_takes_the_song_language(client, fake_sb, language, status):
     assert resp.status_code == status, resp.text
     if status == 201:
         assert fake_sb.tables["projects"][0]["language"] == language
+
+
+# ------------------------------------------------------------- pasted lyrics
+@needs_ffmpeg
+def test_pasted_lyrics_keep_the_users_words_and_lines(fake_sb, song, tmp_path, monkeypatch):
+    from karaokesync.config import get_settings
+    from karaokesync.worker import pasted_lyrics
+    from karaokesync.worker.pipeline import run_pipeline
+
+    settings = get_settings()
+    monkeypatch.setattr(settings, "worker_tmp_dir", str(tmp_path / "work"))
+    monkeypatch.setattr(settings, "vocal_separation", "off")
+    fake_sb.update("projects", {"id": f"eq.{song['project']['id']}"}, {"lyrics_text": "[פזמון]\nשלום עולם\n\nזה שיר יפה"})
+    # The recogniser heard "שלום עולם" (only): enough to anchor the lines.
+    monkeypatch.setattr("karaokesync.worker.pipeline.transcribe", fake_transcribe({}))
+    monkeypatch.setattr("karaokesync.worker.pipeline.load_model_for", lambda *a: "model")
+    aligned = []
+
+    def fake_align(model, clip, words, language):
+        aligned.append(words)
+        return [(0.2 + i * 0.3, 0.45 + i * 0.3, 0.95) for i in range(len(words))]
+
+    monkeypatch.setattr(pasted_lyrics, "align_words", fake_align)
+    stages: list[str] = []
+    payload = run_pipeline(song["job"], fake_sb, settings, lambda stage, p: stages.append(stage))
+
+    assert [[w["text"] for w in line["words"]] for line in payload["lines"]] == [["שלום", "עולם"], ["זה", "שיר", "יפה"]]
+    assert payload["alignment_method"] == "pasted" and "aligning_pasted" in stages
+    assert aligned == [["שלום", "עולם", "זה", "שיר", "יפה"]]
+    starts = [w["start_ms"] for line in payload["lines"] for w in line["words"]]
+    assert starts == sorted(starts)
+
+
+@needs_ffmpeg
+def test_pasted_lyrics_work_even_when_nothing_was_heard(fake_sb, song, tmp_path, monkeypatch):
+    from karaokesync.config import get_settings
+    from karaokesync.worker import pasted_lyrics
+    from karaokesync.worker.pipeline import run_pipeline
+
+    settings = get_settings()
+    monkeypatch.setattr(settings, "worker_tmp_dir", str(tmp_path / "work"))
+    monkeypatch.setattr(settings, "vocal_separation", "off")
+    fake_sb.update("projects", {"id": f"eq.{song['project']['id']}"}, {"lyrics_text": "שלום עולם"})
+
+    def nothing_heard(*a, **kw):
+        return Transcript(language="he", language_probability=1.0, words=[])
+
+    monkeypatch.setattr("karaokesync.worker.pipeline.transcribe", nothing_heard)
+    monkeypatch.setattr("karaokesync.worker.pipeline.load_model_for", lambda *a: "model")
+    monkeypatch.setattr(pasted_lyrics, "align_words", lambda m, c, words, lang: [(0.5, 0.9, 0.7), (1.0, 1.4, 0.7)])
+    payload = run_pipeline(song["job"], fake_sb, settings, lambda stage, p: None)
+    assert [w["text"] for w in payload["lines"][0]["words"]] == ["שלום", "עולם"]  # no "no lyrics detected" failure
+
+
+# ------------------------------------------------------------ pasted lyrics API
+def test_lyrics_pasted_at_upload_are_saved(client, fake_sb):
+    fake_sb.add_user("alice-token")
+    body = {"file_name": "a.mp3", "size_bytes": 1000, "mime_type": "audio/mpeg", "lyrics_text": "  שלום עולם\r\nזה שיר  "}
+    assert client.post("/uploads", json=body, headers=AUTH).status_code == 201
+    assert fake_sb.tables["projects"][0]["lyrics_text"] == "שלום עולם\nזה שיר"
+    # Nothing pasted: the column is not even sent (works before the SQL file is run).
+    client.post("/uploads", json={**body, "lyrics_text": "   "}, headers=AUTH)
+    assert "lyrics_text" not in fake_sb.tables["projects"][1]
+    too_long = client.post("/uploads", json={**body, "lyrics_text": "x" * 20001}, headers=AUTH)
+    assert too_long.status_code == 422
+
+
+def test_use_pasted_lyrics_processes_the_song_again(client, fake_sb, song):
+    pid = song["project"]["id"]
+    fake_sb.update("processing_jobs", {"id": f"eq.{song['job']['id']}"}, {"status": "succeeded"})
+    fake_sb.update("projects", {"id": f"eq.{pid}"}, {"status": "ready"})
+    url = f"/projects/{pid}/lyrics-text"
+    assert client.post(url, json={"text": "שלום"}, headers={"Authorization": "Bearer bob-token"}).status_code == 401
+    resp = client.post(url, json={"text": "שלום עולם\nזה שיר"}, headers=AUTH)
+    assert resp.status_code == 200 and resp.json()["status"] == "queued"
+    project = fake_sb.tables["projects"][0]
+    assert project["lyrics_text"] == "שלום עולם\nזה שיר" and project["status"] == "queued"
+    # Already processing: refused instead of queuing twice.
+    assert client.post(url, json={"text": "x"}, headers=AUTH).json()["detail"] == "already_processing"
+    # Clearing the text goes back to plain recognition.
+    fake_sb.update("processing_jobs", {"status": "eq.queued"}, {"status": "succeeded"})
+    assert client.post(url, json={"text": ""}, headers=AUTH).status_code == 200
+    assert fake_sb.tables["projects"][0]["lyrics_text"] is None

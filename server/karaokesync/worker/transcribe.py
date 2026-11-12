@@ -82,6 +82,20 @@ def pick_model(default: str, by_language: dict[str, str], language: str | None) 
     return by_language.get((language or "").lower(), default)
 
 
+def load_model_for(language: str | None, model_name: str, device: str, compute_type: str,
+                   language_models: dict[str, str] | None):
+    """The language's own model when one is configured and loads; else the default."""
+    special = pick_model(model_name, language_models or {}, language)
+    if special != model_name:
+        try:
+            model = _load_model(special, device, compute_type)
+            log.info("using the %s model for language=%s", special, language)
+            return model
+        except Exception as exc:  # unknown name, download failed...: the default still works
+            log.warning("could not load %s (%s); using %s", special, type(exc).__name__, model_name)
+    return _load_model(model_name, device, compute_type)
+
+
 def transcribe(
     audio: Path,
     model_name: str,
@@ -99,14 +113,7 @@ def transcribe(
     if language_models:
         if not language:
             language = model.detect_language(audio=samples[: 30 * 16000])[0]
-        special = pick_model(model_name, language_models, language)
-        if special != model_name:
-            try:
-                model = _load_model(special, device, compute_type)
-                log.info("using the %s model for language=%s", special, language)
-            except Exception as exc:  # unknown name, download failed...: the default still works
-                log.warning("could not load %s (%s); using %s", special, type(exc).__name__, model_name)
-                model = _load_model(model_name, device, compute_type)
+        model = load_model_for(language, model_name, device, compute_type, language_models)
     segments, info = model.transcribe(
         samples,
         language=language,

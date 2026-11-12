@@ -10,6 +10,8 @@ export interface Project {
   lyrics_version?: number
   /** subtitle style (see subtitleStyle.ts); free-form JSON in the database */
   style?: unknown
+  /** lyrics pasted by the user (kept word for word, only timed) */
+  lyrics_text?: string | null
   created_at: string
   updated_at: string
 }

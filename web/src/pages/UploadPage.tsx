@@ -5,6 +5,7 @@ import { Alert, Button, Card, ProgressBar, Spinner } from '../components/ui'
 import { errorKey, useI18n } from '../i18n/I18nProvider'
 import type { MessageKey } from '../i18n/he'
 import { ApiError, api, type SongLanguage, uploadToSignedUrl } from '../lib/api'
+import { LyricsTextarea } from '../components/PastedLyricsPanel'
 import { checkLocalFile, readDuration } from '../lib/audioFile'
 import { formatBytes, formatDuration } from '../lib/format'
 import { usePendingFile } from '../lib/pendingFile'
@@ -43,6 +44,8 @@ export function UploadPage() {
       return 'auto'
     }
   })
+  const [lyricsText, setLyricsText] = useState('')
+  const [showLyrics, setShowLyrics] = useState(false)
   const chooseLanguage = (value: SongLanguage | 'auto') => {
     setLanguage(value)
     try {
@@ -76,7 +79,7 @@ export function UploadPage() {
       try {
         // 2. ask the API for a one-time, path-restricted upload permission
         setPhase({ kind: 'preparing' })
-        const init = await api.initUpload(f, language === 'auto' ? null : language)
+        const init = await api.initUpload(f, language === 'auto' ? null : language, lyricsText.trim() || null)
         projectRef.current = init.project_id
 
         // 3. upload straight to private storage
@@ -109,7 +112,7 @@ export function UploadPage() {
         setPhase({ kind: 'error', code })
       }
     },
-    [limits, navigate, language],
+    [limits, navigate, language, lyricsText],
   )
 
   // A file picked on the home page before signing in.
@@ -161,6 +164,23 @@ export function UploadPage() {
             <p className="mt-1.5 text-xs text-white/45">{t('upload.languageHint')}</p>
           </div>
         )}
+        {!file &&
+          (showLyrics ? (
+            <div className="glass space-y-2 rounded-3xl p-4" data-testid="upload-lyrics">
+              <p className="text-sm font-semibold">📝 {t('lyrics.upload.title')}</p>
+              <p className="text-xs text-white/55">{t('lyrics.paste.help')}</p>
+              <LyricsTextarea value={lyricsText} onChange={setLyricsText} />
+            </div>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setShowLyrics(true)}
+              className="min-h-11 w-full rounded-2xl border border-dashed border-white/20 px-4 text-start text-sm hover:border-violet-400 hover:bg-white/5"
+            >
+              📝 <span className="font-semibold">{t('lyrics.upload.open')}</span>
+              <span className="block text-xs text-white/50">{t('lyrics.paste.why')}</span>
+            </button>
+          ))}
         {!file && <Dropzone onFile={start} maxMb={maxMb} maxMinutes={maxMinutes} />}
 
         {file && (

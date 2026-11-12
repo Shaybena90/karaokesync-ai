@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { KaraokePlayer } from '../components/player/KaraokePlayer'
 import { StatusBadge } from '../components/StatusBadge'
+import { PastedLyricsPanel } from '../components/PastedLyricsPanel'
 import { Alert, Button, ButtonLink, Card, ProgressBar, Spinner } from '../components/ui'
 import { errorKey, isMessageKey, useI18n } from '../i18n/I18nProvider'
 import type { MessageKey } from '../i18n/he'
@@ -161,6 +162,13 @@ export function ProjectPage() {
             </div>
           </Card>
         )}
+        {failed && canRetry && (
+          <PastedLyricsPanel
+            initial={project.lyrics_text ?? null}
+            busy={busy}
+            onSubmit={(text) => void run(() => api.usePastedLyrics(project.id, text))}
+          />
+        )}
 
         {(project.status === 'ready' || project.status === 'expired') && (
           <div className="space-y-3">
@@ -185,6 +193,13 @@ export function ProjectPage() {
               </div>
               <p className="hidden text-xs text-white/40 sm:block">{t('player.shortcuts')}</p>
             </div>
+            {audio?.status === 'verified' && (
+              <PastedLyricsPanel
+                initial={project.lyrics_text ?? null}
+                busy={busy}
+                onSubmit={(text) => void run(() => api.usePastedLyrics(project.id, text))}
+              />
+            )}
           </div>
         )}
 

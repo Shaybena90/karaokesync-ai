@@ -115,6 +115,9 @@ def check_supabase(client: httpx.Client, supabase_url: str, anon_key: str, googl
     instr_rows = client.get(f"{supabase_url}/rest/v1/instrumental_jobs?select=id&limit=1", headers=h)
     r.check(not (instr_rows.status_code == 404 or "does not exist" in instr_rows.text),
             "melody-only migration was run (instrumental_jobs exists)", "run 20261112000001_instrumentals.sql")
+    lyrics_col = client.get(f"{supabase_url}/rest/v1/projects?select=lyrics_text&limit=1", headers=h)
+    r.check("lyrics_text" not in lyrics_col.text or lyrics_col.status_code < 400,
+            "pasted-lyrics migration was run (projects.lyrics_text exists)", "run 20261113000001_lyrics_text.sql")
     for bucket in ("audio", "exports", "backgrounds"):
         public = client.get(f"{supabase_url}/storage/v1/object/public/{bucket}/smoke-test.txt")
         r.check(public.status_code != 200, f"storage bucket '{bucket}' is private")
