@@ -7,6 +7,8 @@ import shutil
 import tempfile
 from pathlib import Path
 
+import httpx
+
 from ..config import Settings
 from ..exports.ass import build_ass
 from ..exports.measure import measurer_for
@@ -85,11 +87,18 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
 
         report(95)
         path = f"{project['user_id']}/{project['id']}/{job['id']}.mp4"
+        size_mb = out.stat().st_size / 1024 / 1024
+        log.info("export job=%s uploading %.1f MB", job["id"], size_mb)
         try:
             sb.upload_file(settings.exports_bucket, path, str(out), "video/mp4")
         except SupabaseError as exc:
+            # Storage's own words (no secrets in them), so the reason shows in the worker window.
+            log.warning("export job=%s upload refused: %s (%.1f MB)", job["id"], exc, size_mb)
             if exc.status_code == 413:
                 raise PipelineError("export_too_large", retryable=False) from exc
+            raise PipelineError("export_upload_failed", retryable=True) from exc
+        except httpx.HTTPError as exc:
+            log.warning("export job=%s upload interrupted: %s (%.1f MB)", job["id"], type(exc).__name__, size_mb)
             raise PipelineError("export_upload_failed", retryable=True) from exc
         log.info("export job=%s rendered %s %sp (%d bytes)", job["id"], aspect, resolution, out.stat().st_size)
         return path

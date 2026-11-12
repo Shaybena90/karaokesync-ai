@@ -6,6 +6,8 @@ for checking that the authenticated user owns the rows it touches.
 
 from __future__ import annotations
 
+import os
+
 from dataclasses import dataclass
 from typing import Any
 from urllib.parse import quote
@@ -145,12 +147,14 @@ class SupabaseClient:
 
     def upload_file(self, bucket: str, path: str, local_path: str, content_type: str) -> None:
         """Upload (or replace) an object from a local file."""
+        # Home connections can upload slowly: allow about a minute per MB.
+        size_mb = os.path.getsize(local_path) / 1024 / 1024
         with open(local_path, "rb") as fh:
             resp = self._http.post(
                 f"{self._url}/storage/v1/object/{bucket}/{quote(path)}",
                 content=fh,
                 headers=self._headers({"Content-Type": content_type, "x-upsert": "true"}),
-                timeout=httpx.Timeout(600.0, connect=10.0),
+                timeout=httpx.Timeout(max(600.0, size_mb * 60), connect=10.0),
             )
         self._raise_for(resp)
 

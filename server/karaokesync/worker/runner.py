@@ -30,6 +30,8 @@ from .pipeline import run_pipeline
 log = logging.getLogger("karaokesync.worker")
 
 CLEANUP_INTERVAL_SECONDS = 3600
+# Shown when the worker starts, to tell an up-to-date worker from an old copy.
+WORKER_VERSION = "2026-11-12 (video size limit)"
 
 
 class Heartbeat:
@@ -242,7 +244,7 @@ def main() -> None:
     signal.signal(signal.SIGINT, _stop)
     signal.signal(signal.SIGTERM, _stop)
 
-    log.info("worker %s started (env=%s)", worker_id, settings.app_env)
+    log.info("worker %s started (env=%s, version=%s)", worker_id, settings.app_env, WORKER_VERSION)
     last_cleanup = 0.0
     while not stopping.is_set():
         try:
