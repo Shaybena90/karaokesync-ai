@@ -22,6 +22,8 @@ interface Props {
   onAutoSync: (line: DocLine) => void
   onTapSync: (line: DocLine) => void
   onDismissSync: (lineId: string) => void
+  /** A typed sentence replaces the line; `sync` = then time it to the singer automatically. */
+  onLineText: (lineId: string, text: string, sync: boolean) => void
 }
 
 /** All lines as editable word chips. Low-confidence words are underlined so they are easy to find. */
@@ -39,8 +41,15 @@ export const LinesList = memo(function LinesList({
   onAutoSync,
   onTapSync,
   onDismissSync,
+  onLineText,
 }: Props) {
   const { t } = useI18n()
+  const [editing, setEditing] = useState<{ lineId: string; text: string } | null>(null)
+  const save = (sync: boolean) => {
+    if (!editing) return
+    onLineText(editing.lineId, editing.text, sync)
+    setEditing(null)
+  }
   return (
     <ol className="space-y-2.5">
       {doc.map((line, i) => (
@@ -53,6 +62,9 @@ export const LinesList = memo(function LinesList({
             <span className="ms-auto flex flex-wrap gap-1">
               <IconBtn label={t('editor.playLine')} onClick={() => onPlayLine(line)}>▶</IconBtn>
               <IconBtn label={t('editor.loopLine')} onClick={() => onLoopLine(line)}>⟲</IconBtn>
+              <IconBtn label={t('editor.line.edit')} onClick={() => setEditing({ lineId: line.id, text: line.words.map((w) => w.text).join(' ') })}>
+                ✏️
+              </IconBtn>
               <IconBtn label={t('editor.autoSync')} onClick={() => onAutoSync(line)} disabled={isBusy(syncStates[line.id])}>
                 ✨
               </IconBtn>
@@ -66,6 +78,39 @@ export const LinesList = memo(function LinesList({
               )}
             </span>
           </div>
+          {editing?.lineId === line.id && (
+            <div className="mt-2 space-y-2" data-testid="line-editor">
+              <input
+                autoFocus
+                value={editing.text}
+                dir={lyricDir}
+                maxLength={2000}
+                aria-label={t('editor.line.edit')}
+                onChange={(e) => setEditing({ lineId: line.id, text: e.target.value })}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault()
+                    save(true)
+                  } else if (e.key === 'Escape') setEditing(null)
+                }}
+                className="block min-h-12 w-full rounded-2xl border border-white/10 bg-white/5 px-4 text-lg font-semibold focus:border-violet-400 focus:outline-none"
+              />
+              <p className="text-xs text-white/50">{t('editor.line.hint')}</p>
+              <div className="flex flex-wrap gap-2">
+                <button type="button" disabled={!editing.text.trim()} onClick={() => save(true)}
+                  className="min-h-10 rounded-xl bg-gradient-to-br from-violet-600 to-blue-600 px-3 text-sm font-semibold disabled:opacity-40">
+                  ✨ {t('editor.line.saveSync')}
+                </button>
+                <button type="button" disabled={!editing.text.trim()} onClick={() => save(false)}
+                  className="min-h-10 rounded-xl bg-white/10 px-3 text-sm font-medium hover:bg-white/15 disabled:opacity-40">
+                  {t('editor.line.saveOnly')}
+                </button>
+                <button type="button" onClick={() => setEditing(null)} className="min-h-10 rounded-xl px-3 text-sm text-white/60 hover:text-white">
+                  {t('editor.line.cancel')}
+                </button>
+              </div>
+            </div>
+          )}
           <div className="mt-2 flex flex-wrap gap-1.5" dir={lyricDir}>
             {line.words.map((w) => {
               const unsure = w.confidence !== null && w.confidence < 0.5

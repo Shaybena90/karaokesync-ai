@@ -315,6 +315,63 @@ export function applyTapTimes(doc: LyricsDoc, lineId: string, taps: number[], la
   return settleLine(doc, i, words)
 }
 
+// --------------------------------------------------------- whole sentences
+const ESTIMATE_WORD_MS = 450
+
+function splitSentence(text: string): string[] {
+  return text
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .map((p) => p.slice(0, MAX_WORD_LENGTH))
+}
+
+/** Words spread over [start, end) by length — a first guess until the line is synced. */
+function spreadWords(parts: string[], start: number, end: number): DocWord[] {
+  const total = parts.reduce((n, p) => n + p.length, 0) || 1
+  let cursor = start
+  return parts.map((text, i) => {
+    const wordStart = cursor
+    const wordEnd = i === parts.length - 1 ? end : Math.round(wordStart + ((end - start) * text.length) / total)
+    cursor = wordEnd
+    // Confidence 0: shown as "unsure" until the automatic sync times it.
+    return { id: newId(), text, start_ms: wordStart, end_ms: Math.max(wordStart, wordEnd), confidence: 0 }
+  })
+}
+
+/** Replace a whole line with a typed sentence (its words take the line's time span). */
+export function setLineText(doc: LyricsDoc, lineId: string, text: string): LyricsDoc {
+  const i = doc.findIndex((l) => l.id === lineId)
+  const parts = splitSentence(text)
+  if (i < 0 || parts.length === 0) return doc
+  const line = doc[i]
+  if (line.words.map((w) => w.text).join(' ') === parts.join(' ')) return doc
+  const start = lineStart(line)
+  const end = Math.max(lineEnd(line), start + parts.length * 200)
+  return settleLine(doc, i, spreadWords(parts, start, end))
+}
+
+/**
+ * Add a typed sentence as a new line where the song is now (`atMs`): it goes
+ * between the lines around that moment, starting there.
+ */
+export function insertLineAt(doc: LyricsDoc, atMs: number, text: string, durationMs?: number): { doc: LyricsDoc; lineId: string } | null {
+  const parts = splitSentence(text)
+  if (parts.length === 0) return null
+  let index = doc.findIndex((l) => lineStart(l) > atMs)
+  if (index < 0) index = doc.length
+  const before = flatWords(doc.slice(0, index))
+  const floor = before.length ? before[before.length - 1].start_ms : 0
+  const start = Math.max(0, Math.round(atMs), floor)
+  const nextStart = index < doc.length ? lineStart(doc[index]) : Number.POSITIVE_INFINITY
+  const songEnd = durationMs && durationMs > 0 ? durationMs : Number.POSITIVE_INFINITY
+  let end = Math.min(start + parts.length * ESTIMATE_WORD_MS, nextStart, songEnd)
+  if (end <= start) end = start + parts.length * 100
+  const line: DocLine = { id: newId(), words: spreadWords(parts, start, end) }
+  const next = [...doc.slice(0, index), line, ...doc.slice(index)]
+  return { doc: settleLine(next, index, line.words), lineId: line.id }
+}
+
 // ------------------------------------------------------------- persistence
 /** Shape expected by the `save_lyrics` database function. */
 export function toSavePayload(doc: LyricsDoc) {

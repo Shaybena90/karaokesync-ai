@@ -5,9 +5,11 @@ import {
   deleteWord,
   flatWords,
   historyReducer,
+  insertLineAt,
   insertWord,
   isValidDoc,
   mergeWithNext,
+  setLineText,
   setWordText,
   setWordTiming,
   shiftTiming,
@@ -225,3 +227,37 @@ describe('tap sync', () => {
     expect(applyTapTimes(doc, 'L2', [])).toBe(doc)
   })
 })
+
+describe('whole sentences', () => {
+  it('replaces a line with a typed sentence over the same time', () => {
+    const out = setLineText(doc, 'L2', '  זה השיר   הכי יפה ')
+    expect(texts(out)).toEqual(['שלום עולם', 'זה השיר הכי יפה'])
+    const line = out[1].words
+    expect(line[0].start_ms).toBe(3000)
+    expect(line[line.length - 1].end_ms).toBe(3800)
+    expect(line.every((w) => w.confidence === 0)).toBe(true) // unsure until synced
+    expect(isValidDoc(out)).toBe(true)
+    expect(setLineText(doc, 'L2', 'זה שיר')).toBe(doc) // unchanged
+    expect(setLineText(doc, 'L2', '   ')).toBe(doc)
+  })
+
+  it('adds a sentence where the song is now', () => {
+    const res = insertLineAt(doc, 2500, 'שורה שחסרה כאן', 10_000)!
+    expect(texts(res.doc)).toEqual(['שלום עולם', 'שורה שחסרה כאן', 'זה שיר'])
+    expect(res.doc[1].id).toBe(res.lineId)
+    expect(res.doc[1].words[0].start_ms).toBe(2500)
+    expect(lineEndOf(res.doc[1])).toBeLessThanOrEqual(3000) // not past the next line
+    expect(isValidDoc(res.doc)).toBe(true)
+  })
+
+  it('adds at the start and at the end of the song', () => {
+    expect(texts(insertLineAt(doc, 0, 'פתיחה')!.doc)[0]).toBe('פתיחה')
+    const end = insertLineAt(doc, 9000, 'סוף', 12_000)!
+    expect(texts(end.doc).at(-1)).toBe('סוף')
+    expect(insertLineAt(doc, 1000, '  ')).toBeNull()
+  })
+})
+
+function lineEndOf(line: { words: { end_ms: number }[] }) {
+  return Math.max(...line.words.map((w) => w.end_ms))
+}

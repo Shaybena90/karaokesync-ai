@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, u
 import { Link, Navigate, useParams } from 'react-router-dom'
 import type WaveSurfer from 'wavesurfer.js'
 import { LinesList } from '../components/editor/LinesList'
+import { NewLinePanel } from '../components/editor/NewLinePanel'
 import { TapSyncPanel } from '../components/editor/TapSyncPanel'
 import { WaveformTimeline } from '../components/editor/WaveformTimeline'
 import { WordInspector } from '../components/editor/WordInspector'
@@ -14,6 +15,7 @@ import {
   applyTapTimes,
   deleteWord,
   findWord,
+  insertLineAt,
   flatWords,
   fromLyricLines,
   historyReducer,
@@ -21,6 +23,7 @@ import {
   lineEnd,
   lineStart,
   mergeWithNext,
+  setLineText,
   setWordText,
   setWordTiming,
   shiftTiming,
@@ -208,13 +211,42 @@ export function EditorPage() {
   )
   const lineSync = useLineSync(id, onSyncResult)
   const { start: startSync, fail: failSync } = lineSync
-  const onAutoSync = useCallback(
-    (line: DocLine) => {
-      const window = syncWindow(docRef.current, line.id, audioDuration())
-      if (!window) return failSync(line.id, 'invalid_sync_window')
-      void startSync(line.id, line.words.map((w) => w.text), window)
+  /** Time a line of `d` (the document as it is now) to the singer. */
+  const syncLine = useCallback(
+    (d: LyricsDoc, lineId: string) => {
+      const line = d.find((l) => l.id === lineId)
+      const window = line ? syncWindow(d, lineId, audioDuration()) : null
+      if (!line || !window) return failSync(lineId, 'invalid_sync_window')
+      void startSync(lineId, line.words.map((w) => w.text), window)
     },
     [audioDuration, startSync, failSync],
+  )
+  const onAutoSync = useCallback((line: DocLine) => syncLine(docRef.current, line.id), [syncLine])
+
+  // ------------------------------------------------- whole typed sentences
+  const onLineText = useCallback(
+    (lineId: string, text: string, sync: boolean) => {
+      const next = setLineText(docRef.current, lineId, text)
+      if (next !== docRef.current) edit(() => next)
+      if (sync) syncLine(docRef.current, lineId)
+    },
+    [edit, syncLine],
+  )
+  const [newLineOpen, setNewLineOpen] = useState(false)
+  const addLine = useCallback(
+    (atMs: number, text: string) => {
+      const res = insertLineAt(docRef.current, atMs, text, audioDuration())
+      if (!res) return
+      edit(() => res.doc)
+      setNewLineOpen(false)
+      syncLine(res.doc, res.lineId)
+      // Show the new line in the list.
+      requestAnimationFrame(() => {
+        const first = res.doc.find((l) => l.id === res.lineId)?.words[0]
+        if (first) chips.current.get(first.id)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      })
+    },
+    [audioDuration, edit, syncLine],
   )
 
   // ------------------------------------------------------------ tap sync
@@ -316,7 +348,11 @@ export function EditorPage() {
       />
     ) : null
 
-  const inspector = tapPanel ?? (selected ? (
+  const newLinePanel = newLineOpen ? (
+    <NewLinePanel lyricDir={lyricDir} currentTimeMs={nowMs} onAdd={addLine} onCancel={() => setNewLineOpen(false)} />
+  ) : null
+
+  const inspector = tapPanel ?? newLinePanel ?? (selected ? (
     <WordInspector
       key={`${selected.word.id}:${selected.word.text}`}
       word={selected.word}
@@ -459,7 +495,21 @@ export function EditorPage() {
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_22rem]">
         <div>
-          <p className="mb-3 text-xs text-white/50">{t('editor.help')}</p>
+          <div className="mb-3 flex flex-wrap items-start gap-2">
+            <p className="min-w-0 flex-1 basis-60 text-xs text-white/50">{t('editor.help')}</p>
+            {/* Outside the pinned waveform bar, so it never grows over the lines on small phones. */}
+            <button
+              type="button"
+              onClick={() => {
+                setSelectedId(null)
+                setNewLineOpen(true)
+              }}
+              disabled={!url}
+              className="min-h-10 shrink-0 rounded-xl bg-white/10 px-3 text-sm font-semibold hover:bg-white/15 disabled:opacity-40"
+            >
+              ➕ {t('editor.newLine.open')}
+            </button>
+          </div>
           {doc.length === 0 ? (
             <p className="text-white/60">{t('project.noWords')}</p>
           ) : (
@@ -477,6 +527,7 @@ export function EditorPage() {
               onAutoSync={onAutoSync}
               onTapSync={onTapSync}
               onDismissSync={lineSync.dismiss}
+              onLineText={onLineText}
             />
           )}
         </div>

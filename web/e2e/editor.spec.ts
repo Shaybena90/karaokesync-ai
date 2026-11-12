@@ -192,3 +192,39 @@ test('the word panel is mounted once', async ({ page }) => {
   await page.getByRole('button', { name: 'סנכרון בהקשה' }).first().click()
   await expect(page.getByTestId('tap-sync')).toHaveCount(1)
 })
+
+test('type a whole sentence and sync it to the singer', async ({ page, backend }) => {
+  await page.getByRole('button', { name: 'עריכת המשפט כולו' }).nth(1).click()
+  const editor = page.getByTestId('line-editor')
+  await editor.getByRole('textbox').fill('זה השיר הכי יפה')
+  await editor.getByRole('button', { name: /שמירה וסנכרון לפי הזמר/ }).click()
+  await expect(page.getByText('השורה סונכרנה')).toBeVisible({ timeout: 8000 })
+  expect(backend.syncJobs[0]).toMatchObject({ words: ['זה', 'השיר', 'הכי', 'יפה'], window_start_ms: 4000, window_end_ms: 12000 })
+  // Saved twice: first the typed sentence (estimated timing), then the synced timing.
+  await expect.poll(() => backend.lyricSaves.at(-1)?.p_lines[1].words.map((w) => w.start_ms)).toEqual([4300, 4700, 5100, 5500])
+  expect(backend.lastSavedText()[1]).toBe('זה השיר הכי יפה')
+})
+
+test('save a sentence without syncing', async ({ page, backend }) => {
+  await page.getByRole('button', { name: 'עריכת המשפט כולו' }).first().click()
+  await page.getByTestId('line-editor').getByRole('textbox').fill('שלום לכולם')
+  await page.getByRole('button', { name: 'שמירה בלבד' }).click()
+  await waitForSave(backend, 1)
+  expect(backend.lastSavedText()[0]).toBe('שלום לכולם')
+  expect(backend.syncJobs).toHaveLength(0)
+})
+
+test('add a missing sentence where the song is now', async ({ page, backend }, info) => {
+  // Put the playhead at 5.7 s (selecting a word moves it there), then close the word panel.
+  await page.locator('.ks-chip', { hasText: 'קריוקי' }).click()
+  await inspector(page, isMobileProject(info.project.name)).getByRole('button', { name: 'סגירה' }).click()
+  await page.getByRole('button', { name: /משפט חדש/ }).click()
+  const panel = page.getByTestId('new-line')
+  await expect(panel.getByTestId('new-line-at')).toHaveText('0:05.7')
+  await panel.getByRole('textbox').fill('שורה שחסרה באמצע')
+  await panel.getByRole('button', { name: /הוספה וסנכרון/ }).click()
+  await expect(panel).toBeHidden()
+  await expect(page.getByText('השורה סונכרנה')).toBeVisible({ timeout: 8000 })
+  expect(backend.syncJobs[0]).toMatchObject({ words: ['שורה', 'שחסרה', 'באמצע'], window_start_ms: 6500, window_end_ms: 12000 })
+  await expect.poll(() => backend.lastSavedText()).toEqual(['שלום עולם', 'זה שיר קריוקי', 'שורה שחסרה באמצע', 'סוף טוב'])
+})
