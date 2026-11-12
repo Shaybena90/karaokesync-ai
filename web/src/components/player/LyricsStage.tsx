@@ -1,4 +1,5 @@
 import { memo } from 'react'
+import type { Entrance } from '../../lib/subtitleStyle'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { KaraokeView } from '../../lib/karaoke'
 import type { LyricLine } from '../../lib/types'
@@ -12,6 +13,8 @@ interface Props {
   videoFrame: boolean
   showNext: boolean
   textBox: boolean
+  /** How the line comes on screen (CSS class ks-enter-*, same as the video). */
+  entrance: Entrance
   /** Word spans of the main line register here; the player animates them per frame. */
   registerWord: (id: string, el: HTMLSpanElement | null) => void
   onSeekToLine: (line: LyricLine) => void
@@ -31,6 +34,7 @@ export const LyricsStage = memo(function LyricsStage({
   videoFrame,
   showNext,
   textBox,
+  entrance,
   registerWord,
   onSeekToLine,
 }: Props) {
@@ -87,10 +91,10 @@ export const LyricsStage = memo(function LyricsStage({
 
         {main && (
           <p
-            key={main.id}
+            key={`${main.id}:${entrance}`}
             onClick={() => onSeekToLine(main)}
             style={{ fontSize: 'calc(var(--k-base) * var(--k-scale))' }}
-            className={`ks-lyric animate-[ks-line-in_.35s_ease-out] cursor-pointer leading-tight [text-wrap:balance] ${
+            className={`ks-lyric ${entrance === 'none' ? '' : `ks-enter-${entrance}`} cursor-pointer leading-tight [text-wrap:balance] ${
               textBox ? 'inline-block rounded-[0.15em] bg-black/40 px-[0.3em] py-[0.08em]' : ''
             }`}
           >

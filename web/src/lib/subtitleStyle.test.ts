@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_STYLE, PRESETS, clipWindow, normalizeStyle, styleVars } from './subtitleStyle'
+import { DEFAULT_STYLE, ENTRANCES, FONTS, PRESETS, clipWindow, normalizeStyle, styleVars } from './subtitleStyle'
 
 describe('subtitle style', () => {
   it('falls back to defaults / preset values for invalid input', () => {
@@ -40,5 +40,22 @@ describe('background clips', () => {
     expect(clipWindow({ media_id: id, start_ms: null, end_ms: null }, 60_000)).toEqual({ start: 0, end: 60_000 })
     expect(clipWindow({ media_id: id, start_ms: 10_000, end_ms: 90_000 }, 60_000)).toEqual({ start: 10_000, end: 60_000 })
     expect(clipWindow({ media_id: id, start_ms: 70_000, end_ms: null }, 60_000)).toBeNull()
+  })
+})
+
+describe('fonts and entrance effects', () => {
+  it('has many Hebrew fonts and at least ten effects, same as the server', () => {
+    expect(Object.keys(FONTS).length).toBeGreaterThanOrEqual(20)
+    expect(FONTS.Alef).toBe(700)
+    expect(ENTRANCES.filter((e) => e !== 'none').length).toBeGreaterThanOrEqual(10)
+    // Same values as server/karaokesync/styles.py
+    expect(PRESETS.neon.entrance).toBe('blur')
+    expect(PRESETS.tiktok.entrance).toBe('pop')
+    expect(DEFAULT_STYLE.entrance).toBe('rise')
+  })
+
+  it('keeps a known effect and font, falls back otherwise', () => {
+    expect(normalizeStyle({ entrance: 'wipe', font: 'Suez One' })).toMatchObject({ entrance: 'wipe', font: 'Suez One' })
+    expect(normalizeStyle({ preset: 'tiktok', entrance: 'explode' }).entrance).toBe('pop')
   })
 })

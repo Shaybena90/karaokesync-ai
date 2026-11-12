@@ -31,7 +31,7 @@ test('presets change the look and are saved', async ({ page, backend }) => {
   expect(f.w / f.h).toBeCloseTo(9 / 16, 1) // TikTok switches to vertical video
   expect((await lyricFontPx(page)) / f.w).toBeCloseTo(0.085 * 1.25, 2)
 
-  await page.getByRole('radio', { name: 'למעלה' }).click()
+  await page.getByRole('radio', { name: 'למעלה', exact: true }).click()
   await expect.poll(() => (backend.stylePatches.at(-1)?.style as { preset?: string })?.preset).toBe('custom')
 })
 
@@ -119,4 +119,21 @@ test('the player shows the saved background', async ({ page, backend }) => {
   backend.project().style = { backgrounds: [{ media_id: id, start_ms: null, end_ms: null }] }
   await page.goto(`/projects/${PID}/play`)
   await expect(page.getByTestId('background-layers').locator('img')).toHaveCSS('opacity', '1')
+})
+
+test('choose a Hebrew font and a line entrance effect', async ({ page, backend }) => {
+  const lastStyle = () => backend.stylePatches.at(-1)?.style as { font?: string; entrance?: string } | undefined
+  await page.getByRole('radio', { name: 'Suez One' }).click()
+  await expect.poll(() => lastStyle()?.font).toBe('Suez One')
+  expect(await page.evaluate(() => getComputedStyle(document.querySelector('.ks-lyric')!).fontFamily)).toContain('Suez One')
+
+  const effects = page.getByRole('radiogroup', { name: 'אפקט כניסה של שורה' }).getByRole('radio')
+  expect(await effects.count()).toBeGreaterThanOrEqual(11) // 10+ effects and "none"
+  await page.getByRole('radio', { name: 'קפיצה' }).click()
+  await expect.poll(() => lastStyle()?.entrance).toBe('pop')
+  // The preview replays the line with the chosen effect.
+  await expect(page.locator('p.ks-lyric.ks-enter-pop')).toHaveCount(1)
+  await page.getByRole('radio', { name: 'ללא' }).last().click()
+  await expect.poll(() => lastStyle()?.entrance).toBe('none')
+  await expect(page.locator('p.ks-lyric[class*="ks-enter-"]')).toHaveCount(0)
 })

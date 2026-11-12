@@ -16,6 +16,7 @@ import { computeView, sameView, wordState, type KaraokeView } from '../../lib/ka
 import { wordFill } from '../../lib/sync'
 import type { LyricLine } from '../../lib/types'
 import { useLyrics } from '../../lib/useLyrics'
+import { ensureFonts } from '../../lib/fonts'
 import { useInstrumental, type InstrumentalState } from '../../lib/useInstrumental'
 import { useSignedAudio } from '../../lib/useSignedAudio'
 import { DEFAULT_STYLE, clipWindow, styleVars, type SubtitleStyle } from '../../lib/subtitleStyle'
@@ -114,6 +115,8 @@ export function KaraokePlayer({
       return [{ key: `${i}:${m.id}`, url: m.url, element: m.kind === 'image' || m.format === 'gif' ? 'img' : 'video', ...window }]
     })
   }, [clips, media, durationMs])
+
+  useEffect(() => ensureFonts([style.font]), [style.font])
 
   const lyricDir = directionOf(language)
   const wordsById = useMemo(() => {
@@ -325,6 +328,7 @@ export function KaraokePlayer({
       videoFrame={Boolean(frame)}
       showNext={style.show_next_line}
       textBox={style.text_box}
+      entrance={style.entrance}
       registerWord={registerWord}
       onSeekToLine={seekToLine}
     />

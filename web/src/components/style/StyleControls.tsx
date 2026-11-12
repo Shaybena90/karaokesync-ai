@@ -1,7 +1,8 @@
-import type { ReactNode } from 'react'
+import { useEffect, type ReactNode } from 'react'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { MessageKey } from '../../i18n/he'
-import { FONTS, PRESETS, type FontName, type SubtitleStyle } from '../../lib/subtitleStyle'
+import { ensureFonts } from '../../lib/fonts'
+import { ENTRANCES, FONTS, PRESETS, type FontName, type SubtitleStyle } from '../../lib/subtitleStyle'
 
 interface Props {
   style: SubtitleStyle
@@ -19,6 +20,8 @@ export function StyleControls({ style, onChange }: Props) {
   const { t } = useI18n()
   const set = <K extends keyof SubtitleStyle>(key: K, value: SubtitleStyle[K]) =>
     onChange({ ...style, [key]: value, preset: 'custom' })
+  // The font picker shows every font in its own letters.
+  useEffect(() => ensureFonts(Object.keys(FONTS) as FontName[]), [])
 
   return (
     <div className="space-y-5">
@@ -59,19 +62,28 @@ export function StyleControls({ style, onChange }: Props) {
 
       <Section title={t('style.text')}>
         <Row label={t('style.font')}>
-          <select
-            aria-label={t('style.font')}
-            value={style.font}
-            onChange={(e) => set('font', e.target.value as FontName)}
-            className="h-11 w-full rounded-xl bg-white/10 px-3"
-            style={{ fontFamily: `"${style.font}", Heebo, sans-serif` }}
-          >
+          <div role="radiogroup" aria-label={t('style.font')} className="grid max-h-72 grid-cols-2 gap-1.5 overflow-y-auto pe-1">
             {(Object.keys(FONTS) as FontName[]).map((f) => (
-              <option key={f} value={f} className="bg-ink-900" style={{ fontFamily: `"${f}"` }}>
-                {f}
-              </option>
+              <button
+                key={f}
+                type="button"
+                role="radio"
+                aria-checked={style.font === f}
+                aria-label={f}
+                onClick={() => set('font', f)}
+                className={`min-h-12 rounded-xl px-2 py-1.5 text-start transition ${
+                  style.font === f ? 'bg-violet-500/30 ring-2 ring-violet-300' : 'bg-white/5 hover:bg-white/10'
+                }`}
+              >
+                <span className="block truncate text-lg leading-tight" style={{ fontFamily: `"${f}", Heebo, sans-serif`, fontWeight: FONTS[f] }}>
+                  {t('style.fontSample')}
+                </span>
+                <span className="block truncate text-[11px] text-white/50" dir="ltr">
+                  {f}
+                </span>
+              </button>
             ))}
-          </select>
+          </div>
         </Row>
         <Slider label={t('style.size')} value={style.size} min={50} max={160} step={5} suffix="%" onChange={(v) => set('size', v)} />
         <div className="grid grid-cols-3 gap-2">
@@ -109,6 +121,25 @@ export function StyleControls({ style, onChange }: Props) {
             ]}
             onChange={(v) => set('animation', v)}
           />
+        </Row>
+        <Row label={t('style.entrance')}>
+          <div role="radiogroup" aria-label={t('style.entrance')} className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+            {ENTRANCES.map((e) => (
+              <button
+                key={e}
+                type="button"
+                role="radio"
+                aria-checked={style.entrance === e}
+                onClick={() => set('entrance', e)}
+                className={`min-h-10 rounded-xl px-2 text-sm transition ${
+                  style.entrance === e ? 'bg-violet-500/30 font-semibold ring-2 ring-violet-300' : 'bg-white/5 hover:bg-white/10'
+                }`}
+              >
+                {t(`style.entrance.${e}`)}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs text-white/45">{t('style.entranceHint')}</p>
         </Row>
         <Toggle label={t('style.showNext')} checked={style.show_next_line} onChange={(v) => set('show_next_line', v)} />
       </Section>

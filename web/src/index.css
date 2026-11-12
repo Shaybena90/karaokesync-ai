@@ -157,3 +157,44 @@
   box-shadow: inset 0 -3px 0 #38bdf8;
   background-color: rgb(56 189 248 / 0.18);
 }
+
+/* Line entrance effects — the same look as the exported video (server/karaokesync/exports/ass.py). */
+.ks-enter-fade { animation: ks-e-fade 0.45s ease-out; }
+.ks-enter-rise { animation: ks-e-rise 0.45s ease-out; }
+.ks-enter-drop { animation: ks-e-drop 0.45s ease-out; }
+.ks-enter-slide { animation: ks-e-slide-ltr 0.45s ease-out; }
+[dir='rtl'] .ks-enter-slide { animation-name: ks-e-slide-rtl; } /* from where reading starts */
+.ks-enter-zoom_in { animation: ks-e-zoom-in 0.45s ease-out; }
+.ks-enter-zoom_out { animation: ks-e-zoom-out 0.45s ease-out; }
+.ks-enter-pop { animation: ks-e-pop 0.45s ease-out; }
+.ks-enter-blur { animation: ks-e-blur 0.45s ease-out; }
+.ks-enter-swing { animation: ks-e-swing-ltr 0.45s ease-out; }
+[dir='rtl'] .ks-enter-swing { animation-name: ks-e-swing-rtl; }
+.ks-enter-flip { animation: ks-e-flip 0.45s ease-out; }
+.ks-enter-spread { animation: ks-e-spread 0.45s ease-out; }
+.ks-enter-wipe { animation: ks-e-wipe-ltr 0.45s ease-out; }
+[dir='rtl'] .ks-enter-wipe { animation-name: ks-e-wipe-rtl; }
+
+@keyframes ks-e-fade { from { opacity: 0; } }
+@keyframes ks-e-rise { from { opacity: 0; transform: translateY(0.4em); } }
+@keyframes ks-e-drop { from { opacity: 0; transform: translateY(-0.6em); } }
+@keyframes ks-e-slide-ltr { from { opacity: 0; transform: translateX(-12cqi); } }
+@keyframes ks-e-slide-rtl { from { opacity: 0; transform: translateX(12cqi); } }
+@keyframes ks-e-zoom-in { from { opacity: 0; transform: scale(0.4); } }
+@keyframes ks-e-zoom-out { from { opacity: 0; transform: scale(1.7); } }
+@keyframes ks-e-pop {
+  0% { opacity: 0; transform: scale(0.5); }
+  60% { opacity: 1; transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+@keyframes ks-e-blur { from { opacity: 0; filter: blur(0.3em); } to { filter: blur(0); } }
+@keyframes ks-e-swing-ltr { from { opacity: 0; transform: rotate(12deg); } }
+@keyframes ks-e-swing-rtl { from { opacity: 0; transform: rotate(-12deg); } }
+@keyframes ks-e-flip { from { opacity: 0; transform: perspective(600px) rotateX(90deg); } }
+@keyframes ks-e-spread { from { opacity: 0; letter-spacing: 0.4em; } }
+@keyframes ks-e-wipe-ltr { from { clip-path: inset(0 100% 0 0); } to { clip-path: inset(0); } }
+@keyframes ks-e-wipe-rtl { from { clip-path: inset(0 0 0 100%); } to { clip-path: inset(0); } }
+
+@media (prefers-reduced-motion: reduce) {
+  [class*='ks-enter-'] { animation: ks-e-fade 0.2s ease-out !important; }
+}

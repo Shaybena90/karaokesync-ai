@@ -62,6 +62,63 @@ def is_rtl(language: str | None, words: list[str]) -> bool:
     return False
 
 
+ENTRANCE_MS = 450  # how long a line takes to come on screen
+MIN_ENTRANCE_MS = 150
+
+
+def entrance_duration(effect: str, shown_at: int, first_word_ms: int, highlighted: bool) -> int:
+    """The highlight layers use clips fixed on the screen: a line that moves,
+    grows or turns must be in place before its first word lights up. So the
+    effect is shortened to fit; with almost no room it becomes a quick fade."""
+    if effect == "none":
+        return 0
+    room = first_word_ms - shown_at - 50 if highlighted else ENTRANCE_MS
+    return max(0, min(ENTRANCE_MS, room))
+
+
+def entrance_tags(effect: str, dur: int, cx: float, y: float, fs: float, width: float, left: float, right: float,
+                  ya: int, yb: int, rtl: bool) -> str:
+    """Override tags that bring a line on screen: position (\\pos or \\move) plus animation."""
+    pos = f"\\pos({cx:.1f},{y:.1f})"
+    if effect == "none" or dur <= 0:
+        return pos
+    if dur < MIN_ENTRANCE_MS and effect != "fade":
+        effect = "fade"  # no room for movement: just fade in
+    d = int(dur)
+    fade = f"\\fad({min(d, 250)},120)"
+    ease = f"0,{d},0.5"  # \\t acceleration < 1: fast start, gentle end
+    if effect == "fade":
+        return pos + f"\\fad({d},120)"
+    if effect in ("rise", "drop", "slide"):
+        x0, y0 = cx, y
+        if effect == "rise":
+            y0 = y + 0.4 * fs
+        elif effect == "drop":
+            y0 = y - 0.6 * fs
+        else:  # from the side the reading starts on (the right for Hebrew)
+            x0 = cx + (0.12 * width if rtl else -0.12 * width)
+        return f"\\move({x0:.1f},{y0:.1f},{cx:.1f},{y:.1f},0,{d})" + fade
+    if effect == "zoom_in":
+        return pos + fade + f"\\fscx40\\fscy40\\t({ease},\\fscx100\\fscy100)"
+    if effect == "zoom_out":
+        return pos + fade + f"\\fscx170\\fscy170\\t({ease},\\fscx100\\fscy100)"
+    if effect == "pop":
+        mid = int(d * 0.6)
+        return pos + f"\\fad({min(mid, 150)},120)\\fscx50\\fscy50\\t(0,{mid},\\fscx115\\fscy115)\\t({mid},{d},\\fscx100\\fscy100)"
+    if effect == "blur":
+        return pos + fade + f"\\blur14\\t({ease},\\blur0)"
+    if effect == "swing":
+        return pos + fade + f"\\frz{-12 if rtl else 12}\\t({ease},\\frz0)"
+    if effect == "flip":
+        return pos + fade + f"\\frx90\\t({ease},\\frx0)"
+    if effect == "spread":
+        return pos + fade + f"\\fsp{fs * 0.4:.1f}\\t({ease},\\fsp0)"
+    if effect == "wipe":  # revealed from the side the reading starts on
+        edge = right if rtl else left
+        return pos + f"\\clip({edge:.1f},{ya},{edge:.1f},{yb})\\t({ease},\\clip({left:.1f},{ya},{right:.1f},{yb}))"
+    return pos + fade
+
+
 def line_windows(lines: list[dict]) -> list[tuple[int, int]]:
     """When each line is on screen. Consecutive windows touch (no flicker)."""
     windows: list[tuple[int, int]] = []
@@ -190,8 +247,11 @@ def build_ass(
 
         text = mark + " ".join(words)
         fade = r"\fad(120,120)"
+        dur = entrance_duration(style.entrance, start, line["words"][0]["start_ms"], style.animation != "none")
+        enter = entrance_tags(style.entrance, dur, cx, y, fs, W, cx - total / 2 - space / 2, cx + total / 2 + space / 2,
+                              ya, yb, rtl)
         out.append(f"Dialogue: 0,{ass_time(start)},{ass_time(end)},Base,,0,0,0,,"
-                   f"{{\\an5\\pos({cx:.1f},{y:.1f})\\fs{fs:.1f}{fade}}}{text}")
+                   f"{{\\an5{enter}\\fs{fs:.1f}}}{text}")
 
         if nxt:
             nwords = [escape_text(w["text"]) for w in nxt["words"]]

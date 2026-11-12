@@ -11,11 +11,29 @@ export const FONTS = {
   'Secular One': 400,
   'Varela Round': 400,
   'Frank Ruhl Libre': 700,
+  'Alef': 700,
+  'Amatic SC': 700,
+  'Bellefair': 400,
+  'Bona Nova': 700,
+  'David Libre': 700,
+  'Fredoka': 600,
+  'IBM Plex Sans Hebrew': 700,
+  'Karantina': 700,
+  'Miriam Libre': 700,
+  'Noto Sans Hebrew': 700,
+  'Noto Serif Hebrew': 700,
+  'Playpen Sans Hebrew': 700,
+  'Solitreo': 400,
+  'Suez One': 400,
+  'Tinos': 700,
 } as const
 export type FontName = keyof typeof FONTS
 
 export type Position = 'top' | 'center' | 'bottom'
 export type Animation = 'fill' | 'word' | 'none'
+/** How a line comes on screen — same look in the player and in the video (server: styles.py). */
+export const ENTRANCES = ['none', 'fade', 'rise', 'drop', 'slide', 'zoom_in', 'zoom_out', 'pop', 'blur', 'swing', 'flip', 'spread', 'wipe'] as const
+export type Entrance = (typeof ENTRANCES)[number]
 export type PresetName = 'classic' | 'neon' | 'tiktok' | 'custom'
 
 /**
@@ -45,6 +63,7 @@ export interface SubtitleStyle {
   background_color: string
   background_color2: string
   animation: Animation
+  entrance: Entrance
   show_next_line: boolean
   backgrounds: BackgroundClip[]
 }
@@ -64,6 +83,7 @@ export const DEFAULT_STYLE: SubtitleStyle = {
   background_color: '#0b1026',
   background_color2: '#3b0764',
   animation: 'fill',
+  entrance: 'rise',
   show_next_line: true,
   backgrounds: [],
 }
@@ -73,6 +93,7 @@ export const PRESETS: Record<Exclude<PresetName, 'custom'>, SubtitleStyle> = {
   neon: {
     ...DEFAULT_STYLE,
     preset: 'neon',
+    entrance: 'blur',
     font: 'Rubik',
     size: 105,
     text_color: '#f5d0fe',
@@ -88,6 +109,7 @@ export const PRESETS: Record<Exclude<PresetName, 'custom'>, SubtitleStyle> = {
   tiktok: {
     ...DEFAULT_STYLE,
     preset: 'tiktok',
+    entrance: 'pop',
     font: 'Heebo',
     size: 125,
     text_color: '#ffffff',
@@ -155,6 +177,7 @@ export function normalizeStyle(raw: unknown): SubtitleStyle {
     background_color: pick('background_color', color),
     background_color2: pick('background_color2', color),
     animation: pick('animation', oneOf(['fill', 'word', 'none'])),
+    entrance: pick('entrance', oneOf(ENTRANCES)),
     show_next_line: pick('show_next_line', bool),
     backgrounds: normalizeClips(r.backgrounds),
   }
