@@ -60,3 +60,14 @@ test('video without the singer', async ({ page, backend }) => {
   await expect.poll(() => backend.exportJobs[0]?.options).toMatchObject({ audio: 'instrumental' })
   await expect(page.getByText('· 🎵 בלי הזמר')).toBeVisible()
 })
+
+test('a request can be cancelled', async ({ page, backend }) => {
+  await page.goto(`/projects/${PID}/play`)
+  await page.getByRole('button', { name: /הסרת הקול של הזמר/ }).click()
+  await page.getByRole('button', { name: /ביטול/ }).click()
+  await expect(page.getByRole('button', { name: /הסרת הקול של הזמר/ })).toBeVisible()
+  expect(backend.instrumentalJobs[0].status).toBe('cancelled')
+  // The (mock) worker would have finished by now: nothing appears after a cancel.
+  await page.waitForTimeout(3000)
+  await expect(page.getByRole('radio', { name: /בלי הזמר/ })).toHaveCount(0)
+})

@@ -286,9 +286,16 @@ export class MockBackend {
         progress: 0, output_path: null, error_code: null, created_at: new Date().toISOString() }
       this.instrumentalJobs.push(job)
       // The mock worker: running at 40%, then done.
-      setTimeout(() => Object.assign(job, { status: 'running', progress: 40 }), 500)
-      setTimeout(() => Object.assign(job, { status: 'succeeded', progress: 100, output_path: `${UID}/${instr[1]}/instrumental-${job.id}.mp3` }), 2500)
+      const unlessCancelled = (patch: Row) => () => job.status !== 'cancelled' && Object.assign(job, patch)
+      setTimeout(unlessCancelled({ status: 'running', progress: 40 }), 500)
+      setTimeout(unlessCancelled({ status: 'succeeded', progress: 100, output_path: `${UID}/${instr[1]}/instrumental-${job.id}.mp3` }), 2500)
       return this.json(route, job)
+    }
+    if (instr && method === 'DELETE') {
+      for (const j of this.instrumentalJobs) {
+        if (j.project_id === instr[1] && (j.status === 'queued' || j.status === 'running')) Object.assign(j, { status: 'cancelled', error_code: 'cancelled' })
+      }
+      return route.fulfill({ status: 204, headers: CORS })
     }
     const bgInit = /^\/projects\/([^/]+)\/backgrounds$/.exec(p)
     if (bgInit && method === 'POST') {

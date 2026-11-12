@@ -9,11 +9,12 @@ interface Props {
   error: string | null
   vocalsOff: boolean
   onRequest: () => void
+  onCancel: () => void
   onToggle: (vocalsOff: boolean) => void
 }
 
 /** "With the singer / melody only" switch, or the button that creates the melody-only track. */
-export function VocalsControl({ job, ready, requesting, error, vocalsOff, onRequest, onToggle }: Props) {
+export function VocalsControl({ job, ready, requesting, error, vocalsOff, onRequest, onCancel, onToggle }: Props) {
   const { t } = useI18n()
 
   if (ready) {
@@ -47,6 +48,14 @@ export function VocalsControl({ job, ready, requesting, error, vocalsOff, onRequ
         {job.status === 'running' ? <ProgressBar value={job.progress / 100} label={t('vocals.running')} /> : (
           <p className="text-xs text-white/50">{t('vocals.queuedHint')}</p>
         )}
+        <button
+          type="button"
+          onClick={onCancel}
+          disabled={requesting}
+          className="min-h-10 rounded-xl px-4 text-sm font-medium text-white/70 underline-offset-4 hover:text-white hover:underline disabled:opacity-50"
+        >
+          ✕ {t('vocals.cancel')}
+        </button>
       </div>
     )
   }

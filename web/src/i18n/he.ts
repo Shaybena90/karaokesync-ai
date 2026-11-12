@@ -230,6 +230,7 @@ export const he = {
   'vocals.createHint': 'ה-AI מפריד את השירה מהמנגינה. זה לוקח כמה דקות, ורק בפעם הראשונה.',
   'vocals.queued': 'ממתין לשרת העיבוד…',
   'vocals.queuedHint': 'ודאו ששרת העיבוד (Worker) פועל במחשב.',
+  'vocals.cancel': 'ביטול',
   'vocals.running': 'מסיר את הקול של הזמר…',
   'export.noVocals': 'סרטון בלי הזמר (מנגינה בלבד)',
   'export.noVocalsHint': 'צרו קודם גרסה בלי הזמר בנגן שלמעלה.',

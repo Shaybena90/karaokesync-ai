@@ -493,6 +493,7 @@ export function KaraokePlayer({
             error={instrumental.error}
             vocalsOff={vocalsOff && instrumental.ready}
             onRequest={() => void instrumental.request()}
+            onCancel={() => void instrumental.cancel()}
             onToggle={setVocals}
           />
         </div>

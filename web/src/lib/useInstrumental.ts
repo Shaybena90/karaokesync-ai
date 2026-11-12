@@ -62,8 +62,22 @@ export function useInstrumental(projectId: string, enabled = true) {
     }
   }, [projectId])
 
+  /** Stop a request that is waiting or running (the worker stops within seconds). */
+  const cancel = useCallback(async () => {
+    setRequesting(true)
+    setError(null)
+    try {
+      await api.cancelInstrumental(projectId)
+      setJob(await latest(projectId))
+    } catch (err) {
+      setError(err instanceof ApiError ? err.code : 'generic')
+    } finally {
+      setRequesting(false)
+    }
+  }, [projectId])
+
   const ready = job?.status === 'succeeded' && Boolean(job.output_path)
-  return { job, ready, active, requesting, error, request }
+  return { job, ready, active, requesting, error, request, cancel }
 }
 
 export type InstrumentalState = ReturnType<typeof useInstrumental>

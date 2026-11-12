@@ -233,3 +233,50 @@ def test_video_without_vocals_uses_the_melody_only_track(fake_sb, project, tmp_p
     assert render("original") > -30
     fake_sb.tables["export_jobs"].clear()
     assert render("instrumental") < -80  # the silent melody-only track, not the song
+
+
+# ------------------------------------------------------------------ cancel
+def test_cancel_stops_waiting_and_running_requests(client, fake_sb, project):
+    url = f"/projects/{project['id']}/instrumental"
+    job = client.post(url, headers=AUTH).json()
+    assert client.delete(url, headers={"Authorization": "Bearer bob-token"}).status_code == 404
+    assert client.delete(url, headers=AUTH).status_code == 204
+    row = fake_sb.tables["instrumental_jobs"][0]
+    assert row["status"] == "cancelled" and row["locked_by"] is None
+    # A finished track is not touched, and asking again starts a new request.
+    assert client.post(url, headers=AUTH).json()["id"] != job["id"]
+
+
+@needs_ffmpeg
+def test_worker_stops_demucs_when_the_request_is_cancelled(fake_sb, project, fake_demucs, tmp_path, monkeypatch):
+    """Through the real worker code: the heartbeat is refused once the job is
+    cancelled, Demucs is killed within seconds, and nothing is saved."""
+    import time
+
+    from karaokesync.config import get_settings
+    from karaokesync.worker import runner
+
+    # A slow Demucs: 100 progress steps over ~20 s.
+    (fake_demucs / "__main__.py").write_text(
+        "import sys, time\n"
+        "for p in range(1, 101):\n"
+        "    sys.stderr.write(f'\\r {p}%|##| {p}/100'); sys.stderr.flush(); time.sleep(0.2)\n"
+    )
+    settings = get_settings()
+    monkeypatch.setattr(settings, "worker_tmp_dir", str(tmp_path / "work"))
+    fake_sb.put_object("audio", project["audio_path"], make_audio(tmp_path, "mp3", 1))
+    calls = []
+
+    def rpc(fn, args):
+        calls.append(fn)
+        return False if fn == "heartbeat_instrumental_job" else True  # cancelled: "you no longer own this job"
+
+    monkeypatch.setattr(fake_sb, "rpc", rpc)
+    job = {"id": "abcdef01-0000-0000-0000-000000000000", "project_id": project["id"], "audio_file_id": project["audio_id"],
+           "user_id": project["user_id"], "attempts": 1}
+    started = time.monotonic()
+    runner._run_instrumental(fake_sb, settings, "w1", job)
+    assert time.monotonic() - started < 8  # stopped long before the 20 s run would end
+    assert "complete_instrumental_job" not in calls and "fail_instrumental_job" not in calls
+    assert not any(p.startswith(f"{project['user_id']}/{project['id']}/instrumental") for p in fake_sb.objects["audio"])
+    assert not any((tmp_path / "work").iterdir())

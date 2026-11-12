@@ -59,4 +59,21 @@ def instrumental_router() -> APIRouter:
                     return again
             raise
 
+    @router.delete("/projects/{project_id}/instrumental", status_code=204)
+    def cancel_instrumental(
+        project_id: str,
+        user: AuthUser = Depends(rate_limited_user),
+        sb: SupabaseClient = Depends(get_supabase),
+    ) -> None:
+        """Stop a request that is waiting or running. The worker's next heartbeat
+        is refused (the job is no longer "running"), so it stops Demucs within
+        seconds and drops any result."""
+        owned_project(sb, project_id, user)
+        sb.update(
+            "instrumental_jobs",
+            {"project_id": f"eq.{project_id}", "user_id": f"eq.{user.id}", "status": "in.(queued,running)"},
+            {"status": "cancelled", "error_code": "cancelled", "locked_by": None, "locked_until": None,
+             "finished_at": iso(datetime.now(timezone.utc))},
+        )
+
     return router

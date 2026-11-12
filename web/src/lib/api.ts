@@ -78,6 +78,7 @@ export const api = {
       body: JSON.stringify({ format: 'mp4', aspect, resolution, audio }),
     }),
   requestInstrumental: (projectId: string) => request<InstrumentalJob>(`/projects/${projectId}/instrumental`, { method: 'POST' }),
+  cancelInstrumental: (projectId: string) => request<void>(`/projects/${projectId}/instrumental`, { method: 'DELETE' }),
   deleteExport: (exportId: string) => request<void>(`/exports/${exportId}`, { method: 'DELETE' }),
   initBackground: (projectId: string, file: File) =>
     request<{ media: BackgroundMedia; upload_url: string; content_type: string }>(`/projects/${projectId}/backgrounds`, {

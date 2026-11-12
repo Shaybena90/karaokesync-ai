@@ -232,6 +232,7 @@ export const en: Record<MessageKey, string> = {
   'vocals.createHint': 'The AI separates the singing from the music. It takes a few minutes, only the first time.',
   'vocals.queued': 'Waiting for the processing server…',
   'vocals.queuedHint': 'Make sure the processing server (worker) is running.',
+  'vocals.cancel': 'Cancel',
   'vocals.running': 'Removing the singer\'s voice…',
   'export.noVocals': 'Video without the singer (music only)',
   'export.noVocalsHint': 'First create the version without the singer in the player above.',
