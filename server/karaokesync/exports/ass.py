@@ -47,6 +47,12 @@ def ass_color(hex_color: str, alpha: int = 0) -> str:
     return f"&H{alpha:02X}{b}{g}{r}".upper()
 
 
+def tag_color(hex_color: str) -> str:
+    """#rrggbb -> &HBBGGRR& (the form override tags like \\1c expect)."""
+    r, g, b = hex_color[1:3], hex_color[3:5], hex_color[5:7]
+    return f"&H{b}{g}{r}&".upper()
+
+
 def escape_text(text: str) -> str:
     """Lyrics must never be interpreted as ASS override codes."""
     return text.replace("\\", "⧵").replace("{", "｛").replace("}", "｝").replace("\n", " ")
@@ -61,6 +67,11 @@ def is_rtl(language: str | None, words: list[str]) -> bool:
             return d == "R"
     return False
 
+
+# Same rule as the player (web/src/lib/karaoke.ts): a line after a gap of at
+# least INSTRUMENTAL_GAP_MS (or the song's start) gets a 3-2-1 countdown.
+INSTRUMENTAL_GAP_MS = 4000
+COUNTDOWN_MS = 3000
 
 ENTRANCE_MS = 450  # how long a line takes to come on screen
 MIN_ENTRANCE_MS = 150
@@ -117,6 +128,73 @@ def entrance_tags(effect: str, dur: int, cx: float, y: float, fs: float, width: 
         edge = right if rtl else left
         return pos + f"\\clip({edge:.1f},{ya},{edge:.1f},{yb})\\t({ease},\\clip({left:.1f},{ya},{right:.1f},{yb}))"
     return pos + fade
+
+
+def countdown_starts(lines: list[dict]) -> list[int]:
+    """Indexes of the lines that get a countdown before them."""
+    out = []
+    for i, line in enumerate(lines):
+        gap_start = lines[i - 1]["end_ms"] if i else 0
+        if line["start_ms"] - gap_start >= INSTRUMENTAL_GAP_MS:
+            out.append(i)
+    return out
+
+
+def _circle(r: float) -> str:
+    """ASS drawing of a circle of radius r (Bezier), in a 2r x 2r box."""
+    k = r * 0.5523
+    return (f"m {r:.1f} 0 b {r + k:.1f} 0 {2 * r:.1f} {r - k:.1f} {2 * r:.1f} {r:.1f} "
+            f"b {2 * r:.1f} {r + k:.1f} {r + k:.1f} {2 * r:.1f} {r:.1f} {2 * r:.1f} "
+            f"b {r - k:.1f} {2 * r:.1f} 0 {r + k:.1f} 0 {r:.1f} b 0 {r - k:.1f} {r - k:.1f} 0 {r:.1f} 0")
+
+
+def countdown_events(design: str, line_start: int, cx: float, y: float, fs: float, width: float, rtl: bool,
+                     on_hex: str, off_hex: str) -> list[str]:
+    """Dialogue lines for a countdown that ends when the line starts. Each beat
+    (3, 2, 1) lasts a second; every design animates in."""
+    if design == "none":
+        return []
+    on_color = f"{tag_color(on_hex)}\\1a&H00&"
+    off_color = f"{tag_color(off_hex)}\\1a&H90&"  # the unlit parts, see-through
+    t0 = max(0, line_start - COUNTDOWN_MS)
+    beats = [(n, line_start - n * 1000, line_start - (n - 1) * 1000) for n in (3, 2, 1)]
+    beats = [(n, max(a, t0), b) for n, a, b in beats if b > t0]
+    ev = []
+
+    def add(a: int, b: int, tags: str, text: str) -> None:
+        ev.append(f"Dialogue: 2,{ass_time(a)},{ass_time(b)},Cd,,0,0,0,,{{\\an5{tags}}}{text}")
+
+    if design == "dots":
+        r, gap = fs * 0.13, fs * 0.6
+        for n, a, b in beats:
+            for k in range(3):  # n dots still lit, like the player
+                color = on_color if k < n else off_color
+                fade = "\\fad(150,0)" if n == 3 else ""
+                add(a, b, f"\\pos({cx + (k - 1) * gap:.1f},{y:.1f})\\1c{color}\\bord0\\shad0{fade}\\p1", _circle(r))
+    elif design in ("numbers", "zoom"):
+        size = fs * 1.4
+        for n, a, b in beats:
+            if design == "numbers":
+                anim = "\\fscx50\\fscy50\\t(0,180,\\fscx115\\fscy115)\\t(180,300,\\fscx100\\fscy100)\\fad(80,200)"
+            else:
+                anim = "\\fscx250\\fscy250\\t(0,450,0.5,\\fscx100\\fscy100)\\fad(200,250)"
+            add(a, b, f"\\pos({cx:.1f},{y:.1f})\\fs{size:.1f}{anim}", str(n))
+    elif design == "bar":
+        w, h = width * 0.3, max(4.0, fs * 0.16)
+        left, right = cx - w / 2, cx + w / 2
+        rect = f"m 0 0 l {w:.1f} 0 l {w:.1f} {h:.1f} l 0 {h:.1f}"
+        ya, yb = y - h, y + h
+        edge = right if rtl else left  # fills from the side reading starts on
+        add(t0, line_start, f"\\pos({cx:.1f},{y:.1f})\\1c{off_color}\\bord0\\shad0\\fad(200,0)\\p1", rect)
+        add(t0, line_start, f"\\pos({cx:.1f},{y:.1f})\\1c{on_color}\\bord0\\shad0\\fad(200,0)"
+            f"\\clip({edge:.1f},{ya:.1f},{edge:.1f},{yb:.1f})\\t(0,{line_start - t0},\\clip({left:.1f},{ya:.1f},{right:.1f},{yb:.1f}))\\p1", rect)
+    elif design == "pulse":
+        r = fs * 0.22
+        for n, a, b in beats:
+            add(a, b, f"\\pos({cx:.1f},{y:.1f})\\1c{on_color}\\bord0\\shad0\\fad(100,0)\\p1", _circle(r * 0.6))
+            add(a, b, f"\\pos({cx:.1f},{y:.1f})\\1c{on_color}\\bord0\\shad0\\t(0,700,\\fscx260\\fscy260\\alpha&HFF&)\\p1",
+                _circle(r))
+    return ev
 
 
 def line_windows(lines: list[dict]) -> list[tuple[int, int]]:
@@ -206,6 +284,8 @@ def build_ass(
         style_line("Base", ass_color(style.text_color), base_outline_color, ass_color("#000000", 0x70),
                    base_border_style, base_outline, shadow_px),
         style_line("Hi", ass_color(style.highlight_color), hi_outline_color, ass_color("#000000", 0xFF), 1, hi_outline, 0),
+        style_line("Cd", ass_color(style.highlight_color), ass_color(style.outline_color), ass_color("#000000", 0xFF), 1,
+                   outline_px, 0),
         style_line("Next", ass_color(style.text_color, 0x90), ass_color(style.outline_color, 0xB0),
                    ass_color("#000000", 0xFF), 1, outline_px * 0.6, 0),
         "",
@@ -215,6 +295,7 @@ def build_ass(
 
     lines = [l for l in lines if l.get("words")]
     windows = line_windows(lines)
+    counted = set(countdown_starts(lines))
     show_next = style.show_next_line
     for i, line in enumerate(lines):
         start, end = windows[i]
@@ -252,6 +333,9 @@ def build_ass(
                               ya, yb, rtl)
         out.append(f"Dialogue: 0,{ass_time(start)},{ass_time(end)},Base,,0,0,0,,"
                    f"{{\\an5{enter}\\fs{fs:.1f}}}{text}")
+        if i in counted:
+            out += countdown_events(style.countdown, line["start_ms"], cx, y - fs * 1.25, fs, W, rtl,
+                                    style.highlight_color, style.text_color)
 
         if nxt:
             nwords = [escape_text(w["text"]) for w in nxt["words"]]

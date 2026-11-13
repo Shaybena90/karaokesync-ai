@@ -60,7 +60,7 @@ test('countdown before singing resumes after a long break', async ({ page }) => 
   await seek(page, 9_500)
   await nextFrame(page)
   expect(await mainLine(page)).toBe('סוף טוב')
-  await expect(page.locator('span.size-3.scale-100')).toHaveCount(3)
+  await expect(page.locator('[data-cd="dots"] [data-lit="true"]')).toHaveCount(3)
   await seek(page, 8_000)
   await expect(page.getByText('♪ ♪ ♪')).toBeVisible()
 })

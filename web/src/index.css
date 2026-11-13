@@ -198,3 +198,27 @@
 @media (prefers-reduced-motion: reduce) {
   [class*='ks-enter-'] { animation: ks-e-fade 0.2s ease-out !important; }
 }
+
+/* Countdown designs (same as the video: server/karaokesync/exports/ass.py countdown_events). */
+.ks-cd-in { animation: ks-e-fade 0.2s ease-out; }
+.ks-cd-numbers { animation: ks-cd-pop 1s ease-out both; }
+.ks-cd-zoom { animation: ks-cd-zoom 1s ease-out both; }
+.ks-cd-ring { animation: ks-cd-pulse 0.7s ease-out both; }
+.ks-cd-fill { transform: scaleX(var(--k-cd, 0)); transform-origin: left; }
+[dir='rtl'] .ks-cd-fill { transform-origin: right; } /* fills from where reading starts */
+@keyframes ks-cd-pop {
+  0% { opacity: 0; transform: scale(0.5); }
+  8% { opacity: 1; }
+  18% { transform: scale(1.15); }
+  30% { transform: scale(1); }
+  80% { opacity: 1; }
+  100% { opacity: 0; }
+}
+@keyframes ks-cd-zoom {
+  0% { opacity: 0; transform: scale(2.5); }
+  20% { opacity: 1; }
+  45% { transform: scale(1); }
+  75% { opacity: 1; }
+  100% { opacity: 0; transform: scale(1); }
+}
+@keyframes ks-cd-pulse { from { transform: scale(1); opacity: 1; } to { transform: scale(2.6); opacity: 0; } }

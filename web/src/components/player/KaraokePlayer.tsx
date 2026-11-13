@@ -12,7 +12,7 @@ import {
 import { useI18n } from '../../i18n/I18nProvider'
 import { AudioClock } from '../../lib/audioClock'
 import { directionOf, formatDuration } from '../../lib/format'
-import { computeView, sameView, wordState, type KaraokeView } from '../../lib/karaoke'
+import { COUNTDOWN_MS, computeView, sameView, wordState, type KaraokeView } from '../../lib/karaoke'
 import { wordFill } from '../../lib/sync'
 import type { LyricLine } from '../../lib/types'
 import { useLyrics } from '../../lib/useLyrics'
@@ -135,6 +135,11 @@ export function KaraokePlayer({
 
     const next = computeView(lines, now)
     setView((prev) => (sameView(prev, next) ? prev : next))
+    // Countdown bar progress, from the audio clock (0 at "3", 1 when the line starts).
+    if (next.countdown !== null && containerRef.current) {
+      const left = lines[next.main].start_ms - now
+      containerRef.current.style.setProperty('--k-cd', Math.min(1, Math.max(0, 1 - left / COUNTDOWN_MS)).toFixed(3))
+    }
 
     for (const [id, el] of wordEls.current) {
       const word = wordsById.get(id)
@@ -329,6 +334,7 @@ export function KaraokePlayer({
       showNext={style.show_next_line}
       textBox={style.text_box}
       entrance={style.entrance}
+      countdown={style.countdown}
       registerWord={registerWord}
       onSeekToLine={seekToLine}
     />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { DEFAULT_STYLE, ENTRANCES, FONTS, PRESETS, clipWindow, normalizeStyle, styleVars } from './subtitleStyle'
+import { COUNTDOWNS, DEFAULT_STYLE, ENTRANCES, FONTS, PRESETS, clipWindow, normalizeStyle, styleVars } from './subtitleStyle'
 
 describe('subtitle style', () => {
   it('falls back to defaults / preset values for invalid input', () => {
@@ -57,5 +57,16 @@ describe('fonts and entrance effects', () => {
   it('keeps a known effect and font, falls back otherwise', () => {
     expect(normalizeStyle({ entrance: 'wipe', font: 'Suez One' })).toMatchObject({ entrance: 'wipe', font: 'Suez One' })
     expect(normalizeStyle({ preset: 'tiktok', entrance: 'explode' }).entrance).toBe('pop')
+  })
+})
+
+describe('countdown designs', () => {
+  it('has five designs plus none, same as the server', () => {
+    expect(COUNTDOWNS.filter((c) => c !== 'none').length).toBeGreaterThanOrEqual(5)
+    expect(DEFAULT_STYLE.countdown).toBe('dots')
+    expect(PRESETS.tiktok.countdown).toBe('numbers')
+    expect(PRESETS.neon.countdown).toBe('pulse')
+    expect(normalizeStyle({ countdown: 'bar' }).countdown).toBe('bar')
+    expect(normalizeStyle({ countdown: 'fireworks' }).countdown).toBe('dots')
   })
 })

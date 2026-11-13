@@ -133,7 +133,7 @@ test('choose a Hebrew font and a line entrance effect', async ({ page, backend }
   await expect.poll(() => lastStyle()?.entrance).toBe('pop')
   // The preview replays the line with the chosen effect.
   await expect(page.locator('p.ks-lyric.ks-enter-pop')).toHaveCount(1)
-  await page.getByRole('radio', { name: 'ללא' }).last().click()
+  await page.getByRole('radiogroup', { name: 'אפקט כניסה של שורה' }).getByRole('radio', { name: 'ללא' }).click()
   await expect.poll(() => lastStyle()?.entrance).toBe('none')
   await expect(page.locator('p.ks-lyric[class*="ks-enter-"]')).toHaveCount(0)
 })

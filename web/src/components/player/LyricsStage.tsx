@@ -1,5 +1,5 @@
 import { memo } from 'react'
-import type { Entrance } from '../../lib/subtitleStyle'
+import type { CountdownDesign, Entrance } from '../../lib/subtitleStyle'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { KaraokeView } from '../../lib/karaoke'
 import type { LyricLine } from '../../lib/types'
@@ -15,6 +15,8 @@ interface Props {
   textBox: boolean
   /** How the line comes on screen (CSS class ks-enter-*, same as the video). */
   entrance: Entrance
+  /** What counts down before singing starts. */
+  countdown: CountdownDesign
   /** Word spans of the main line register here; the player animates them per frame. */
   registerWord: (id: string, el: HTMLSpanElement | null) => void
   onSeekToLine: (line: LyricLine) => void
@@ -35,6 +37,7 @@ export const LyricsStage = memo(function LyricsStage({
   showNext,
   textBox,
   entrance,
+  countdown,
   registerWord,
   onSeekToLine,
 }: Props) {
@@ -73,20 +76,18 @@ export const LyricsStage = memo(function LyricsStage({
       {!videoFrame && sideLine(prev, 'prev')}
 
       <div className="relative w-full">
-        {!videoFrame && (
-          <div className="flex h-6 items-center justify-center gap-2" aria-hidden="true">
-            {view.countdown !== null &&
-              [3, 2, 1].map((n) => (
-                <span
-                  key={n}
-                  className={`size-3 rounded-full transition-all duration-300 ${
-                    n <= view.countdown! ? 'scale-100 bg-[var(--k-active)] shadow-[0_0_14px_var(--k-active)]' : 'scale-50 bg-white/15'
-                  }`}
-                />
-              ))}
-            {view.instrumental && <span className="animate-pulse text-sm tracking-[0.4em] text-white/50">♪ ♪ ♪</span>}
-          </div>
-        )}
+        {/* Countdown row: sized like the line (the video draws it 1.25 lines above it). */}
+        <div
+          className="flex h-[1.6em] items-center justify-center gap-[0.35em]"
+          style={{ fontSize: videoFrame ? 'calc(var(--k-base) * var(--k-scale) * 0.85)' : '1.5rem' }}
+          aria-hidden="true"
+          data-testid="countdown"
+        >
+          {view.countdown !== null && <Countdown design={countdown} n={view.countdown} />}
+          {!videoFrame && view.instrumental && view.countdown === null && (
+            <span className="animate-pulse text-sm tracking-[0.4em] text-white/50">♪ ♪ ♪</span>
+          )}
+        </div>
         {view.instrumental && <span className="sr-only">{t('player.instrumental')}</span>}
 
         {main && (
@@ -118,3 +119,46 @@ export const LyricsStage = memo(function LyricsStage({
     </div>
   )
 })
+
+/**
+ * One countdown beat (n = 3, 2, 1). Each design animates in on every beat; the
+ * bar follows --k-cd (0..1), which the player sets from the audio clock.
+ */
+function Countdown({ design, n }: { design: CountdownDesign; n: number }) {
+  if (design === 'none') return null
+  if (design === 'dots') {
+    return (
+      <span className="ks-cd-in flex items-center gap-[0.6em]" data-cd="dots">
+        {[1, 2, 3].map((k) => (
+          <span
+            key={k}
+            data-lit={k <= n}
+            className={`size-[0.26em] rounded-full transition-all duration-300 ${
+              k <= n ? 'bg-[var(--k-active)] shadow-[0_0_0.5em_var(--k-active)]' : 'scale-75 bg-[var(--k-idle)] opacity-40'
+            }`}
+          />
+        ))}
+      </span>
+    )
+  }
+  if (design === 'numbers' || design === 'zoom') {
+    return (
+      <span key={n} className={`ks-lyric font-bold text-[var(--k-active)] ks-cd-${design}`} style={{ fontSize: '1.4em' }} data-cd={design}>
+        {n}
+      </span>
+    )
+  }
+  if (design === 'bar') {
+    return (
+      <span className="ks-cd-in relative block h-[0.32em] w-[30%] overflow-hidden rounded-full bg-[var(--k-idle)]/40" data-cd="bar">
+        <span className="ks-cd-fill absolute inset-0 rounded-full bg-[var(--k-active)]" />
+      </span>
+    )
+  }
+  return (
+    <span key={n} className="relative grid size-[0.9em] place-items-center" data-cd="pulse">
+      <span className="ks-cd-ring absolute size-[0.44em] rounded-full bg-[var(--k-active)]" />
+      <span className="size-[0.26em] rounded-full bg-[var(--k-active)]" />
+    </span>
+  )
+}

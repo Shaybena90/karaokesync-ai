@@ -34,6 +34,9 @@ export type Animation = 'fill' | 'word' | 'none'
 /** How a line comes on screen — same look in the player and in the video (server: styles.py). */
 export const ENTRANCES = ['none', 'fade', 'rise', 'drop', 'slide', 'zoom_in', 'zoom_out', 'pop', 'blur', 'swing', 'flip', 'spread', 'wipe'] as const
 export type Entrance = (typeof ENTRANCES)[number]
+/** What counts down before singing starts (after the intro or a long break) — same in the video. */
+export const COUNTDOWNS = ['none', 'dots', 'numbers', 'zoom', 'bar', 'pulse'] as const
+export type CountdownDesign = (typeof COUNTDOWNS)[number]
 export type PresetName = 'classic' | 'neon' | 'tiktok' | 'custom'
 
 /**
@@ -64,6 +67,7 @@ export interface SubtitleStyle {
   background_color2: string
   animation: Animation
   entrance: Entrance
+  countdown: CountdownDesign
   show_next_line: boolean
   backgrounds: BackgroundClip[]
 }
@@ -84,6 +88,7 @@ export const DEFAULT_STYLE: SubtitleStyle = {
   background_color2: '#3b0764',
   animation: 'fill',
   entrance: 'rise',
+  countdown: 'dots',
   show_next_line: true,
   backgrounds: [],
 }
@@ -94,6 +99,7 @@ export const PRESETS: Record<Exclude<PresetName, 'custom'>, SubtitleStyle> = {
     ...DEFAULT_STYLE,
     preset: 'neon',
     entrance: 'blur',
+    countdown: 'pulse',
     font: 'Rubik',
     size: 105,
     text_color: '#f5d0fe',
@@ -110,6 +116,7 @@ export const PRESETS: Record<Exclude<PresetName, 'custom'>, SubtitleStyle> = {
     ...DEFAULT_STYLE,
     preset: 'tiktok',
     entrance: 'pop',
+    countdown: 'numbers',
     font: 'Heebo',
     size: 125,
     text_color: '#ffffff',
@@ -178,6 +185,7 @@ export function normalizeStyle(raw: unknown): SubtitleStyle {
     background_color2: pick('background_color2', color),
     animation: pick('animation', oneOf(['fill', 'word', 'none'])),
     entrance: pick('entrance', oneOf(ENTRANCES)),
+    countdown: pick('countdown', oneOf(COUNTDOWNS)),
     show_next_line: pick('show_next_line', bool),
     backgrounds: normalizeClips(r.backgrounds),
   }

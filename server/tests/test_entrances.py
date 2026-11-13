@@ -35,7 +35,7 @@ def test_effect_ends_before_the_first_word_lights_up():
 
 def frame(workdir: Path, t: float) -> bytes:
     return subprocess.run(
-        ["ffmpeg", "-nostdin", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=black:s=640x360:r=30:d=3",
+        ["ffmpeg", "-nostdin", "-loglevel", "error", "-f", "lavfi", "-i", "color=c=black:s=640x360:r=30:d=8",
          "-vf", "ass=filename=subs.ass:fontsdir=fonts", "-ss", str(t), "-frames:v", "1",
          "-f", "rawvideo", "-pix_fmt", "gray", "pipe:1"],
         cwd=workdir, capture_output=True, check=True).stdout

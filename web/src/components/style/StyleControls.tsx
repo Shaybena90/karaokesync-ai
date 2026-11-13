@@ -2,7 +2,7 @@ import { useEffect, type ReactNode } from 'react'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { MessageKey } from '../../i18n/he'
 import { ensureFonts } from '../../lib/fonts'
-import { ENTRANCES, FONTS, PRESETS, type FontName, type SubtitleStyle } from '../../lib/subtitleStyle'
+import { COUNTDOWNS, ENTRANCES, FONTS, PRESETS, type FontName, type SubtitleStyle } from '../../lib/subtitleStyle'
 
 interface Props {
   style: SubtitleStyle
@@ -140,6 +140,25 @@ export function StyleControls({ style, onChange }: Props) {
             ))}
           </div>
           <p className="mt-1.5 text-xs text-white/45">{t('style.entranceHint')}</p>
+        </Row>
+        <Row label={t('style.countdown')}>
+          <div role="radiogroup" aria-label={t('style.countdown')} className="grid grid-cols-2 gap-1.5 sm:grid-cols-3">
+            {COUNTDOWNS.map((c) => (
+              <button
+                key={c}
+                type="button"
+                role="radio"
+                aria-checked={style.countdown === c}
+                onClick={() => set('countdown', c)}
+                className={`min-h-10 rounded-xl px-2 text-sm transition ${
+                  style.countdown === c ? 'bg-violet-500/30 font-semibold ring-2 ring-violet-300' : 'bg-white/5 hover:bg-white/10'
+                }`}
+              >
+                {t(`style.countdown.${c}`)}
+              </button>
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs text-white/45">{t('style.countdownHint')}</p>
         </Row>
         <Toggle label={t('style.showNext')} checked={style.show_next_line} onChange={(v) => set('show_next_line', v)} />
       </Section>

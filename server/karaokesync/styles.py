@@ -82,6 +82,9 @@ FontName = Literal[
     "Tinos",
 ]
 
+# What counts down before singing starts (after the intro or a long break).
+Countdown = Literal["none", "dots", "numbers", "zoom", "bar", "pulse"]
+
 # How a line comes on screen (same look in the player and in the video).
 Entrance = Literal[
     "none",
@@ -116,6 +119,7 @@ class SubtitleStyle(BaseModel):
     background_color2: str = "#3b0764"
     animation: Literal["fill", "word", "none"] = "fill"
     entrance: Entrance = "rise"
+    countdown: Countdown = "dots"
     show_next_line: bool = True
     backgrounds: list[BackgroundClip] = Field(default_factory=list)
 
@@ -144,12 +148,12 @@ class SubtitleStyle(BaseModel):
 PRESETS: dict[str, SubtitleStyle] = {
     "classic": SubtitleStyle(),
     "neon": SubtitleStyle(
-        preset="neon", entrance="blur", font="Rubik", size=105, text_color="#f5d0fe", highlight_color="#22d3ee",
+        preset="neon", entrance="blur", countdown="pulse", font="Rubik", size=105, text_color="#f5d0fe", highlight_color="#22d3ee",
         outline_color="#a21caf", outline=2, shadow=0, glow=True, position="center",
         background_color="#05010d", background_color2="#1e0838", animation="fill",
     ),
     "tiktok": SubtitleStyle(
-        preset="tiktok", entrance="pop", font="Heebo", size=125, text_color="#ffffff", highlight_color="#facc15",
+        preset="tiktok", entrance="pop", countdown="numbers", font="Heebo", size=125, text_color="#ffffff", highlight_color="#facc15",
         outline_color="#000000", outline=6, shadow=0, position="center", background_color="#111111",
         background_color2="#111111", animation="word", show_next_line=False,
     ),
