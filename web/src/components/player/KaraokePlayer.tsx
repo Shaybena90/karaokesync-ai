@@ -21,6 +21,7 @@ import { useInstrumental, type InstrumentalState } from '../../lib/useInstrument
 import { useSignedAudio } from '../../lib/useSignedAudio'
 import { DEFAULT_STYLE, clipWindow, styleVars, type SubtitleStyle } from '../../lib/subtitleStyle'
 import { useBackgroundMedia, type LoadedBackground } from '../../lib/useBackgroundMedia'
+import { animatedClipUrl } from '../../lib/animatedBackgrounds'
 import { BackgroundLayers, type BackgroundLayer, type BackgroundSync } from './BackgroundLayers'
 import { VocalsControl } from './VocalsControl'
 import { Spinner } from '../ui'
@@ -108,13 +109,17 @@ export function KaraokePlayer({
   const bgSync = useRef<BackgroundSync | null>(null)
   const bgLayers = useMemo<BackgroundLayer[]>(() => {
     const songMs = durationMs > 0 ? durationMs : Number.MAX_SAFE_INTEGER
-    return clips.flatMap((clip, i) => {
+    // A built-in moving background covers the whole song, under the uploaded ones.
+    const animated: BackgroundLayer[] = style.animated_background
+      ? [{ key: `animated:${style.animated_background}`, url: animatedClipUrl(style.animated_background), element: 'video', start: 0, end: songMs }]
+      : []
+    return animated.concat(clips.flatMap((clip, i) => {
       const m = media.find((x) => x.id === clip.media_id)
       const window = clipWindow(clip, songMs)
       if (!m?.url || !window) return []
       return [{ key: `${i}:${m.id}`, url: m.url, element: m.kind === 'image' || m.format === 'gif' ? 'img' : 'video', ...window }]
-    })
-  }, [clips, media, durationMs])
+    }))
+  }, [clips, media, durationMs, style.animated_background])
 
   useEffect(() => ensureFonts([style.font]), [style.font])
 

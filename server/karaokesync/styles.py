@@ -9,6 +9,8 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field, ValidationError, field_validator
 
+from .animated_backgrounds import BACKGROUNDS as ANIMATED_BACKGROUNDS
+
 # Fonts offered to users: all support Hebrew + Latin and are free (SIL OFL)
 # on Google Fonts, so the browser and the video renderer use the same files.
 FONTS: dict[str, int] = {  # family -> weight used
@@ -122,6 +124,14 @@ class SubtitleStyle(BaseModel):
     countdown: Countdown = "dots"
     show_next_line: bool = True
     backgrounds: list[BackgroundClip] = Field(default_factory=list)
+    # A built-in moving background (animated_backgrounds.py) for the whole song,
+    # under any uploaded backgrounds. None = the colour gradient only.
+    animated_background: str | None = None
+
+    @field_validator("animated_background", mode="before")
+    @classmethod
+    def _animated(cls, v: Any) -> str | None:
+        return v if isinstance(v, str) and v in ANIMATED_BACKGROUNDS else None
 
     @field_validator("backgrounds", mode="before")
     @classmethod

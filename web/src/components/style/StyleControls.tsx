@@ -1,4 +1,5 @@
 import { useEffect, type ReactNode } from 'react'
+import { AnimatedBackgroundPicker } from './AnimatedBackgroundPicker'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { MessageKey } from '../../i18n/he'
 import { ensureFonts } from '../../lib/fonts'
@@ -168,6 +169,7 @@ export function StyleControls({ style, onChange }: Props) {
           <Color label={t('style.bgColor1')} value={style.background_color} onChange={(v) => set('background_color', v)} />
           <Color label={t('style.bgColor2')} value={style.background_color2} onChange={(v) => set('background_color2', v)} />
         </div>
+        <AnimatedBackgroundPicker value={style.animated_background} onChange={(v) => set('animated_background', v)} />
       </Section>
     </div>
   )

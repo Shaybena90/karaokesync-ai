@@ -3,6 +3,7 @@
  * The same values drive the in-browser player and the exported video/ASS.
  */
 import type { CSSProperties } from 'react'
+import { ANIMATED_IDS } from './animatedBackgrounds'
 
 export const FONTS = {
   Heebo: 700,
@@ -70,6 +71,8 @@ export interface SubtitleStyle {
   countdown: CountdownDesign
   show_next_line: boolean
   backgrounds: BackgroundClip[]
+  /** A built-in moving background for the whole song (lib/animatedBackgrounds.ts), or null. */
+  animated_background: string | null
 }
 
 export const DEFAULT_STYLE: SubtitleStyle = {
@@ -91,6 +94,7 @@ export const DEFAULT_STYLE: SubtitleStyle = {
   countdown: 'dots',
   show_next_line: true,
   backgrounds: [],
+  animated_background: null,
 }
 
 export const PRESETS: Record<Exclude<PresetName, 'custom'>, SubtitleStyle> = {
@@ -188,6 +192,9 @@ export function normalizeStyle(raw: unknown): SubtitleStyle {
     countdown: pick('countdown', oneOf(COUNTDOWNS)),
     show_next_line: pick('show_next_line', bool),
     backgrounds: normalizeClips(r.backgrounds),
+    animated_background: typeof r.animated_background === 'string' && ANIMATED_IDS.has(r.animated_background)
+      ? r.animated_background
+      : null,
   }
 }
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { ANIMATED_BACKGROUNDS, animatedClipUrl } from './animatedBackgrounds'
 import { COUNTDOWNS, DEFAULT_STYLE, ENTRANCES, FONTS, PRESETS, clipWindow, normalizeStyle, styleVars } from './subtitleStyle'
 
 describe('subtitle style', () => {
@@ -68,5 +69,20 @@ describe('countdown designs', () => {
     expect(PRESETS.neon.countdown).toBe('pulse')
     expect(normalizeStyle({ countdown: 'bar' }).countdown).toBe('bar')
     expect(normalizeStyle({ countdown: 'fireworks' }).countdown).toBe('dots')
+  })
+})
+
+describe('built-in animated backgrounds', () => {
+  it('has 30, each with a clip and a picture', () => {
+    expect(ANIMATED_BACKGROUNDS).toHaveLength(30)
+    expect(new Set(ANIMATED_BACKGROUNDS.map((b) => b.id)).size).toBe(30)
+    expect(animatedClipUrl('aurora')).toBe('/backgrounds/aurora.mp4')
+    expect(DEFAULT_STYLE.animated_background).toBeNull()
+  })
+
+  it('keeps a known background, drops anything else', () => {
+    expect(normalizeStyle({ animated_background: 'galaxy' }).animated_background).toBe('galaxy')
+    expect(normalizeStyle({ animated_background: '../../etc' }).animated_background).toBeNull()
+    expect(normalizeStyle({ animated_background: 5 }).animated_background).toBeNull()
   })
 })

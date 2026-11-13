@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import logging
 import shutil
+import subprocess
 import tempfile
 from pathlib import Path
 
 import httpx
 
+from ..animated_backgrounds import BACKGROUNDS as ANIMATED_BACKGROUNDS
+from ..animated_backgrounds import cached_clip
 from ..config import Settings
 from ..exports.ass import build_ass
 from ..exports.measure import measurer_for
@@ -76,7 +79,9 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
 
         duration_ms = int(audio.get("duration_ms") or (max(l["end_ms"] for l in lines) + 3000))
         report(4)
-        layers = _download_backgrounds(sb, settings, project, style, duration_ms, workdir)
+        layers = _animated_layer(settings, style, duration_ms) + _download_backgrounds(
+            sb, settings, project, style, duration_ms, workdir
+        )
         report(6)
         out = render_mp4(
             workdir, source, ass_text, font, style, canvas, duration_ms,
@@ -139,6 +144,20 @@ def _download_backgrounds(
             files[row["id"]] = local
         layers.append(BackgroundLayer(files[row["id"]], row["kind"] or "video", start, end, row.get("duration_ms")))
     return layers
+
+
+def _animated_layer(settings: Settings, style: SubtitleStyle, duration_ms: int) -> list[BackgroundLayer]:
+    """The chosen built-in moving background, for the whole song, under the uploaded ones.
+    Drawn once on this computer and kept for the next exports."""
+    if not style.animated_background:
+        return []
+    bg = ANIMATED_BACKGROUNDS[style.animated_background]
+    try:
+        clip = cached_clip(bg.id, Path(settings.worker_tmp_dir) / "animated-backgrounds")
+    except (subprocess.SubprocessError, OSError) as exc:
+        log.warning("animated background %s could not be drawn: %s", bg.id, type(exc).__name__)
+        raise PipelineError("background_failed", retryable=True) from exc
+    return [BackgroundLayer(clip, "video", 0, duration_ms, bg.duration_ms)]
 
 
 def _video_encoder(settings: Settings) -> str:

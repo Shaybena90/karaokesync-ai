@@ -137,3 +137,18 @@ test('choose a Hebrew font and a line entrance effect', async ({ page, backend }
   await expect.poll(() => lastStyle()?.entrance).toBe('none')
   await expect(page.locator('p.ks-lyric[class*="ks-enter-"]')).toHaveCount(0)
 })
+
+test('choose a built-in animated background for the whole song', async ({ page, backend }) => {
+  const picker = page.getByRole('radiogroup', { name: /רקע מונפש מוכן/ })
+  expect(await picker.getByRole('radio').count()).toBe(31) // 30 backgrounds and "none"
+  await expect(picker.locator('img').first()).toHaveAttribute('src', '/backgrounds/sunset.jpg')
+  await picker.getByRole('radio', { name: 'גלקסיה' }).click()
+  await expect.poll(() => (backend.stylePatches.at(-1)?.style as { animated_background?: string })?.animated_background).toBe('galaxy')
+  const layer = page.getByTestId('background-layers').locator('video')
+  await expect(layer).toHaveAttribute('src', '/backgrounds/galaxy.mp4')
+  await expect(layer).toHaveCSS('opacity', '1')
+
+  await picker.getByRole('radio', { name: /ללא – צבעים בלבד/ }).click()
+  await expect.poll(() => (backend.stylePatches.at(-1)?.style as { animated_background?: string | null })?.animated_background).toBeNull()
+  await expect(page.getByTestId('background-layers')).toHaveCount(0)
+})
