@@ -13,7 +13,13 @@ interface Props {
   onSelect: (wordId: string) => void
   /** `moved` is true when the whole word was dragged (not one of its edges). */
   onTimingChange: (wordId: string, startMs: number, endMs: number, moved: boolean) => void
+  /** A stretch the user marks for a sentence (shown in yellow, edges draggable). */
+  range?: { start: number; end: number } | null
+  onRangeChange?: (startMs: number, endMs: number) => void
 }
+
+const RANGE_ID = '__range'
+const RANGE_COLOR = 'rgba(250, 204, 21, 0.28)'
 
 type RegionsApi = ReturnType<typeof RegionsPlugin.create>
 
@@ -24,18 +30,22 @@ const SELECTED = 'rgba(232, 121, 249, 0.5)'
  * Waveform of the song with one draggable / resizable region per word.
  * Dragging a region (or its edges) changes the word's timing.
  */
-export function WaveformTimeline({ url, doc, selectedId, zoom, onReady, onSelect, onTimingChange }: Props) {
+export function WaveformTimeline({ url, doc, selectedId, zoom, onReady, onSelect, onTimingChange, range, onRangeChange }: Props) {
   const container = useRef<HTMLDivElement>(null)
   const wsRef = useRef<WaveSurfer | null>(null)
   const regionsRef = useRef<RegionsApi | null>(null)
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
   // Latest callbacks without re-creating wavesurfer.
-  const callbacks = useRef({ onSelect, onTimingChange, onReady })
+  const callbacks = useRef({ onSelect, onTimingChange, onReady, onRangeChange })
   useLayoutEffect(() => {
-    callbacks.current = { onSelect, onTimingChange, onReady }
+    callbacks.current = { onSelect, onTimingChange, onReady, onRangeChange }
   })
   const initialZoom = useRef(zoom)
+  const zoomRef = useRef(zoom)
+  useLayoutEffect(() => {
+    zoomRef.current = zoom
+  }, [zoom])
 
   useEffect(() => {
     if (!container.current) return
@@ -60,12 +70,13 @@ export function WaveformTimeline({ url, doc, selectedId, zoom, onReady, onSelect
     })
     const regions = ws.registerPlugin(RegionsPlugin.create())
     // `side` is set when an edge was resized, undefined when the whole word was dragged.
-    regions.on('region-updated', (r: Region, side?: 'start' | 'end') =>
-      callbacks.current.onTimingChange(r.id, r.start * 1000, r.end * 1000, side === undefined),
-    )
+    regions.on('region-updated', (r: Region, side?: 'start' | 'end') => {
+      if (r.id === RANGE_ID) return callbacks.current.onRangeChange?.(r.start * 1000, r.end * 1000)
+      callbacks.current.onTimingChange(r.id, r.start * 1000, r.end * 1000, side === undefined)
+    })
     regions.on('region-clicked', (r: Region, e: MouseEvent) => {
       e.stopPropagation()
-      callbacks.current.onSelect(r.id)
+      if (r.id !== RANGE_ID) callbacks.current.onSelect(r.id)
     })
     ws.on('ready', () => {
       setReady(true)
@@ -109,8 +120,33 @@ export function WaveformTimeline({ url, doc, selectedId, zoom, onReady, onSelect
         }
       }
     })
+    existing.delete(RANGE_ID) // managed below
     for (const stale of existing.values()) stale.remove()
   }, [doc, selectedId, ready])
+
+  // The marked stretch: drawn over the words while a sentence is being marked.
+  useEffect(() => {
+    const regions = regionsRef.current
+    if (!regions || !ready) return
+    const current = regions.getRegions().find((r) => r.id === RANGE_ID)
+    if (!range) {
+      current?.remove()
+      return
+    }
+    const start = range.start / 1000
+    const end = Math.max(range.end, range.start + 50) / 1000
+    if (!current) {
+      regions.addRegion({ id: RANGE_ID, start, end, color: RANGE_COLOR, drag: true, resize: true, minLength: 0.2 })
+      // Show the stretch: on a phone only a few seconds of the song fit on screen.
+      const ws = wsRef.current
+      const width = container.current?.clientWidth ?? 0
+      if (ws && (start * zoomRef.current < ws.getScroll() || end * zoomRef.current > ws.getScroll() + width)) {
+        ws.setScroll(Math.max(0, start * zoomRef.current - width / 6))
+      }
+    } else if (Math.abs(current.start - start) > 0.0005 || Math.abs(current.end - end) > 0.0005) {
+      current.setOptions({ start, end })
+    }
+  }, [range, ready])
 
   // Bring the whole box of the selected word into view (with some room around
   // it), so it can be dragged without touching the screen edge.

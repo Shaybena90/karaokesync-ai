@@ -24,6 +24,8 @@ interface Props {
   onDismissSync: (lineId: string) => void
   /** A typed sentence replaces the line; `sync` = then time it to the singer automatically. */
   onLineText: (lineId: string, text: string, sync: boolean) => void
+  /** Mark the stretch where this line is sung, then sync inside it. */
+  onMarkRange: (line: DocLine) => void
 }
 
 /** All lines as editable word chips. Low-confidence words are underlined so they are easy to find. */
@@ -42,6 +44,7 @@ export const LinesList = memo(function LinesList({
   onTapSync,
   onDismissSync,
   onLineText,
+  onMarkRange,
 }: Props) {
   const { t } = useI18n()
   const [editing, setEditing] = useState<{ lineId: string; text: string } | null>(null)
@@ -64,6 +67,9 @@ export const LinesList = memo(function LinesList({
               <IconBtn label={t('editor.loopLine')} onClick={() => onLoopLine(line)}>⟲</IconBtn>
               <IconBtn label={t('editor.line.edit')} onClick={() => setEditing({ lineId: line.id, text: line.words.map((w) => w.text).join(' ') })}>
                 ✏️
+              </IconBtn>
+              <IconBtn label={t('editor.range.open')} onClick={() => onMarkRange(line)}>
+                ⏱
               </IconBtn>
               <IconBtn label={t('editor.autoSync')} onClick={() => onAutoSync(line)} disabled={isBusy(syncStates[line.id])}>
                 ✨

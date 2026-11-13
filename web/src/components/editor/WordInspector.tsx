@@ -120,7 +120,7 @@ export function WordInspector(props: Props) {
   )
 }
 
-function TimeField({ label, ms, onChange, onNow }: { label: string; ms: number; onChange: (ms: number) => void; onNow: () => void }) {
+export function TimeField({ label, ms, onChange, onNow }: { label: string; ms: number; onChange: (ms: number) => void; onNow: () => void }) {
   const { t } = useI18n()
   const [draft, setDraft] = useState<string | null>(null)
   const commit = () => {

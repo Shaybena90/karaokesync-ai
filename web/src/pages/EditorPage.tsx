@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, u
 import { Link, Navigate, useParams } from 'react-router-dom'
 import type WaveSurfer from 'wavesurfer.js'
 import { LinesList } from '../components/editor/LinesList'
+import { LineRangePanel } from '../components/editor/LineRangePanel'
 import { NewLinePanel } from '../components/editor/NewLinePanel'
 import { TapSyncPanel } from '../components/editor/TapSyncPanel'
 import { WaveformTimeline } from '../components/editor/WaveformTimeline'
@@ -223,6 +224,23 @@ export function EditorPage() {
   )
   const onAutoSync = useCallback((line: DocLine) => syncLine(docRef.current, line.id), [syncLine])
 
+  // ------------------------------------- mark a sentence's stretch, then sync
+  const [newLineOpen, setNewLineOpen] = useState(false)
+  const [marking, setMarking] = useState<{ lineId: string; start: number; end: number } | null>(null)
+  const onMarkRange = useCallback((line: DocLine) => {
+    setSelectedId(null)
+    setNewLineOpen(false)
+    // Start from where the line is now, with a little room on both sides.
+    setMarking({ lineId: line.id, start: Math.max(0, lineStart(line) - 300), end: lineEnd(line) + 300 })
+  }, [])
+  const syncMarked = useCallback(() => {
+    const m = marking
+    if (!m) return
+    const line = docRef.current.find((l) => l.id === m.lineId)
+    setMarking(null)
+    if (line) void startSync(line.id, line.words.map((w) => w.text), { start: Math.round(m.start), end: Math.round(m.end) })
+  }, [marking, startSync])
+
   // ------------------------------------------------- whole typed sentences
   const onLineText = useCallback(
     (lineId: string, text: string, sync: boolean) => {
@@ -232,7 +250,6 @@ export function EditorPage() {
     },
     [edit, syncLine],
   )
-  const [newLineOpen, setNewLineOpen] = useState(false)
   const addLine = useCallback(
     (atMs: number, text: string) => {
       const res = insertLineAt(docRef.current, atMs, text, audioDuration())
@@ -352,7 +369,24 @@ export function EditorPage() {
     <NewLinePanel lyricDir={lyricDir} currentTimeMs={nowMs} onAdd={addLine} onCancel={() => setNewLineOpen(false)} />
   ) : null
 
-  const inspector = tapPanel ?? newLinePanel ?? (selected ? (
+  const markIndex = marking ? doc.findIndex((l) => l.id === marking.lineId) : -1
+  const rangePanel =
+    marking && markIndex >= 0 ? (
+      <LineRangePanel
+        text={doc[markIndex].words.map((w) => w.text).join(' ')}
+        lineNumber={markIndex + 1}
+        lyricDir={lyricDir}
+        range={marking}
+        currentTimeMs={nowMs}
+        onChange={(start, end) => setMarking({ ...marking, start, end })}
+        onPlay={() => playRange(marking.start, marking.end)}
+        onLoop={() => loopRange(marking.start, marking.end)}
+        onSync={syncMarked}
+        onCancel={() => setMarking(null)}
+      />
+    ) : null
+
+  const inspector = tapPanel ?? newLinePanel ?? rangePanel ?? (selected ? (
     <WordInspector
       key={`${selected.word.id}:${selected.word.text}`}
       word={selected.word}
@@ -431,6 +465,8 @@ export function EditorPage() {
             onReady={onWaveReady}
             onSelect={select}
             onTimingChange={onTimingChange}
+            range={marking}
+            onRangeChange={(start, end) => setMarking((m) => (m ? { ...m, start, end } : m))}
           />
         ) : (
           <p className="py-4 text-center text-sm text-white/50">{storagePath ? <Spinner /> : t('project.audioGone')}</p>
@@ -528,6 +564,7 @@ export function EditorPage() {
               onTapSync={onTapSync}
               onDismissSync={lineSync.dismiss}
               onLineText={onLineText}
+              onMarkRange={onMarkRange}
             />
           )}
         </div>

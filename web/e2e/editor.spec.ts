@@ -228,3 +228,45 @@ test('add a missing sentence where the song is now', async ({ page, backend }, i
   expect(backend.syncJobs[0]).toMatchObject({ words: ['שורה', 'שחסרה', 'באמצע'], window_start_ms: 6500, window_end_ms: 12000 })
   await expect.poll(() => backend.lastSavedText()).toEqual(['שלום עולם', 'זה שיר קריוקי', 'שורה שחסרה באמצע', 'סוף טוב'])
 })
+
+const rangeRegions = (page: Page) =>
+  page.evaluate(() => {
+    const host = [...document.querySelectorAll('.ks-waveform *')].find((e) => e.shadowRoot)!
+    return [...host.shadowRoot!.querySelectorAll<HTMLElement>('[part~="region"]')].filter((r) => r.style.backgroundColor.includes('250, 204, 21')).length
+  })
+
+test('mark where a sentence is sung and sync inside that stretch', async ({ page, backend }) => {
+  await page.getByRole('button', { name: 'תחימת המשפט בזמן וסנכרון' }).nth(1).click()
+  const panel = page.getByTestId('line-range')
+  await expect(panel.getByText('זה שיר קריוקי')).toBeVisible()
+  await expect.poll(() => rangeRegions(page)).toBe(1) // the yellow stretch on the waveform
+
+  const start = panel.getByRole('textbox', { name: 'התחלה (שניות)' })
+  await start.fill('4.1')
+  await start.press('Enter')
+  const end = panel.getByRole('textbox', { name: 'סוף (שניות)' })
+  await end.fill('7.25')
+  await end.press('Enter')
+  await panel.getByRole('button', { name: /סנכרון המילים בקטע הזה/ }).click()
+  await expect(panel).toBeHidden()
+  await expect.poll(() => rangeRegions(page)).toBe(0)
+  expect(backend.syncJobs[0]).toMatchObject({ words: ['זה', 'שיר', 'קריוקי'], window_start_ms: 4100, window_end_ms: 7250 })
+  await expect(page.getByText('השורה סונכרנה')).toBeVisible({ timeout: 8000 })
+})
+
+test('the stretch can be set from the playback position', async ({ page, backend }, info) => {
+  await page.getByRole('button', { name: 'תחימת המשפט בזמן וסנכרון' }).nth(1).click()
+  const panel = page.getByTestId('line-range')
+  // Selecting a word moves the playhead to it (here: "שיר" at 5.1 s).
+  await page.locator('.ks-chip', { hasText: 'שיר' }).click()
+  await panel.getByRole('button', { name: /לפי מיקום הניגון/ }).first().click()
+  await expect(panel.getByRole('textbox', { name: 'התחלה (שניות)' })).toHaveValue('5.10')
+  void info
+  // An end before the start is refused with an explanation.
+  const end = panel.getByRole('textbox', { name: 'סוף (שניות)' })
+  await end.fill('5.2')
+  await end.press('Enter')
+  await expect(panel.getByRole('alert')).toContainText('הקטע קצר מדי')
+  await expect(panel.getByRole('button', { name: /סנכרון המילים בקטע הזה/ })).toBeDisabled()
+  expect(backend.syncJobs).toHaveLength(0)
+})
