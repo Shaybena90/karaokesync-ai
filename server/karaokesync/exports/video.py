@@ -14,6 +14,7 @@ from pathlib import Path
 from ..styles import SubtitleStyle
 from ..worker.errors import PipelineError
 from .ass import Canvas
+from .opening import OpeningOptions, intro_file, plan_opening, render_opening
 
 ASPECTS = {"16:9": (16, 9), "9:16": (9, 16), "1:1": (1, 1)}
 RESOLUTIONS = (720, 1080)
@@ -137,6 +138,10 @@ def render_mp4(
     max_bytes: int | None = None,
     workers: int | None = None,
     encoder: str = "libx264",
+    opening: OpeningOptions | None = None,
+    aspect: str = "16:9",
+    title_subs: str | None = None,
+    extra_fonts: list[Path] | None = None,
 ) -> Path:
     """Render the video in parts at the same time (one FFmpeg per part), join
     them without re-encoding and add the song once.
@@ -148,11 +153,16 @@ def render_mp4(
         raise PipelineError("ffmpeg_missing", retryable=False)
     fonts = workdir / "fonts"
     fonts.mkdir(exist_ok=True)
-    shutil.copy(font_file, fonts / font_file.name)
+    for f in [font_file, *(extra_fonts or [])]:
+        shutil.copy(f, fonts / f.name)
     (workdir / "subs.ass").write_text(ass_text, encoding="utf-8")
+    plan = plan_opening(opening) if opening and opening.active else None
+    lead_ms = plan.karaoke_start_ms if plan else 0   # the opening comes before the song
+    if plan and title_subs:
+        (workdir / "title.ass").write_text(title_subs, encoding="utf-8")
 
     # Quality first (CRF), but never above the bitrate that fits the storage limit.
-    rates = bitrates_for(duration_ms, max_bytes)
+    rates = bitrates_for(duration_ms + lead_ms, max_bytes)
     video_cap = ["-maxrate", f"{rates[0]}k", "-bufsize", f"{rates[0]}k"] if rates else []
     audio_kbps = rates[1] if rates else 192
     base = workdir / "base.png"
@@ -161,7 +171,12 @@ def render_mp4(
                           capture_output=True, timeout=120, check=False)
     if made.returncode != 0 or not base.exists():
         raise PipelineError("render_failed", retryable=False)
-    chunks = plan_chunks(duration_ms, workers or default_workers())
+    if plan:
+        # The karaoke's first moment is rendered alone: the opening's last transition blends into it.
+        rest = plan_chunks(duration_ms - plan.head_ms, workers or default_workers())
+        chunks = [(0, plan.head_ms)] + [(a + plan.head_ms, b + plan.head_ms) for a, b in rest]
+    else:
+        chunks = plan_chunks(duration_ms, workers or default_workers())
     threads = max(1, (os.cpu_count() or 1) // len(chunks))
     deadline = time.monotonic() + timeout_s
 
@@ -223,15 +238,32 @@ def render_mp4(
         if proc.returncode != 0 or not part.exists() or part.stat().st_size == 0:
             raise PipelineError("render_failed", retryable=False)
 
+    names = [f"part{k}.mp4" for k in range(len(chunks))]
+    sound: list[str] = ["-map", "1:a:0"]
+    extra_audio: list[str] = []
+    if plan:
+        names[0] = render_opening(
+            ffmpeg, workdir, canvas, opening, aspect, plan, "part0.mp4", "title.ass" if title_subs else None,
+            encoder_args(encoder, video_cap), max(1, os.cpu_count() or 1), max(60.0, deadline - time.monotonic()),
+        )
+        # The song starts where the karaoke starts; the intro's own sound plays before it.
+        delay = f"adelay=delays={lead_ms}:all=1"
+        if opening.intro:
+            extra_audio = ["-i", str(intro_file(aspect).resolve())]
+            graph = f"[1:a:0]{delay}[song];[2:a:0]apad[intro];[song][intro]amix=inputs=2:duration=first:normalize=0[a]"
+        else:
+            graph = f"[1:a:0]{delay}[a]"
+        sound = ["-filter_complex", graph, "-map", "[a]"]
+
     # Join the parts as they are and add the song.
-    (workdir / "parts.txt").write_text("".join(f"file 'part{k}.mp4'\n" for k in range(len(chunks))), encoding="utf-8")
+    (workdir / "parts.txt").write_text("".join(f"file '{n}'\n" for n in names), encoding="utf-8")
     join = [
         ffmpeg, "-nostdin", "-hide_banner", "-loglevel", "error", "-y",
         "-f", "concat", "-safe", "0", "-i", "parts.txt",
-        "-i", str(audio.resolve()),
-        "-map", "0:v", "-map", "1:a:0", "-c:v", "copy",
+        "-i", str(audio.resolve()), *extra_audio,
+        "-map", "0:v", *sound, "-c:v", "copy",
         "-c:a", "aac", "-b:a", f"{audio_kbps}k",
-        "-t", f"{duration_ms / 1000:.3f}",
+        "-t", f"{(duration_ms + lead_ms) / 1000:.3f}",
         "-movflags", "+faststart",
         out_name,
     ]

@@ -130,10 +130,16 @@ export const api = {
   completeUpload: (projectId: string) => request<ProjectState>(`/uploads/${projectId}/complete`, { method: 'POST' }),
   retry: (projectId: string) => request<ProjectState>(`/projects/${projectId}/retry`, { method: 'POST' }),
   deleteProject: (projectId: string) => request<void>(`/projects/${projectId}`, { method: 'DELETE' }),
-  createVideoExport: (projectId: string, aspect: string, resolution: number, audio: 'original' | 'instrumental' = 'original') =>
+  createVideoExport: (
+    projectId: string,
+    aspect: string,
+    resolution: number,
+    audio: 'original' | 'instrumental' = 'original',
+    opening: { intro: boolean; transition: string; title: { song: string; artist: string } | null } | null = null,
+  ) =>
     request<ExportJob>(`/projects/${projectId}/exports`, {
       method: 'POST',
-      body: JSON.stringify({ format: 'mp4', aspect, resolution, audio }),
+      body: JSON.stringify({ format: 'mp4', aspect, resolution, audio, opening }),
     }),
   requestInstrumental: (projectId: string) => request<InstrumentalJob>(`/projects/${projectId}/instrumental`, { method: 'POST' }),
   cancelInstrumental: (projectId: string) => request<void>(`/projects/${projectId}/instrumental`, { method: 'DELETE' }),

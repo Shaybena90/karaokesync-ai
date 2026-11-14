@@ -45,7 +45,7 @@ test('video export: request, progress, download', async ({ page, backend }) => {
   await page.getByRole('radio', { name: '720p' }).click()
   await page.getByRole('button', { name: /יצירת סרטון/ }).click()
   await expect(page.getByText(/בתור ליצירה|יוצר סרטון/)).toBeVisible()
-  expect(backend.exportJobs[0].options).toEqual({ aspect: '9:16', resolution: 720, audio: 'original' })
+  expect(backend.exportJobs[0].options).toMatchObject({ aspect: '9:16', resolution: 720, audio: 'original' })
   await page.getByRole('button', { name: /הורדת הסרטון/ }).click({ timeout: 15000 })
   await expect.poll(() => backend.apiCalls.find((c) => c.startsWith('VIDEO'))).toBe('VIDEO download=שיר בדיקה.mp4')
 })
@@ -171,4 +171,41 @@ test('3D background and 3D Hebrew letters, in the preview and saved', async ({ p
   await expect.poll(() => last()?.depth_color).toBe('#ff0000')
   await kinds.getByRole('radio', { name: /רגיל/ }).click()
   await expect.poll(shadow).toBe('none')
+})
+
+test('opening clip, 3D title with the song and singer, and a transition', async ({ page, backend }) => {
+  const box = page.getByTestId('opening')
+  const song = box.getByRole('textbox', { name: 'שם השיר' })
+  await expect(song).toHaveValue('שיר בדיקה') // starts as the project's name
+  await box.getByRole('textbox', { name: 'שם הזמר' }).fill('הזמרת')
+  await box.getByRole('button', { name: /צפייה בפתיח/ }).click()
+  await expect(page.getByTestId('intro-preview')).toHaveAttribute('src', '/intro/intro.mp4')
+  const transitions = box.getByRole('radiogroup', { name: 'אפקט מעבר' }).getByRole('radio')
+  expect(await transitions.count()).toBeGreaterThanOrEqual(15)
+  await box.getByRole('radio', { name: /עיגול נפתח/ }).click()
+
+  // a title needs the song's name
+  await song.fill('')
+  const create = page.getByRole('button', { name: /יצירת סרטון/ })
+  await expect(create).toBeDisabled()
+  await expect(box.getByText(/כתבו את שם השיר/)).toBeVisible()
+  await song.fill('ירושלים של זהב')
+  await create.click()
+  await expect.poll(() => backend.exportJobs[0]?.options).toMatchObject({
+    opening: { intro: true, transition: 'circleopen', title: { song: 'ירושלים של זהב', artist: 'הזמרת' } },
+  })
+  // remembered for next time
+  await page.reload()
+  await expect(page.getByTestId('opening').getByRole('textbox', { name: 'שם הזמר' })).toHaveValue('הזמרת')
+  await expect(page.getByTestId('opening').getByRole('radio', { name: /עיגול נפתח/ })).toHaveAttribute('aria-checked', 'true')
+})
+
+test('a video without opening and title', async ({ page, backend }) => {
+  const box = page.getByTestId('opening')
+  await box.getByRole('checkbox', { name: /כותרת יוקרתית/ }).uncheck()
+  await box.getByRole('checkbox', { name: /סרטון פתיח/ }).uncheck()
+  await expect(box.getByRole('radiogroup', { name: 'אפקט מעבר' })).toHaveCount(0)
+  await page.getByRole('button', { name: /יצירת סרטון/ }).click()
+  await expect.poll(() => backend.exportJobs.length).toBe(1)
+  expect((backend.exportJobs[0].options as { opening: unknown }).opening).toBeNull()
 })

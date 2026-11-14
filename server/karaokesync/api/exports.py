@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from ..config import Settings
 from ..exports.ass import build_ass
 from ..exports.measure import measurer_for
+from ..exports.opening import OpeningOptions
 from ..exports.text_formats import to_lrc, to_srt
 from ..exports.video import RESOLUTIONS, canvas_for
 from ..fonts import ensure_font
@@ -45,6 +46,8 @@ class ExportRequest(BaseModel):
     resolution: Literal[720, 1080] = 1080
     # "instrumental" = the melody-only track (the singer's voice removed)
     audio: Literal["original", "instrumental"] = "original"
+    # Opening: the KaraokeSync intro, a title card (song + singer) and the transition into the karaoke
+    opening: OpeningOptions | None = None
 
 
 def _require_lyrics(sb: SupabaseClient, project: dict) -> list[dict]:
@@ -135,6 +138,7 @@ def exports_router() -> APIRouter:
             "aspect": body.aspect,
             "resolution": body.resolution,
             "audio": body.audio,
+            "opening": body.opening.model_dump() if body.opening and body.opening.active else None,
             # Snapshot: later style edits do not change a render that is already queued.
             "style": parse_style(project.get("style")).model_dump(),
         }

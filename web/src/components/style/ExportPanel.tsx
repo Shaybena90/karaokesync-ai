@@ -6,6 +6,8 @@ import type { InstrumentalState } from '../../lib/useInstrumental'
 import type { ExportJob } from '../../lib/types'
 import type { VideoAspect } from '../player/KaraokePlayer'
 import { Alert, Button, ProgressBar, Spinner } from '../ui'
+import { openingProblem, openingRequest, useOpeningChoice } from '../../lib/opening'
+import { OpeningPanel } from './OpeningPanel'
 import { Segmented } from './StyleControls'
 
 interface Props {
@@ -27,6 +29,7 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
   const { t, locale } = useI18n()
   const [resolution, setResolution] = useState<'720' | '1080'>('1080')
   const [noVocals, setNoVocals] = useState(false)
+  const [opening, setOpening] = useOpeningChoice(projectId, title)
   const [jobs, setJobs] = useState<ExportJob[]>([])
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -130,12 +133,14 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
           🎵 {t('export.noVocals')}
         </label>
         {!instrumental.ready && canRenderVideo && <p className="-mt-2 text-xs text-white/40">{t('export.noVocalsHint')}</p>}
+        <OpeningPanel choice={opening} onChange={setOpening} aspect={aspect} />
         <Button
           className="w-full"
-          disabled={!canRenderVideo || busy !== null || active}
+          disabled={!canRenderVideo || busy !== null || active || openingProblem(opening) !== null}
           onClick={() => run('mp4', async () => {
             await beforeExport()
-            await api.createVideoExport(projectId, aspect, Number(resolution), noVocals && instrumental.ready ? 'instrumental' : 'original')
+            await api.createVideoExport(projectId, aspect, Number(resolution), noVocals && instrumental.ready ? 'instrumental' : 'original',
+              openingRequest(opening))
             await load()
           })}
         >

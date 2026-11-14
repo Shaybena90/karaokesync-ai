@@ -3,7 +3,7 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "rewrites": [{ "source": "/((?!assets/|backgrounds/|sw.js|workbox-|manifest.webmanifest|.*\\.(?:png|svg|ico)$).*)", "destination": "/index.html" }],
+  "rewrites": [{ "source": "/((?!assets/|backgrounds/|intro/|sw.js|workbox-|manifest.webmanifest|.*\\.(?:png|svg|ico)$).*)", "destination": "/index.html" }],
   "headers": [
     {
       "source": "/(.*)",

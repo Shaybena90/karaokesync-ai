@@ -1,0 +1,11 @@
+# The opening's sound (8 s), all made by FFmpeg: a soft whoosh as the logo flies
+# in, a deep hit when it lands (1.8 s), then a warm shimmering chord that fades.
+aevalsrc=exprs=
+0.32*(random(0)*2-1)*exp(-pow((t-1.35)/0.45\,2))
++0.55*sin(2*PI*(42+70*exp(-(t-1.8)*9))*(t-1.8))*exp(-(t-1.8)*3.2)*gte(t\,1.8)
++0.07*(sin(2*PI*220*t)+sin(2*PI*277.18*t)+sin(2*PI*329.63*t)+0.7*sin(2*PI*440*t)+0.5*sin(2*PI*554.37*t)+0.35*sin(2*PI*659.25*t*(1+0.002*sin(2*PI*5*t))))*min(1\,max(0\,(t-1.9)/1.2))*min(1\,max(0\,(8-t)/2.5))
+:s=48000:d=8,
+lowpass=f=5200,
+aecho=0.8:0.6:180|320:0.35|0.22,
+volume=0.9,
+pan=stereo|c0=c0|c1=c0

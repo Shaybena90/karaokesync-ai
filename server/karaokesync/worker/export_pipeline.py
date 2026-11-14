@@ -15,6 +15,7 @@ from ..animated_backgrounds import clip_for
 from ..config import Settings
 from ..exports.ass import build_ass
 from ..exports.measure import measurer_for
+from ..exports.opening import ARTIST_FONT, TITLE_FONT, OpeningOptions, opening_files, title_ass
 from ..exports.video import ASPECTS, RESOLUTIONS, BackgroundLayer, canvas_for, render_mp4
 from ..fonts import ensure_font
 from ..lyrics_data import load_lyrics
@@ -35,6 +36,10 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
     if aspect not in ASPECTS or resolution not in RESOLUTIONS:
         raise PipelineError("invalid_export_options", retryable=False)
     style = parse_style(options.get("style"))
+    try:
+        opening = OpeningOptions.model_validate(options.get("opening") or {})
+    except ValueError as exc:
+        raise PipelineError("invalid_export_options", retryable=False) from exc
 
     projects = sb.select("projects", {"id": f"eq.{job['project_id']}", "select": "id,user_id,title,language"})
     audio_rows = sb.select(
@@ -79,6 +84,17 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
 
         duration_ms = int(audio.get("duration_ms") or (max(l["end_ms"] for l in lines) + 3000))
         report(4)
+        title_subs, extra_fonts = None, []
+        if opening.active:
+            opening_files(opening, aspect)
+            if opening.title:
+                try:
+                    title_font, artist_font = ensure_font(TITLE_FONT), ensure_font(ARTIST_FONT)
+                except RuntimeError as exc:
+                    raise PipelineError("font_unavailable", retryable=True) from exc
+                extra_fonts = [title_font, artist_font]
+                title_subs = title_ass(opening.title, canvas, measurer_for(str(title_font)), measurer_for(str(artist_font)),
+                                       project.get("language"))
         layers = _animated_layer(settings, style, duration_ms) + _download_backgrounds(
             sb, settings, project, style, duration_ms, workdir
         )
@@ -89,6 +105,10 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
             backgrounds=layers,
             max_bytes=settings.max_export_mb * 1024 * 1024,
             encoder=_video_encoder(settings),
+            opening=opening if opening.active else None,
+            aspect=aspect,
+            title_subs=title_subs,
+            extra_fonts=extra_fonts,
         )
 
         report(95)

@@ -299,7 +299,7 @@ export class MockBackend {
     const exportsMatch = /^\/projects\/([^/]+)\/exports$/.exec(p)
     if (exportsMatch && method === 'POST') {
       const body = JSON.parse(req.postData() ?? '{}')
-      const job: Row = { id: 'e1', project_id: exportsMatch[1], format: 'mp4', options: { aspect: body.aspect, resolution: body.resolution, audio: body.audio },
+      const job: Row = { id: 'e1', project_id: exportsMatch[1], format: 'mp4', options: { aspect: body.aspect, resolution: body.resolution, audio: body.audio, opening: body.opening ?? null },
         status: 'queued', progress: 0, output_path: null, error_code: null, created_at: new Date().toISOString(), finished_at: null }
       this.exportJobs.unshift(job)
       setTimeout(() => Object.assign(job, { status: 'running', progress: 42 }), 1000)
