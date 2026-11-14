@@ -140,7 +140,7 @@ test('choose a Hebrew font and a line entrance effect', async ({ page, backend }
 
 test('choose a built-in animated background for the whole song', async ({ page, backend }) => {
   const picker = page.getByRole('radiogroup', { name: /רקע מונפש מוכן/ })
-  expect(await picker.getByRole('radio').count()).toBe(43) // 12 in 3D, 30 classic and "none"
+  expect(await picker.getByRole('radio').count()).toBe(49) // 18 in 3D, 30 classic and "none"
   await expect(picker.locator('img').first()).toHaveAttribute('src', '/backgrounds/neon-tunnel.jpg') // 3D first
   await picker.getByRole('radio', { name: 'גלקסיה' }).click()
   await expect.poll(() => (backend.stylePatches.at(-1)?.style as { animated_background?: string })?.animated_background).toBe('galaxy')

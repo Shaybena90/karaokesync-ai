@@ -1,5 +1,5 @@
 /**
- * Built-in moving backgrounds (30 classic + 12 in 3D) — mirror of server/karaokesync/animated_backgrounds.py
+ * Built-in moving backgrounds (30 classic + 18 in 3D) — mirror of server/karaokesync/animated_backgrounds.py
  * (a server test checks the lists match). Each one is a short clip that loops
  * seamlessly, drawn from the same FFmpeg recipe the video export uses.
  * Files: public/backgrounds/<id>.mp4 (the clip) and <id>.jpg (a small picture).
@@ -57,6 +57,12 @@ export const ANIMATED_BACKGROUNDS: readonly AnimatedBackground[] = [
   { id: 'hex-floor', he: "רצפת משושים", en: 'Hexagon floor', seconds: 10, kind: '3d' },
   { id: 'ocean-sunset', he: "ים בשקיעה", en: 'Ocean sunset', seconds: 10, kind: '3d' },
   { id: 'cube-field', he: "קוביות מרחפות", en: 'Floating cubes', seconds: 10, kind: '3d' },
+  { id: 'wedding-hearts', he: "לבבות חתונה", en: 'Wedding hearts', seconds: 10, kind: '3d' },
+  { id: 'wedding-lights', he: "אורות חופה", en: 'Fairy lights', seconds: 10, kind: '3d' },
+  { id: 'party-confetti', he: "מסיבת קונפטי", en: 'Party confetti', seconds: 10, kind: '3d' },
+  { id: 'party-balloons', he: "בלונים", en: 'Party balloons', seconds: 10, kind: '3d' },
+  { id: 'forest-fireflies', he: "יער גחליליות", en: 'Firefly forest', seconds: 10, kind: '3d' },
+  { id: 'mountain-lake', he: "אגם הררי", en: 'Mountain lake', seconds: 10, kind: '3d' },
 ]
 
 export const ANIMATED_IDS: ReadonlySet<string> = new Set(ANIMATED_BACKGROUNDS.map((b) => b.id))

@@ -3,6 +3,7 @@ import { Link, useNavigate, useParams } from 'react-router-dom'
 import { KaraokePlayer } from '../components/player/KaraokePlayer'
 import { StatusBadge } from '../components/StatusBadge'
 import { PastedLyricsPanel } from '../components/PastedLyricsPanel'
+import { LyricsSearchPanel } from '../components/LyricsSearchPanel'
 import { useWorkerStatus } from '../lib/useWorkerStatus'
 import { Alert, Button, ButtonLink, Card, ProgressBar, Spinner } from '../components/ui'
 import { errorKey, isMessageKey, useI18n } from '../i18n/I18nProvider'
@@ -170,6 +171,15 @@ export function ProjectPage() {
           </Card>
         )}
         {failed && canRetry && (
+          <LyricsSearchPanel
+            initialQuery={project.title}
+            durationMs={audio?.duration_ms}
+            busy={busy}
+            mode="sync"
+            onUse={(text) => void run(() => api.usePastedLyrics(project.id, text))}
+          />
+        )}
+        {failed && canRetry && (
           <PastedLyricsPanel
             initial={project.lyrics_text ?? null}
             busy={busy}
@@ -200,6 +210,15 @@ export function ProjectPage() {
               </div>
               <p className="hidden text-xs text-white/40 sm:block">{t('player.shortcuts')}</p>
             </div>
+            {audio?.status === 'verified' && (
+              <LyricsSearchPanel
+                initialQuery={project.title}
+                durationMs={audio.duration_ms}
+                busy={busy}
+                mode="sync"
+                onUse={(text) => void run(() => api.usePastedLyrics(project.id, text))}
+              />
+            )}
             {audio?.status === 'verified' && (
               <PastedLyricsPanel
                 initial={project.lyrics_text ?? null}

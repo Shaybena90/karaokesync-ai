@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     cors_origins: str = "http://localhost:5173"
     # Who may see the processing servers and pause them from the website (comma separated).
     admin_emails: str = ""
+    # Online lyrics search (LRCLIB: a free, open lyrics database; no key needed).
+    lyrics_search_url: str = "https://lrclib.net"
 
     # Upload limits (also returned to the browser through GET /limits)
     max_upload_mb: int = 50

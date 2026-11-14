@@ -34,8 +34,8 @@ CLASSIC = [b.id for b in ab.BACKGROUNDS.values() if b.kind == "classic"]
 SCENES = [b.id for b in ab.BACKGROUNDS.values() if b.kind == "3d"]
 
 
-def test_thirty_classic_and_twelve_3d_backgrounds_with_names():
-    assert len(CLASSIC) == 30 and len(SCENES) == 12
+def test_thirty_classic_and_eighteen_3d_backgrounds_with_names():
+    assert len(CLASSIC) == 30 and len(SCENES) == 18
     for bg in ab.BACKGROUNDS.values():
         assert re.fullmatch(r"[a-z]+(-[a-z]+)*", bg.id) and bg.name_he and bg.name_en
         assert bg.seconds in (10, 20)

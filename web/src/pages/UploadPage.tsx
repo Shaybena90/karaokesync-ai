@@ -6,6 +6,7 @@ import { errorKey, useI18n } from '../i18n/I18nProvider'
 import type { MessageKey } from '../i18n/he'
 import { ApiError, api, type SongLanguage, uploadToSignedUrl } from '../lib/api'
 import { LyricsTextarea } from '../components/PastedLyricsPanel'
+import { LyricsSearchPanel } from '../components/LyricsSearchPanel'
 import { checkLocalFile, readDuration } from '../lib/audioFile'
 import { formatBytes, formatDuration } from '../lib/format'
 import { usePendingFile } from '../lib/pendingFile'
@@ -169,6 +170,7 @@ export function UploadPage() {
             <div className="glass space-y-2 rounded-3xl p-4" data-testid="upload-lyrics">
               <p className="text-sm font-semibold">📝 {t('lyrics.upload.title')}</p>
               <p className="text-xs text-white/55">{t('lyrics.paste.help')}</p>
+              <LyricsSearchPanel initialQuery="" mode="fill" onUse={setLyricsText} />
               <LyricsTextarea value={lyricsText} onChange={setLyricsText} />
             </div>
           ) : (

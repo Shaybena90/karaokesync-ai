@@ -19,6 +19,19 @@ async function accessToken(): Promise<string | null> {
   return data.session?.access_token ?? null
 }
 
+/** A song found by the online lyrics search (GET /lyrics-search). */
+export interface LyricsSearchResult {
+  id: number
+  title: string
+  artist: string
+  album: string
+  duration_ms: number | null
+  synced: boolean
+  lyrics: string
+  /** Its length is within a few seconds of the uploaded song: probably the same version. */
+  matches_length: boolean
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = await accessToken()
   const headers = new Headers(init.headers)
@@ -93,6 +106,10 @@ export const api = {
     }),
   workerStatus: () => request<WorkerStatus>('/worker-status'),
   setWorkerPaused: (paused: boolean) => request<{ paused: boolean }>('/worker-status', { method: 'POST', body: JSON.stringify({ paused }) }),
+  searchLyrics: (q: string, durationMs?: number | null) =>
+    request<{ results: LyricsSearchResult[] }>(
+      `/lyrics-search?${new URLSearchParams({ q, ...(durationMs ? { duration_ms: String(Math.round(durationMs)) } : {}) })}`,
+    ),
   usePastedLyrics: (projectId: string, text: string | null) =>
     request<ProjectState>(`/projects/${projectId}/lyrics-text`, { method: 'POST', body: JSON.stringify({ text }) }),
   completeUpload: (projectId: string) => request<ProjectState>(`/uploads/${projectId}/complete`, { method: 'POST' }),

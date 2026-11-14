@@ -88,6 +88,14 @@ export class MockBackend {
     workers: [{ id: 'STUDIO-PC-1234-abcd', online: true, device: 'GPU (NVIDIA RTX A5000)', activity: 'processing', version: 'v',
       last_seen: new Date().toISOString(), started_at: new Date().toISOString() }],
   }
+  /** Songs the mock lyrics search finds; null = the service is down. Queries are kept in lyricsQueries. */
+  lyricsResults: Row[] | null = [
+    { id: 7, title: 'שיר בדיקה', artist: 'הזמרת', album: '', duration_ms: 15000, synced: true, matches_length: true,
+      lyrics: 'שלום עולם זה שיר קריוקי\nסוף טוב' },
+    { id: 8, title: 'שיר בדיקה (רמיקס)', artist: 'הזמרת', album: '', duration_ms: 241000, synced: false, matches_length: false,
+      lyrics: 'גרסה אחרת לגמרי' },
+  ]
+  lyricsQueries: { q: string; duration_ms: string | null }[] = []
   /** Error code the mock API gives when verifying a background (null = accepted). */
   backgroundError: string | null = null
   /** Error code the mock worker reports for sync jobs (null = success). */
@@ -288,6 +296,12 @@ export class MockBackend {
       setTimeout(() => Object.assign(job, { status: 'running', progress: 42 }), 1000)
       setTimeout(() => Object.assign(job, { status: 'succeeded', progress: 100, output_path: `${UID}/${PID}/e1.mp4` }), 3000)
       return this.json(route, job, 201)
+    }
+    if (p === '/lyrics-search') {
+      const q = url.searchParams.get('q') ?? ''
+      this.lyricsQueries.push({ q, duration_ms: url.searchParams.get('duration_ms') })
+      if (!this.lyricsResults) return this.json(route, { detail: 'lyrics_search_unavailable' }, 503)
+      return this.json(route, { results: q.includes('אין') ? [] : this.lyricsResults })
     }
     if (p === '/worker-status') {
       const st = this.workerStatus
