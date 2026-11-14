@@ -96,6 +96,10 @@ export class MockBackend {
       lyrics: 'גרסה אחרת לגמרי' },
   ]
   lyricsQueries: { q: string; duration_ms: string | null }[] = []
+  /** The signed-in user's metadata (the lyrics websites list lives here). */
+  userMetadata: Row = {}
+  /** Bodies of POST /lyrics-sources/search. */
+  sourceSearches: { q: string; sources: string[] }[] = []
   /** Error code the mock API gives when verifying a background (null = accepted). */
   backgroundError: string | null = null
   /** Error code the mock worker reports for sync jobs (null = success). */
@@ -166,7 +170,10 @@ export class MockBackend {
     }
 
     if (p.startsWith('/auth/v1/token')) return this.json(route, SESSION)
-    if (p.startsWith('/auth/v1/user')) return this.json(route, USER)
+    if (p.startsWith('/auth/v1/user')) {
+      if (req.method() === 'PUT') Object.assign(this.userMetadata, JSON.parse(req.postData() ?? '{}').data ?? {})
+      return this.json(route, { ...USER, user_metadata: this.userMetadata })
+    }
     if (p.startsWith('/auth/v1/logout')) return route.fulfill({ status: 204, headers: CORS })
     if (p.startsWith('/auth/v1/signup')) return this.json(route, { user: { ...USER, identities: [{}] }, session: null })
     if (p.startsWith('/auth/v1/recover')) return this.json(route, {})
@@ -296,6 +303,24 @@ export class MockBackend {
       setTimeout(() => Object.assign(job, { status: 'running', progress: 42 }), 1000)
       setTimeout(() => Object.assign(job, { status: 'succeeded', progress: 100, output_path: `${UID}/${PID}/e1.mp4` }), 3000)
       return this.json(route, job, 201)
+    }
+    if (p === '/lyrics-sources/normalize') {
+      const raw = String(JSON.parse(req.postData() ?? '{}').url ?? '')
+      if (!/^https?:\/\/[^/]+\/.*(test|\{q\})/.test(raw)) return this.json(route, { detail: 'invalid_source' }, 422)
+      return this.json(route, { template: raw.replace('test', '{q}') })
+    }
+    if (p === '/lyrics-sources/search') {
+      const body = JSON.parse(req.postData() ?? '{}')
+      this.sourceSearches.push(body)
+      return this.json(route, {
+        sources: body.sources.map((template: string) => {
+          const host = new URL(template.replace('{q}', 'x')).hostname
+          const search_url = template.replace('{q}', encodeURIComponent(body.q))
+          if (host.includes('blocked')) return { template, host, search_url, status: 'blocked_source', results: [] }
+          return { template, host, search_url, status: 'ok',
+            results: [{ title: `${body.q} - מילים`, url: `https://${host}/song/1`, lyrics: 'שורה מהאתר שלי\nועוד שורה', source: host }] }
+        }),
+      })
     }
     if (p === '/lyrics-search') {
       const q = url.searchParams.get('q') ?? ''

@@ -32,6 +32,16 @@ export interface LyricsSearchResult {
   matches_length: boolean
 }
 
+/** What searching one of the user's own lyrics websites found (POST /lyrics-sources/search). */
+export interface LyricsSourceReport {
+  template: string
+  host: string
+  /** The site's own search page for this song (to open it when nothing was found). */
+  search_url: string
+  status: 'ok' | 'no_results' | 'blocked_source' | 'unreachable' | 'invalid_source' | 'not_html'
+  results: { title: string; url: string; lyrics: string; source: string }[]
+}
+
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
   const token = await accessToken()
   const headers = new Headers(init.headers)
@@ -110,6 +120,10 @@ export const api = {
     request<{ results: LyricsSearchResult[] }>(
       `/lyrics-search?${new URLSearchParams({ q, ...(durationMs ? { duration_ms: String(Math.round(durationMs)) } : {}) })}`,
     ),
+  searchLyricsSources: (q: string, sources: string[]) =>
+    request<{ sources: LyricsSourceReport[] }>('/lyrics-sources/search', { method: 'POST', body: JSON.stringify({ q, sources }) }),
+  normalizeLyricsSource: (url: string) =>
+    request<{ template: string }>('/lyrics-sources/normalize', { method: 'POST', body: JSON.stringify({ url }) }),
   usePastedLyrics: (projectId: string, text: string | null) =>
     request<ProjectState>(`/projects/${projectId}/lyrics-text`, { method: 'POST', body: JSON.stringify({ text }) }),
   completeUpload: (projectId: string) => request<ProjectState>(`/uploads/${projectId}/complete`, { method: 'POST' }),

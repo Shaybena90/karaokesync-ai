@@ -165,12 +165,25 @@ export function UploadPage() {
             <p className="mt-1.5 text-xs text-white/45">{t('upload.languageHint')}</p>
           </div>
         )}
+        {!file && (
+          <section aria-label={t('upload.findLyrics')}>
+            <p className="mb-2 text-sm text-white/70">{t('upload.findLyrics')}</p>
+            <LyricsSearchPanel
+              initialQuery=""
+              mode="fill"
+              startOpen
+              onUse={(text) => {
+                setLyricsText(text)
+                setShowLyrics(true)
+              }}
+            />
+          </section>
+        )}
         {!file &&
           (showLyrics ? (
             <div className="glass space-y-2 rounded-3xl p-4" data-testid="upload-lyrics">
               <p className="text-sm font-semibold">📝 {t('lyrics.upload.title')}</p>
               <p className="text-xs text-white/55">{t('lyrics.paste.help')}</p>
-              <LyricsSearchPanel initialQuery="" mode="fill" onUse={setLyricsText} />
               <LyricsTextarea value={lyricsText} onChange={setLyricsText} />
             </div>
           ) : (

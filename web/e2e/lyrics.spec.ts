@@ -80,14 +80,49 @@ test('lyrics search: another song, nothing found, service down', async ({ page, 
 
 test('lyrics found online fill the upload form', async ({ page, backend }) => {
   await page.goto('/upload')
-  await page.getByRole('button', { name: /יש לך את המילים\? הדבק אותן/ }).click()
-  await page.getByRole('button', { name: /חפש את המילים באינטרנט/ }).click()
-  const panel = page.getByTestId('lyrics-search')
+  const panel = page.getByTestId('lyrics-search') // open right away on the new-song screen
   await panel.getByRole('textbox', { name: 'שם השיר והזמר' }).fill('הזמרת - שיר בדיקה')
   await panel.getByRole('button', { name: 'חפש', exact: true }).click()
   await panel.getByRole('radio').first().click()
   await panel.getByRole('button', { name: /^✓ השתמש במילים האלה$/ }).click()
+  await expect(page.getByTestId('upload-lyrics').locator('textarea')).toHaveValue('שלום עולם זה שיר קריוקי\nסוף טוב')
   await page.locator('input[type=file]').setInputFiles({ name: 'song.wav', mimeType: 'audio/wav', buffer: makeWav(3) })
   await expect(page).toHaveURL(/\/projects\/33333333/, { timeout: 15000 })
   expect(backend.uploadRequests[0].lyrics_text).toBe('שלום עולם זה שיר קריוקי\nסוף טוב')
+})
+
+test('my own lyrics websites: add, search them on the new-song screen, remove', async ({ page, backend }) => {
+  await page.goto('/upload')
+  const panel = page.getByTestId('lyrics-search')
+  await panel.getByRole('button', { name: /אתרי המילים שלי/ }).click()
+  const sites = page.getByTestId('lyrics-sources')
+  // a page that is not a search address is refused with an explanation
+  await sites.getByRole('textbox', { name: 'כתובת החיפוש באתר' }).fill('https://shirim.example/about')
+  await sites.getByRole('button', { name: 'הוסף אתר' }).click()
+  await expect(sites.getByText(/זו לא כתובת חיפוש/)).toBeVisible()
+  // the address of a search for "test" becomes the site's search address
+  await sites.getByRole('textbox', { name: 'שם האתר (לא חובה)' }).fill('שירים בעברית')
+  await sites.getByRole('textbox', { name: 'כתובת החיפוש באתר' }).fill('https://shirim.example/search?q=test')
+  await sites.getByRole('button', { name: 'הוסף אתר' }).click()
+  await expect(sites.getByText('נוסף. החיפוש ישתמש בכתובת: https://shirim.example/search?q={q}')).toBeVisible()
+  await expect.poll(() => backend.userMetadata.lyrics_sources).toEqual([{ name: 'שירים בעברית', url: 'https://shirim.example/search?q={q}' }])
+  await sites.getByRole('textbox', { name: 'כתובת החיפוש באתר' }).fill('https://blocked.example/?s=test')
+  await sites.getByRole('button', { name: 'הוסף אתר' }).click()
+  await expect(panel.getByText('מחפש במאגר הפתוח ובעוד 2 אתרים שהגדרת.')).toBeVisible()
+
+  await panel.getByRole('textbox', { name: 'שם השיר והזמר' }).fill('ירושלים של זהב')
+  await panel.getByRole('button', { name: 'חפש', exact: true }).click()
+  await expect.poll(() => backend.sourceSearches.at(-1)?.sources.length).toBe(2)
+  const hit = panel.getByRole('radio', { name: /ירושלים של זהב - מילים/ })
+  await expect(hit).toContainText('shirim.example')
+  await hit.click()
+  await expect(panel.locator('textarea')).toHaveValue('שורה מהאתר שלי\nועוד שורה')
+  await expect(panel.getByRole('link', { name: /פתח את הדף באתר/ })).toHaveAttribute('href', 'https://shirim.example/song/1')
+  // a site that blocks automatic searches offers its own search page instead
+  const missed = page.getByTestId('sources-missed')
+  await expect(missed).toContainText('blocked.example חוסם חיפוש אוטומטי.')
+  await expect(missed.getByRole('link')).toHaveAttribute('href', /blocked\.example\/\?s=/)
+
+  await sites.getByRole('button', { name: 'הסר את blocked.example' }).click()
+  await expect.poll(() => (backend.userMetadata.lyrics_sources as unknown[]).length).toBe(1)
 })
