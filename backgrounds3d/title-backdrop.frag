@@ -1,31 +1,39 @@
 // @out intro
-// Backdrop of the song title card (the title itself is drawn by the video
-// renderer, per song): deep black-blue velvet, soft golden light from above,
-// gold bokeh drifting up and fine sparkling dust. A 10 s loop.
+// Backdrop of the song title card (the words themselves are drawn by the video
+// renderer, per song). It continues the intro's look: the same deep purple,
+// the logo's purple and blue in soft drifting lights, twinkling stars and a
+// glow behind the title, so the change from the intro is smooth. A 10 s loop.
+#include "lib/logo.glsl"
+
 void main() {
   vec2 p = screen();
-  vec3 col = mix(vec3(.03, .02, .05), vec3(.004, .004, .012), smoothstep(-1., 1.2, p.y));
-  col += vec3(.35, .25, .1) * .25 * exp(-length(p - vec2(0., .05)) * 1.6);          // warm glow behind the title
-  // light rays from the top, swaying slowly
-  float a = atan(p.x, 1.6 - p.y);
-  float rays = .5 + .5 * sin(a * 18. + sin(LA) * .6) * sin(a * 7. - LA);
-  col += vec3(1., .8, .45) * .05 * rays * smoothstep(-.6, 1.2, p.y);
-  // gold bokeh rising: 3 layers, each rises a whole number of cells per loop
+  // the intro's background colours
+  vec3 col = mix(vec3(.035, .012, .08), vec3(.002, .003, .015), smoothstep(-1.1, 1.1, p.y));
+  col += LOGO_PURPLE * .16 * exp(-length(p * vec2(.6, 1.)) * 1.8);          // glow behind the title
+  col += LOGO_BLUE * .06 * exp(-abs(p.y + .55) * 5.) * (.8 + .2 * sin(LA));   // a faint floor light, like the intro's mirror
+  // stars, as in the intro
   for (int l = 0; l < 3; l++) {
+    vec2 g = p * (6. + 4. * float(l)) + vec2(float(l) * 3.7, 0.);
+    vec2 id = floor(g);
+    vec3 h = hash32(id + float(l) * 7.);
+    float tw = .5 + .5 * sin(LA * floor(1. + 3. * h.x) + h.y * 6.28);
+    col += mix(LOGO_PURPLE, vec3(1.), h.y) * step(.93, h.z) * smoothstep(.12, .0, length(fract(g) - .5 - (h.xy - .5) * .6)) * tw * .45;
+  }
+  // soft purple and blue lights drifting up slowly (whole cells per loop, so it loops)
+  for (int l = 0; l < 2; l++) {
     float fl = float(l);
-    float scale = 2.2 + fl * 1.6;
-    float shift = 4. + 2. * fl;                                   // cells risen per loop
+    float scale = 1.8 + fl * 1.4;
+    float shift = 3. + 2. * fl;
     vec2 g = p * scale + vec2(fl * 4.1, -PHASE * shift);
     vec2 id = floor(g);
-    vec3 h = hash32(vec2(id.x, mod(id.y, shift)) + fl * 9.);
+    vec3 h = hash32(vec2(id.x, mod(id.y, shift)) + fl * 9. + 40.);
     vec2 c = fract(g) - .5 - (h.xy - .5) * .6;
-    float r = .14 + .1 * h.z;
-    float bok = smoothstep(r, r * .5, length(c)) * step(.8, h.z);
-    col += mix(vec3(1., .78, .4), vec3(1., .6, .3), h.x) * bok * (.07 + .05 * fl) * (.7 + .3 * sin(LA + h.y * 6.28));
+    float r = .16 + .1 * h.z;
+    float bok = smoothstep(r, r * .3, length(c)) * step(.78, h.z);
+    col += mix(LOGO_PURPLE, LOGO_BLUE, h.x) * bok * (.10 + .05 * fl) * (.7 + .3 * sin(LA + h.y * 6.28));
   }
-  // fine dust that twinkles
-  vec2 g = p * 40.;
-  vec3 h = hash32(floor(g));
-  col += vec3(1., .85, .55) * step(.985, h.x) * smoothstep(.25, .0, length(fract(g) - .5)) * (.5 + .5 * sin(LA * floor(1. + 3. * h.y) + h.z * 6.28)) * .8;
+  // slow light rays from above, in the logo's purple
+  float a = atan(p.x, 1.8 - p.y);
+  col += LOGO_PURPLE * .035 * (.5 + .5 * sin(a * 16. + sin(LA) * .5)) * smoothstep(-.4, 1.2, p.y);
   outColor = finish(col);
 }

@@ -1,12 +1,13 @@
 """The opening of an exported video: the KaraokeSync intro clip, a luxurious 3D
 title card with the song and the singer, and a transition into the karaoke.
 
-    [intro 8 s] ~transition~ [title 5 s] ~transition~ [karaoke ...]
+    [intro 8 s] ~transition~ [title 6.5 s] ~transition~ [karaoke ...]
 
 The intro clip and the title backdrop are pre-drawn 3D clips committed to the
 repository (web/public/intro, made by web/scripts/render-3d-backgrounds.mjs).
-The title itself is drawn per song by libass, in gold 3D letters. Transitions
-are FFmpeg's xfade; the last one blends into the first second of the karaoke,
+The title itself is drawn per song by libass, in the intro's colours: the
+singer in white 3D letters with a purple depth, the song under it. Transitions
+are FFmpeg's xfade; the last one blends into the first moment of the karaoke,
 so the karaoke parts themselves never need to be encoded twice.
 """
 
@@ -27,8 +28,8 @@ INTRO_DIR = Path(__file__).resolve().parents[3] / "web" / "public" / "intro"
 INTRO_FILES = {"16:9": "intro.mp4", "9:16": "intro-9x16.mp4", "1:1": "intro-1x1.mp4"}
 BACKDROP_FILE = "title-backdrop.mp4"
 INTRO_MS = 8000
-TITLE_MS = 5000
-TRANSITION_MS = 1000
+TITLE_MS = 6500
+TRANSITION_MS = 1800   # long, soft transitions
 CUT_MS = 34  # "no transition": a one-frame blend, i.e. a cut
 # A preview video: the opening + the start of the song, small and quick to make.
 PREVIEW_SONG_MS = 20_000
@@ -58,12 +59,17 @@ Transition = Literal[
     "zoomin", "slideleft", "smoothleft", "hblur", "diagtl", "squeezeh", "horzopen",
 ]
 
-TITLE_FONT = "Frank Ruhl Libre"   # an elegant serif with Hebrew letters
-ARTIST_FONT = "Heebo"
-GOLD_FACE = "#f7d67c"
-GOLD_LIGHT = "#fff0b8"
-GOLD_DEEP = "#7a5414"
-
+NAME_FONT = "Rubik"      # the singer (big): the same letters as "Karaoke Sync" in the intro
+SONG_FONT = "Heebo"      # the song, under it
+# The colours of the intro (the logo's purple and blue), so the title follows it smoothly.
+FACE_TOP = "#ffffff"
+FACE_LOW = "#e4d9ff"
+EDGE = "#c4b5fd"
+DEPTH = "#8b5cf6"
+SONG_COLOR = "#cfd8ff"
+GLOW_PURPLE = "#a855f7"
+GLOW_BLUE = "#3b82f6"
+TITLE_DELAY_MS = 900     # the words come in once the transition has mostly shown the card
 
 class TitleCard(BaseModel):
     song: str = Field(min_length=1, max_length=120)
@@ -124,24 +130,27 @@ def _fit(measurer: TextMeasurer, text: str, size: float, max_width: float) -> fl
     return size * min(1.0, max_width / width) if width > 0 else size
 
 
-def title_ass(card: TitleCard, canvas: Canvas, title_font: TextMeasurer, artist_font: TextMeasurer,
+def title_ass(card: TitleCard, canvas: Canvas, name_font: TextMeasurer, song_font: TextMeasurer,
               language: str | None) -> str:
-    """The title card's subtitles: the song in gold 3D letters (deep extrusion,
-    a lighter upper half, a light sweeping across) and the singer below a gold
-    line, all coming in with a short animation. Times are 0..TITLE_MS."""
+    """The title card's subtitles, in the intro's colours: the singer big, in
+    white 3D letters with a purple depth and a soft purple glow, and just under
+    it the song, smaller, in light blue. A light sweeps across the singer's name.
+    Without a singer, the song takes the big place. Times are 0..TITLE_MS."""
     W, H = canvas.width, canvas.height
     unit = min(W, H) / 720
-    song, artist = escape_text(card.song), escape_text(card.artist)
-    fs = _fit(title_font, song, min(W, H) * 0.15, W * 0.84)
-    afs = _fit(artist_font, artist, min(W, H) * 0.055, W * 0.8) if artist else 0
-    cx, cy = W / 2, H * (0.45 if artist else 0.5)
-    ay = cy + fs * 0.98
-    line_y = cy + fs * 0.62
-    mark = RLM if is_rtl(language, song.split()) else LRM
-    amark = RLM if is_rtl(language, artist.split()) else LRM
+    artist, song = escape_text(card.artist), escape_text(card.song)
+    big, small = (artist, song) if artist else (song, "")
+    fs = _fit(name_font, big, min(W, H) * 0.19, W * 0.86)
+    sfs = _fit(song_font, small, fs * 0.5, W * 0.84) if small else 0
+    gap = fs * 0.14                                   # a little space between the two lines
+    block = fs + (gap + sfs if small else 0)
+    cy = H * 0.5 - block / 2 + fs / 2                 # the two lines together are centred
+    sy = cy + fs / 2 + gap + sfs / 2
+    mark = RLM if is_rtl(language, big.split()) else LRM
+    smark = RLM if is_rtl(language, small.split()) else LRM
+    start = "0:00:%05.2f" % (TITLE_DELAY_MS / 1000)
     end = "0:00:%05.2f" % (TITLE_MS / 1000)
-    tname, aname = title_font.info.family, artist_font.info.family
-    tbold = -1 if title_font.info.bold else 0
+    nbold = -1 if name_font.info.bold else 0
     out = [
         "[Script Info]", "ScriptType: v4.00+", f"PlayResX: {W}", f"PlayResY: {H}", "WrapStyle: 2",
         "ScaledBorderAndShadow: yes", "Kerning: yes", "YCbCr Matrix: TV.709", "",
@@ -149,45 +158,46 @@ def title_ass(card: TitleCard, canvas: Canvas, title_font: TextMeasurer, artist_
         "Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, "
         "Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, "
         "MarginR, MarginV, Encoding",
-        f"Style: T,{tname},{fs:.1f},{ass_color(GOLD_FACE)},{ass_color(GOLD_FACE)},{ass_color(GOLD_LIGHT)},"
-        f"&HFF000000,{tbold},0,0,0,100,100,0,0,1,{1.3 * unit:.1f},0,5,0,0,0,-1",
-        f"Style: A,{aname},{max(afs, 1):.1f},{ass_color('#f4f1ea')},{ass_color('#f4f1ea')},{ass_color('#000000', 0x80)},"
-        f"&HFF000000,0,0,0,0,100,100,0,0,1,{0.8 * unit:.1f},0,5,0,0,0,-1",
+        f"Style: N,{name_font.info.family},{fs:.1f},{ass_color(FACE_LOW)},{ass_color(FACE_LOW)},{ass_color(EDGE)},"
+        f"&HFF000000,{nbold},0,0,0,100,100,0,0,1,{1.2 * unit:.1f},0,5,0,0,0,-1",
+        f"Style: S,{song_font.info.family},{max(sfs, 1):.1f},{ass_color(SONG_COLOR)},{ass_color(SONG_COLOR)},"
+        f"{ass_color('#1e1b4b', 0x40)},&HFF000000,-1,0,0,0,100,100,0,0,1,{1.0 * unit:.1f},0,5,0,0,0,-1",
         "", "[Events]", "Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text",
     ]
-    grow = "\\fscx112\\fscy112\\t(0,1000,0.5,\\fscx100\\fscy100)"
-    fade = "\\fad(450,450)"
+    grow = "\\fscx108\\fscy108\\t(0,1100,0.5,\\fscx100\\fscy100)"
+    fade = "\\fad(700,500)"
 
     def ev(layer: int, style: str, tags: str, text: str) -> None:
-        out.append(f"Dialogue: {layer},0:00:00.00,{end},{style},,0,0,0,,{{\\an5{tags}}}{text}")
+        out.append(f"Dialogue: {layer},{start},{end},{style},,0,0,0,,{{\\an5{tags}}}{text}")
 
-    # 1. the deep gold extrusion and a soft shadow, behind the letters
-    for ox, oy, color, alpha, blur in text_3d_layers("deep", GOLD_DEEP):
+    # 1. a soft purple-blue glow behind the name
+    ev(0, "N", f"\\pos({cx_(W)},{cy:.1f})\\1c{tag_color(GLOW_PURPLE)}\\3c{tag_color(GLOW_BLUE)}\\bord{fs * 0.08:.1f}"
+               f"\\1a&H90&\\3a&HB0&\\blur{fs * 0.22:.1f}{fade}{grow}", mark + big)
+    # 2. the purple 3D depth and its shadow
+    for ox, oy, color, alpha, blur in text_3d_layers("deep", DEPTH):
         soft = f"\\blur{blur * fs:.1f}" if blur else ""
-        ev(0, "T", f"\\pos({cx + ox * fs:.1f},{cy + oy * fs:.1f})\\1c{tag_color(color)}\\3c{tag_color(color)}"
-                   f"\\1a&H{alpha:02X}&\\3a&H{alpha:02X}&{soft}{fade}{grow}", mark + song)
-    # 2. the gold face, coming into focus
-    ev(1, "T", f"\\pos({cx:.1f},{cy:.1f})\\blur6\\t(0,900,\\blur0.6){fade}{grow}", mark + song)
-    # 3. a lighter gold on the upper half: a metal gradient
-    top = f"\\clip(0,{cy - fs:.0f},{W},{cy - fs * 0.05:.0f})"
-    ev(2, "T", f"\\pos({cx:.1f},{cy:.1f})\\1c{tag_color(GOLD_LIGHT)}\\bord0\\1a&H50&{top}\\blur6\\t(0,900,\\blur0.6){fade}{grow}",
-       mark + song)
-    # 4. a light sweeping across the letters
+        ev(1, "N", f"\\pos({W / 2 + ox * fs:.1f},{cy + oy * fs:.1f})\\1c{tag_color(color)}\\3c{tag_color(color)}"
+                   f"\\1a&H{alpha:02X}&\\3a&H{alpha:02X}&{soft}{fade}{grow}", mark + big)
+    # 3. the white face coming into focus, brighter on its upper half (like the chrome letters of the intro)
+    ev(2, "N", f"\\pos({cx_(W)},{cy:.1f})\\blur6\\t(0,1000,\\blur0.5){fade}{grow}", mark + big)
+    top = f"\\clip(0,{cy - fs:.0f},{W},{cy - fs * 0.04:.0f})"
+    ev(3, "N", f"\\pos({cx_(W)},{cy:.1f})\\1c{tag_color(FACE_TOP)}\\bord0{top}\\blur6\\t(0,1000,\\blur0.5){fade}{grow}",
+       mark + big)
+    # 4. a light sweeping across the name
     band = W * 0.1
     ya, yb = cy - fs * 0.8, cy + fs * 0.8
-    ev(3, "T", f"\\pos({cx:.1f},{cy:.1f})\\1c&HFFFFFF&\\3c&HFFFFFF&\\1a&H30&\\3a&H60&\\blur{fs * 0.06:.1f}"
-               f"\\clip({-band:.0f},{ya:.0f},0,{yb:.0f})\\t(1300,2400,\\clip({W:.0f},{ya:.0f},{W + band:.0f},{yb:.0f})){fade}",
-       mark + song)
-    # 5. a thin gold line that opens from the middle
-    half, thick = W * 0.2, max(2.0, 2 * unit)
-    ev(1, "A", f"\\pos({cx:.1f},{line_y:.1f})\\p1\\1c{tag_color(GOLD_FACE)}\\bord0\\blur{unit:.1f}\\fscx0"
-               f"\\t(500,1400,0.6,\\fscx100){fade}",
-       f"m 0 0 l {2 * half:.0f} 0 l {2 * half:.0f} {thick:.0f} l 0 {thick:.0f}")   # libass centres the drawn box
-    # 6. the singer, letters closing in
-    if artist:
-        ev(1, "A", f"\\pos({cx:.1f},{ay:.1f})\\fsp{afs * 0.45:.1f}\\t(700,1700,0.6,\\fsp{afs * 0.06:.1f})"
-                   f"\\fad(900,450)", amark + artist)
+    ev(4, "N", f"\\pos({cx_(W)},{cy:.1f})\\1c&HFFFFFF&\\3c&HFFFFFF&\\1a&H40&\\3a&H70&\\blur{fs * 0.06:.1f}"
+               f"\\clip({-band:.0f},{ya:.0f},0,{yb:.0f})\\t(1500,2700,\\clip({W:.0f},{ya:.0f},{W + band:.0f},{yb:.0f})){fade}",
+       mark + big)
+    # 5. the song, just under the name, coming in a moment later
+    if small:
+        ev(2, "S", f"\\pos({cx_(W)},{sy:.1f})\\3c{tag_color(GLOW_BLUE)}\\3a&HA0&\\blur{1.5 * unit:.1f}"
+                   f"\\fsp{sfs * 0.3:.1f}\\t(300,1400,0.6,\\fsp{sfs * 0.03:.1f})\\fad(1000,500)", smark + small)
     return "\n".join(out) + "\n"
+
+
+def cx_(width: int) -> str:
+    return f"{width / 2:.1f}"
 
 
 def render_opening(

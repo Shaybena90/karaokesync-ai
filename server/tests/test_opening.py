@@ -21,8 +21,8 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def test_plans():
     both = op.plan_opening(op.OpeningOptions(intro=True, title=op.TitleCard(song="שיר"), transition="radial"))
-    assert both.segments == [("intro", 8000), ("title", 5000)]
-    assert both.karaoke_start_ms == 8000 + 5000 - 1000 - 1000 and both.head_ms == 1000
+    assert both.segments == [("intro", 8000), ("title", 6500)]
+    assert both.karaoke_start_ms == 8000 + 6500 - 1800 - 1800 and both.head_ms == 1800
     intro_only = op.plan_opening(op.OpeningOptions(intro=True, transition="none"))
     assert intro_only.karaoke_start_ms == 8000 - op.CUT_MS and intro_only.head_ms == op.CUT_MS
     assert not op.OpeningOptions().active
@@ -42,19 +42,28 @@ def test_title_card_subtitles():
     m = measurer_for(str(SYSTEM_FONT))
     ass = op.title_ass(op.TitleCard(song="ירושלים {של} זהב", artist="נעמי שמר"), Canvas(1920, 1080), m, m, "he")
     assert "ירושלים ｛של｝ זהב" in ass and "{של}" not in ass   # typed text never becomes ASS codes
-    assert "נעמי שמר" in ass
-    song_lines = [l for l in ass.splitlines() if l.startswith("Dialogue:") and "ירושלים" in l]
-    assert len(song_lines) == 1 + 16 + 1 + 1 + 1   # shadow + extrusion, face, light half, light sweep
-    assert "‏" in ass   # right-to-left mark for Hebrew
+    events = [l for l in ass.splitlines() if l.startswith("Dialogue:")]
+    name_lines = [l for l in events if "נעמי שמר" in l]
+    song_lines = [l for l in events if "ירושלים" in l]
+    assert len(name_lines) == 1 + 1 + 16 + 1 + 1 + 1   # glow, shadow + depth, face, light half, light sweep
+    assert len(song_lines) == 1
+    assert "\u200f" in ass   # right-to-left mark for Hebrew
+    # the singer is the big line, the song is under it and smaller
+    size = {k: float(v) for k, v in re.findall(r"Style: ([NS]),[^,]+,([\d.]+)", ass)}
+    assert size["S"] < size["N"] * 0.6
+    y = lambda line: float(re.search(r"\\pos\([\d.]+,([\d.]+)\)", line).group(1))
+    assert y(song_lines[0]) > y(name_lines[-1])
+    # no gold any more: the colours of the intro
+    assert op.FACE_TOP == "#ffffff" and op.DEPTH.startswith("#8b5c")
     no_artist = op.title_ass(op.TitleCard(song="Song"), Canvas(1280, 720), m, m, "en")
-    assert sum("Dialogue:" in l for l in no_artist.splitlines()) == len(song_lines) + 1   # + the gold line
+    assert sum(l.startswith("Dialogue:") for l in no_artist.splitlines()) == len(name_lines)   # the song takes the big place
 
 
 def test_a_very_long_title_is_made_smaller():
     m = measurer_for(str(SYSTEM_FONT))
     ass = op.title_ass(op.TitleCard(song="מילה " * 20), Canvas(1280, 720), m, m, "he")
-    size = float(re.search(r"Style: T,[^,]+,([\d.]+)", ass).group(1))
-    assert m.width(("מילה " * 20).strip(), size) <= 1280 * 0.85
+    size = float(re.search(r"Style: N,[^,]+,([\d.]+)", ass).group(1))
+    assert m.width(("מילה " * 20).strip(), size) <= 1280 * 0.87
 
 
 def test_missing_clips_are_reported(monkeypatch, tmp_path):
@@ -189,7 +198,7 @@ def test_the_worker_makes_a_short_small_preview(fake_sb, ready_project, tmp_path
     info = json.loads(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=height:format=duration", "-of", "json",
                                       str(fake_sb.objects["exports"][path])], capture_output=True, text=True).stdout)
     assert info["streams"][0]["height"] == 480
-    assert abs(float(info["format"]["duration"]) - (7.0 + 4.0)) < 0.2   # the intro (8 s - 1 s blend) + 4 s of the song
+    assert abs(float(info["format"]["duration"]) - (8.0 - 1.8 + 4.0)) < 0.2   # the intro (minus the blend) + 4 s of the song
     # a real export never accepts 480p
     job["options"].pop("preview")
     with pytest.raises(Exception):
