@@ -1,0 +1,26 @@
+{
+	"FileVersion": 3,
+	"EngineAssociation": "5.7",
+	"Category": "",
+	"Description": "Kanaf Sim - flight simulator (independent hobby project, not affiliated with the IDF/IAF)",
+	"Modules": [
+		{
+			"Name": "KanafCore",
+			"Type": "Runtime",
+			"LoadingPhase": "Default"
+		},
+		{
+			"Name": "KanafSim",
+			"Type": "Runtime",
+			"LoadingPhase": "Default",
+			"AdditionalDependencies": [ "Engine", "KanafCore" ]
+		}
+	],
+	"Plugins": [
+		{ "Name": "EnhancedInput", "Enabled": true },
+		{ "Name": "ProceduralMeshComponent", "Enabled": true },
+		{ "Name": "RawInput", "Enabled": true, "SupportedTargetPlatforms": [ "Win64" ] },
+		{ "Name": "KanafCesium", "Enabled": false },
+		{ "Name": "CesiumForUnreal", "Enabled": false }
+	]
+}

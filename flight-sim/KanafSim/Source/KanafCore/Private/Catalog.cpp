@@ -7,8 +7,8 @@ namespace kanaf {
 
 static Vec3 vec3Of(const JsonValue& a) { return {a[0].num(), a[1].num(), a[2].num()}; }
 
-bool MissionDef::allowsAircraft(const std::string& id) const {
-    for (auto& a : aircraft) if (a == "*" || a == id) return true;
+bool MissionDef::allowsAircraft(const std::string& aircraftId) const {
+    for (auto& a : aircraft) if (a == "*" || a == aircraftId) return true;
     return false;
 }
 

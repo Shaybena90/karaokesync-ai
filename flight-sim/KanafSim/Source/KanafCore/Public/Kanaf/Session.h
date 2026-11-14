@@ -22,6 +22,7 @@ struct SessionConfig {
     ControlMode controlMode = ControlMode::Beginner;
     double fuelFraction = 1.0;
     double geoidUndulationM = 19.0;       // EGM2008 over Israel ~ +17..+22 m (game constant)
+    double startAlongM = -45.0;           // start position along the runway axis from the threshold
 };
 
 enum class TerrainStatus { RealDem, FallbackFlat_NoData, FallbackFlat_LoadError, FallbackFlat_OutsideCoverage };

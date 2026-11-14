@@ -95,6 +95,11 @@ public:
     // Estimated speech duration when no audio is available (chars * k + pauses)
     double estimateDuration(const RadioTransmission& t) const;
 
+    // Resolve a message with the current context without queueing it (previews, tools, tests).
+    bool preview(const std::string& messageId, RadioTransmission& out) const;
+    void setWaypointForPreview(const std::string& wp) { wpId_ = wp; }
+    void setAltitudeForPreview(double ft) { altFt_ = ft; }
+
     // History (for tests / log screen)
     std::vector<RadioTransmission> history;
     bool externalTiming = false;  // true when an audio layer drives finished()
@@ -120,7 +125,7 @@ private:
     double altFt_ = 0;
     std::string wpId_;
     std::string pendingAck_;      // reply id expected after a needsAck message
-    bool airborneSeen_ = false, liftoffT_ = false, warnedTaxi_ = false, warnedTko_ = false;
+    bool airborneSeen_ = false, warnedTaxi_ = false, warnedTko_ = false;
     bool gearWarnedThisApproach_ = false, onFinal_ = false, landedReported_ = false, fuelLow_ = false;
     double liftoffTime_ = -1, lastTouchSink_ = 0;
     bool nearThresholdStopped_ = false, inboundZone_ = false, readyForInbound_ = false;

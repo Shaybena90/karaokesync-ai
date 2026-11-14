@@ -165,6 +165,8 @@ private:
     Vec3 groundN_{0, 0, -1};
     bool onRunway_ = false;
     double maxSinkSinceAir_ = 0;
+    bool flying_ = false;        // true after a confirmed lift-off, until the next touchdown
+    double airborneTime_ = 0;
 };
 
 // ---- Flight control system (fly-by-wire style control laws) -------------------------------

@@ -27,9 +27,9 @@ void PatternAutopilot::setup(const RunwayRef& rw, double patternAgl, double offs
     u_ = d.normalized();
     left_ = leftPattern ? Vec3{u_.y, -u_.x, 0} : Vec3{-u_.y, u_.x, 0};
     patternAlt_ = rw.elevationM + patternAgl;
-    Vec3 thr = rw.thresholdNed, far = rw.farEndNed;
-    thr.z = far.z = 0;
-    wps_ = {far + u_ * 3000.0, far + u_ * 3000.0 + left_ * offset, thr + left_ * offset - u_ * 4000.0,
+    Vec3 thr = rw.thresholdNed, farEnd = rw.farEndNed;
+    thr.z = farEnd.z = 0;
+    wps_ = {farEnd + u_ * 3000.0, farEnd + u_ * 3000.0 + left_ * offset, thr + left_ * offset - u_ * 4000.0,
             thr - u_ * 12000.0 + left_ * (offset * 0.35), thr - u_ * 10000.0};
     phase_ = Phase::Hold;
     holdT_ = 0; thrI_ = 0; waypointIndex = 0; gearCmd_ = true;

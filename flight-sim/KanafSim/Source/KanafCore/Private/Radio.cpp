@@ -116,6 +116,13 @@ RadioTransmission RadioDirector::resolve(const RadioMessageDef& def) const {
     return t;
 }
 
+bool RadioDirector::preview(const std::string& id, RadioTransmission& out) const {
+    const RadioMessageDef* def = book_ ? book_->message(id) : nullptr;
+    if (!def) return false;
+    out = resolve(*def);
+    return true;
+}
+
 double RadioDirector::estimateDuration(const RadioTransmission& t) const {
     double d = 0.35;  // key-up + squelch
     for (auto& f : t.fragmentIds) {

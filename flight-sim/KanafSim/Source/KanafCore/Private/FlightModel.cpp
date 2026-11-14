@@ -90,6 +90,7 @@ void FlightModel::resetOnGround(double north, double east, double headingDeg, do
     st_.pos = {north, east, gz - (strut - mainStatic)};
     events_.clear();
     wasOnGround_ = true; stoppedLatched_ = true; stallLatched_ = overstressLatched_ = false;
+    flying_ = false; airborneTime_ = 0;
     fuelLowLatched_ = bingoLatched_ = false; maxSinkSinceAir_ = 0;
     computeData();
 }
@@ -104,6 +105,7 @@ void FlightModel::resetInAir(const Vec3& pos, double headingDeg, double tas, dou
     st_.spool = 0.8;
     events_.clear();
     wasOnGround_ = false; stoppedLatched_ = false;
+    flying_ = true; airborneTime_ = 1.0;
     computeData();
 }
 
@@ -283,16 +285,29 @@ void FlightModel::substep(double h, const ControlInputs& in, const SurfaceComman
     }
     tailStrikeLatched_ = scraping;
     if (contacts > 0 && !wasOnGround_) {
-        if (touchdownSink > P.maxTouchdownSink) {
+        if (!flying_) {
+            // Brief hop (e.g. during the take-off roll): structural limit still applies, but it is
+            // not reported as a landing.
+            if (touchdownSink > P.maxTouchdownSink) {
+                st_.crashed = true;
+                st_.crashReason = "gear_collapse_sink";
+                emit(SimEvent::Crash, touchdownSink, st_.crashReason);
+                st_.vel = {}; st_.omega = {};
+                return;
+            }
+        } else if (touchdownSink > P.maxTouchdownSink) {
             st_.crashed = true;
             st_.crashReason = "gear_collapse_sink";
             emit(SimEvent::Crash, touchdownSink, st_.crashReason);
             st_.vel = {}; st_.omega = {};
             return;
         }
-        fd_.lastTouchdownSink = touchdownSink;
-        emit(SimEvent::Touchdown, touchdownSink, onRunway_ ? "runway" : "terrain");
-        if (touchdownSink > P.hardLandingSink) emit(SimEvent::HardLanding, touchdownSink);
+        if (flying_) {
+            fd_.lastTouchdownSink = touchdownSink;
+            emit(SimEvent::Touchdown, touchdownSink, onRunway_ ? "runway" : "terrain");
+            if (touchdownSink > P.hardLandingSink) emit(SimEvent::HardLanding, touchdownSink);
+            flying_ = false;
+        }
     }
 
     // --- specific force -> load factor -----------------------------------------------------
@@ -316,7 +331,10 @@ void FlightModel::substep(double h, const ControlInputs& in, const SurfaceComman
 
     // --- state flags & events --------------------------------------------------------------
     bool onGround = contacts > 0;
-    if (wasOnGround_ && !onGround && gsMs > 30) {
+    airborneTime_ = onGround ? 0.0 : airborneTime_ + h;
+    // A lift-off is reported only after 1 s continuously airborne (filters take-off-roll hops).
+    if (!flying_ && !onGround && airborneTime_ >= 1.0 && gsMs > 30) {
+        flying_ = true;
         emit(SimEvent::LiftOff, gsMs);
         maxSinkSinceAir_ = 0;
         stoppedLatched_ = false;

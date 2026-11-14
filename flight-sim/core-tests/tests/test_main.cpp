@@ -131,10 +131,10 @@ TEST(geo_wgs84_and_scale) {
     CHECK(dv > 45000 && dv < 60000);
     // Local frame: exact roundtrip 100 km away, and earth-curvature drop ~ d^2/2R
     GeoFrame f(ramon->lat, ramon->lon, ramon->elevationM, 19);
-    GeoPoint far{ramon->lat + 0.9, ramon->lon, ramon->elevationM};
-    Vec3 n = f.toNed(far);
+    GeoPoint farPt{ramon->lat + 0.9, ramon->lon, ramon->elevationM};
+    Vec3 n = f.toNed(farPt);
     GeoPoint back = f.fromNed(n);
-    CHECK_NEAR(back.latDeg, far.latDeg, 1e-8); CHECK_NEAR(back.altMslM, far.altMslM, 0.01);
+    CHECK_NEAR(back.latDeg, farPt.latDeg, 1e-8); CHECK_NEAR(back.altMslM, farPt.altMslM, 0.01);
     double dist = std::sqrt(n.x * n.x + n.y * n.y);
     CHECK_NEAR(n.z, dist * dist / (2 * 6371000.0), 3.0);  // ~ 790 m below the tangent plane at 100 km
     // NED north axis points north
@@ -238,6 +238,7 @@ TEST(flight_takeoff_pattern_landing_all_runways) {
         CHECK(s.fm.data().onRunway);
         CHECK(ap.maxNz < 3.0);
         CHECK(m.result() == MissionResult::Success);
+        CHECK_NEAR(m.summary().touchdownSinkMs, ap.touchdownSink, 0.01);  // take-off hops are not landings
     }
 }
 
@@ -419,6 +420,8 @@ TEST(radio_phrasebook_and_audio_assets_complete) {
     CHECK(missing == 0);
 }
 
+static int count_taxi_warn(const std::vector<std::string>& h) { int n = 0; for (auto& x : h) if (x == "t_stop_no_clear") ++n; return n; }
+
 // Drive a full scripted flight with the radio director and verify sequencing rules.
 TEST(radio_director_follows_flight) {
     RadioPhrasebook& b = phrasebook();
@@ -465,6 +468,13 @@ TEST(radio_director_follows_flight) {
     CHECK(d.state() == AtcState::TaxiCleared);
     CHECK(d.acknowledgeQuick());  // readback
     for (int i = 0; i < 60 * 6; ++i) { ControlInputs in; in.parkingBrake = true; pump(dt, in, false); }
+    // Not yet at the holding position (start is on the overrun): no "ready" option yet.
+    rs = d.availableReplies();
+    CHECK(rs.empty());
+    // Taxi forward to the threshold and stop.
+    for (int i = 0; i < 60 * 60 && m.runwayAlong() < 5; ++i) { ControlInputs in; in.throttle = 0.25; pump(dt, in, false); }
+    for (int i = 0; i < 60 * 8; ++i) { ControlInputs in; in.brakeLeft = in.brakeRight = 1; pump(dt, in, false); }
+    CHECK(count_taxi_warn(heard) == 0);
     // 2) Holding near threshold, stopped -> "ready for takeoff" available
     rs = d.availableReplies();
     CHECK(!rs.empty() && rs[0].id == "r_ready_tko");

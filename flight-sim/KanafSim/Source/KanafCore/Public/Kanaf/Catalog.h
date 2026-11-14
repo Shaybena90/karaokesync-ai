@@ -64,7 +64,7 @@ struct MissionDef {
     double timeLimitS = 0;
     int phase = 1;
     bool allowAnyBase = true;
-    bool allowsAircraft(const std::string& id) const;
+    bool allowsAircraft(const std::string& aircraftId) const;
 };
 struct CallsignDef { std::string id, he, pron; };
 

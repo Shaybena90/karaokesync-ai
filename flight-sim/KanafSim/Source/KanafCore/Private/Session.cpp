@@ -1,5 +1,7 @@
 #include "Kanaf/Session.h"
 
+#include "Kanaf/Geo.h"
+
 #include <algorithm>
 
 namespace kanaf {
@@ -84,7 +86,13 @@ bool FlightSession::setup(const Catalog& cat, const SessionConfig& cfg, std::str
         }
     }
     ground.setFallback(&flat_);
-    for (auto& r : base->runways) {
+    // Runways of every catalogued base within 80 km are physical surfaces (land anywhere nearby).
+    std::vector<const RunwayDef*> allRunways;
+    for (auto& b : cat.bases)
+        if (greatCircleDistanceM(b.lat, b.lon, base->lat, base->lon) < 80000)
+            for (auto& r : b.runways) allRunways.push_back(&r);
+    for (const RunwayDef* rp : allRunways) {
+        const RunwayDef& r = *rp;
         RunwaySurface rs;
         rs.id = r.id;
         rs.widthM = r.widthM > 0 ? r.widthM : 45;
@@ -135,7 +143,9 @@ void FlightSession::resetToStart() {
     Vec3 d = activeRunway.farEndNed - activeRunway.thresholdNed;
     d.z = 0;
     Vec3 u = d.normalized();
-    Vec3 start = activeRunway.thresholdNed + u * 60.0;  // 60 m past the threshold, on centreline
+    // Start on the paved overrun, 45 m before the threshold, so the radio flow includes a short
+    // taxi to the holding position before lining up.
+    Vec3 start = activeRunway.thresholdNed + u * config.startAlongM;
     double hdg = wrap360(std::atan2(u.y, u.x) * kRad2Deg);
     double storesCD = 0;
     // stores drag from profile coefficient
