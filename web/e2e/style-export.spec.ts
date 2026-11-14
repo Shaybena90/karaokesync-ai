@@ -226,3 +226,11 @@ test('preview the whole video (opening, transitions, title) before making it', a
   expect(backend.exportJobs[0].options).not.toHaveProperty('preview')
   await expect(page.getByRole('button', { name: /הורדת הסרטון/ })).toBeVisible({ timeout: 15000 })
 })
+
+test('a video waiting in the queue says when the processing computer is off', async ({ page, backend }) => {
+  backend.workerStatus = { available: true, online: false, paused: false, admin: false }
+  backend.exportJobs.push({ id: 'q1', project_id: backend.project().id, format: 'mp4', options: { aspect: '16:9', resolution: 480, preview: true },
+    status: 'queued', progress: 0, output_path: null, error_code: null, created_at: new Date().toISOString(), finished_at: null })
+  await page.reload()
+  await expect(page.getByTestId('export-waiting')).toContainText('ה-Worker לא מחובר')
+})

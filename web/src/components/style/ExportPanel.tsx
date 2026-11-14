@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { errorKey, useI18n } from '../../i18n/I18nProvider'
 import { ApiError, api, downloadTextExport, safeFileName, type TextExportFormat } from '../../lib/api'
 import { supabase } from '../../lib/supabase'
+import { useWorkerStatus } from '../../lib/useWorkerStatus'
 import type { InstrumentalState } from '../../lib/useInstrumental'
 import type { ExportJob } from '../../lib/types'
 import type { VideoAspect } from '../player/KaraokePlayer'
@@ -49,6 +50,8 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
   }, [projectId])
 
   const active = jobs.some((j) => j.status === 'queued' || j.status === 'running')
+  // While a video waits in the queue, say whether the processing computer can take it.
+  const worker = useWorkerStatus(jobs.some((j) => j.status === 'queued'))
 
   useEffect(() => {
     void load()
@@ -224,6 +227,11 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
                   <p className="text-xs text-white/60">
                     {job.status === 'queued' ? t('export.queued') : `${t('export.rendering')} ${job.progress}%`}
                   </p>
+                  {job.status === 'queued' && worker.status?.available && (worker.status.paused || worker.status.online === false) && (
+                    <p className="text-xs text-amber-200" role="status" data-testid="export-waiting">
+                      {worker.status.paused ? t('export.queuedPaused') : t('export.queuedOffline')}
+                    </p>
+                  )}
                 </div>
               )}
               {job.status === 'failed' && <p className="mt-2 text-xs text-red-200">{t(errorKey(job.error_code))}</p>}

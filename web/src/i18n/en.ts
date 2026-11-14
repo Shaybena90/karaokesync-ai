@@ -362,6 +362,8 @@ export const en: Record<MessageKey, string> = {
   'error.worker_outdated': 'The processing computer runs an old version of the worker that cannot make an opening or a preview. Update the worker (download the project again, keep the .env file, start it again) and try again.',
   'error.invalid_export_options': 'The processing computer did not recognise the chosen options, probably an old version of the worker. Update the worker and try again.',
   'error.unsupported_export': 'This kind of export is not supported by the processing computer. Update the worker and try again.',
+  'export.queuedOffline': 'Waiting for the processing computer: the worker is not connected. Start it (5-start-worker.bat) and the video will start by itself.',
+  'export.queuedPaused': 'Waiting: the processing computer is paused. Resume it on the "processing computer" page.',
   'style.background': 'Video background',
   'style.bgColor1': 'Color 1',
   'style.bgColor2': 'Color 2',
