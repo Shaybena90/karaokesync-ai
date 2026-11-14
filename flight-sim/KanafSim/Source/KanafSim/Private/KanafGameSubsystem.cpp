@@ -117,8 +117,6 @@ void UKanafGameSubsystem::ApplyGraphicsSettings()
 
 double UKanafGameSubsystem::LocalHourFor(const FString& Id) const
 {
-	const kanaf::Catalog& C = Cat;
-	(void)C;
 	if (Id == TEXT("dawn")) return 6.0;
 	if (Id == TEXT("sunset")) return 17.4;
 	if (Id == TEXT("night")) return 22.0;

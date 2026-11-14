@@ -6,7 +6,6 @@ UKanafEngineSound::UKanafEngineSound(const FObjectInitializer& OI) : Super(OI)
 	NumChannels = 1;
 	Duration = INDEFINITELY_LOOPING_DURATION;
 	bLooping = false;
-	bProcedural = true;
 }
 
 int32 UKanafEngineSound::OnGeneratePCMAudio(TArray<uint8>& OutAudio, int32 NumSamples)

@@ -83,8 +83,8 @@ void PatternAutopilot::update(double dt, const FlightModel& fm, ControlInputs& o
         maxNz = std::max(maxNz, fd.nz); minNz = std::min(minNz, fd.nz);
         maxAlphaDeg = std::max(maxAlphaDeg, fd.alpha * kRad2Deg);
     }
-    auto pitchToGamma = [&](double gammaCmd, double phiNow) {
-        double nz = std::cos(gamma) / std::max(std::cos(phiNow), 0.5) + (V / kG0) * 1.2 * (gammaCmd - gamma);
+    auto pitchToGamma = [&](double gammaCmd, double phiNow, double gain = 1.2) {
+        double nz = std::cos(gamma) / std::max(std::cos(phiNow), 0.5) + (V / kG0) * gain * (gammaCmd - gamma);
         return stickForNz(clampd(nz, -1.0, 4.0), P);
     };
     auto centerline = [&](double maxBankDeg) {
@@ -175,7 +175,7 @@ void PatternAutopilot::update(double dt, const FlightModel& fm, ControlInputs& o
             double hTarget = std::tan(3.0 * kDeg2Rad) * std::max(dist, 0.0);
             double hNow = fd.wheelAgl + (fd.altMsl - fd.agl - rw_.elevationM);  // wheel height above runway elevation
             double gammaCmd = -3.0 * kDeg2Rad + clampd(0.0035 * (hTarget - hNow), -2.5 * kDeg2Rad, 2.5 * kDeg2Rad);
-            out.pitch = pitchToGamma(gammaCmd, phi);
+            out.pitch = pitchToGamma(gammaCmd, phi, 0.45);  // gentle on the glide path (less AoA hunting)
             out.roll = centerline(20);
             out.yaw = 0;
             double vApp = onSpeedCas();
