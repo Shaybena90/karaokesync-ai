@@ -1,0 +1,263 @@
+{
+  "schemaVersion": 1,
+  "checkedDate": "2026-11-14",
+  "statusVocabulary": {
+    "serviceStatus": {
+      "active": "In service per at least one specialist/major source",
+      "active_unconfirmed": "Believed in service; current status not confirmed by a reliable recent source",
+      "ordered": "Contracted/approved, not yet delivered — never flyable as an in-service type",
+      "retired": "Withdrawn from service"
+    },
+    "implementationStatus": {
+      "planned": "In the catalog only; not selectable for flight",
+      "in_development": "Some assets/systems exist; not selectable for flight",
+      "flyable": "Selectable and flyable (possibly with placeholder assets)"
+    },
+    "assetStatus": {
+      "missing": "No asset yet",
+      "placeholder": "Temporary, labelled in-game as a placeholder; must be replaced",
+      "final": "Production-quality asset"
+    }
+  },
+  "disclaimer": "Kanaf Sim is an independent hobby project. It is not affiliated with, endorsed by, or based on non-public information from the IDF/IAF or any manufacturer. All performance figures marked 'game_value' are invented for gameplay.",
+  "models": [
+    {
+      "id": "f16",
+      "nameEn": "F-16 Fighting Falcon",
+      "manufacturer": "Lockheed Martin (originally General Dynamics)",
+      "variants": [
+        {
+          "id": "f16i",
+          "nameHe": "סופה",
+          "nameEn": "F-16I Sufa",
+          "designation": "F-16I (two-seat, Block 52+ derived)",
+          "type": "multirole_fighter",
+          "rolesHe": ["קרב אוויר", "תקיפה"],
+          "crew": 2,
+          "serviceStatus": "active",
+          "statusNote": "Active; F-16I combat use reported in 2025-2026 press.",
+          "statusSources": ["src_airforcetech_f16i", "src_19fortyfive_f16i"],
+          "homeBases": [{"baseId": "ramon", "verification": "reported_unverified_this_session"}, {"baseId": "hatzerim", "verification": "reported_unverified_this_session"}],
+          "implementationStatus": "flyable",
+          "flightProfileId": "f16i",
+          "hasHud": true,
+          "weaponsMenu": true,
+          "assets": {
+            "exteriorModel": {"status": "placeholder", "path": "procedural:f16_placeholder", "note": "Built from engine primitives at public F-16 overall dimensions; replace with a licensed F-16I model incl. CFTs and dorsal spine."},
+            "cockpit": {"status": "placeholder", "path": "procedural:generic_fighter_cockpit", "note": "Game representation, NOT a reconstruction of the F-16I cockpit. Needs modelling from public photos of the F-16I front cockpit."},
+            "livery": {"status": "missing", "path": "", "note": "Needs research on current F-16I camouflage from public photos."},
+            "sound": {"status": "placeholder", "path": "procedural:jet_engine_synth", "note": "Synthesised engine tone; replace with licensed recordings."},
+            "flightProfile": {"status": "placeholder", "path": "flight_profiles/f16i.json", "note": "Game model with generic F-16 reference values; see per-field dataStatus."}
+          }
+        },
+        {
+          "id": "f16d_barak",
+          "nameHe": "ברק",
+          "nameEn": "F-16D Barak",
+          "designation": "F-16D (two-seat)",
+          "type": "multirole_fighter",
+          "rolesHe": ["קרב אוויר", "תקיפה"],
+          "crew": 2,
+          "serviceStatus": "active_unconfirmed",
+          "statusNote": "Single-seat F-16C retired July 2024. Status of the two-seat F-16D is not clearly confirmed; 2025-2026 reports discuss upgrading remaining 'Barak' jets.",
+          "statusSources": ["src_euro_sd_f16c_retire", "src_allisrael_barak_upgrade"],
+          "homeBases": [],
+          "implementationStatus": "planned",
+          "flightProfileId": "",
+          "hasHud": true,
+          "weaponsMenu": true,
+          "assets": {"exteriorModel": {"status": "missing"}, "cockpit": {"status": "missing"}, "livery": {"status": "missing"}, "sound": {"status": "missing"}, "flightProfile": {"status": "missing"}}
+        },
+        {
+          "id": "f16c_barak",
+          "nameHe": "ברק",
+          "nameEn": "F-16C Barak",
+          "designation": "F-16C (single-seat)",
+          "type": "multirole_fighter",
+          "crew": 1,
+          "serviceStatus": "retired",
+          "statusNote": "IAF announced retirement of the F-16C fleet in July 2024.",
+          "statusSources": ["src_euro_sd_f16c_retire"],
+          "homeBases": [],
+          "implementationStatus": "planned",
+          "flightProfileId": "",
+          "hasHud": true,
+          "weaponsMenu": false,
+          "assets": {"exteriorModel": {"status": "missing"}, "cockpit": {"status": "missing"}, "livery": {"status": "missing"}, "sound": {"status": "missing"}, "flightProfile": {"status": "missing"}}
+        },
+        {
+          "id": "f16ab_netz",
+          "nameHe": "נץ",
+          "nameEn": "F-16A/B Netz",
+          "designation": "F-16A / F-16B",
+          "type": "multirole_fighter",
+          "crew": 1,
+          "serviceStatus": "retired",
+          "statusNote": "Retired December 2016.",
+          "statusSources": ["src_jpost_netz_retire", "src_twz_netz"],
+          "homeBases": [],
+          "implementationStatus": "planned",
+          "flightProfileId": "",
+          "hasHud": true,
+          "weaponsMenu": false,
+          "assets": {"exteriorModel": {"status": "missing"}, "cockpit": {"status": "missing"}, "livery": {"status": "missing"}, "sound": {"status": "missing"}, "flightProfile": {"status": "missing"}}
+        }
+      ]
+    },
+    {
+      "id": "f35",
+      "nameEn": "F-35 Lightning II",
+      "manufacturer": "Lockheed Martin",
+      "variants": [
+        {
+          "id": "f35i",
+          "nameHe": "אדיר",
+          "nameEn": "F-35I Adir",
+          "designation": "F-35I (Israeli-specific F-35A configuration)",
+          "type": "stealth_multirole_fighter",
+          "rolesHe": ["קרב אוויר", "תקיפה", "איסוף"],
+          "crew": 1,
+          "serviceStatus": "active",
+          "statusNote": "48 delivered by Jan 2026 of 50 purchased at that time (last two due later in 2026 per press); 75 planned; a fourth squadron approved May 2026 (future aircraft = ordered, not in service). Squadrons at Nevatim: 116, 140 (combat), 117 (training).",
+          "statusSources": ["src_jns_f35_48", "src_armyrec_f35_48", "src_twz_extra_squadrons"],
+          "homeBases": [{"baseId": "nevatim", "verification": "documented"}],
+          "implementationStatus": "planned",
+          "flightProfileId": "",
+          "hasHud": false,
+          "hudNote": "The F-35 uses a helmet-mounted display instead of a conventional HUD.",
+          "weaponsMenu": true,
+          "assets": {"exteriorModel": {"status": "missing"}, "cockpit": {"status": "missing"}, "livery": {"status": "missing"}, "sound": {"status": "missing"}, "flightProfile": {"status": "missing"}}
+        }
+      ]
+    },
+    {
+      "id": "f15",
+      "nameEn": "F-15 Eagle",
+      "manufacturer": "Boeing (originally McDonnell Douglas)",
+      "variants": [
+        {
+          "id": "f15i",
+          "nameHe": "רעם",
+          "nameEn": "F-15I Ra'am",
+          "designation": "F-15I (two-seat strike fighter, F-15E derived)",
+          "type": "strike_fighter",
+          "rolesHe": ["תקיפה", "קרב אוויר"],
+          "crew": 2,
+          "serviceStatus": "active",
+          "statusNote": "25 aircraft delivered late 1990s, serving with 69 Squadron at Hatzerim.",
+          "statusSources": ["src_twz_f15ia_rearm"],
+          "homeBases": [{"baseId": "hatzerim", "verification": "documented"}],
+          "implementationStatus": "planned",
+          "flightProfileId": "",
+          "hasHud": true,
+          "weaponsMenu": true,
+          "assets": {"exteriorModel": {"status": "missing"}, "cockpit": {"status": "missing"}, "livery": {"status": "missing"}, "sound": {"status": "missing"}, "flightProfile": {"status": "missing"}}
+        },
+        {
+          "id": "f15_baz",
+          "nameHe": "בז",
+          "nameEn": "F-15A/B/C/D Baz",
+          "designation": "F-15A, F-15B, F-15C, F-15D (upgraded)",
+          "type": "air_superiority_fighter",
+          "rolesHe": ["עליונות אווירית"],
+          "crew": 1,
+          "serviceStatus": "active",
+          "statusNote": "F-15A-to-D Baz reported in frontline service with 106 Squadron; being gradually retired as F-15IA/F-35I arrive. Per-subvariant counts conflict between sources — split into exact sub-variants once verified.",
+          "statusSources": ["src_twz_f15ia_rearm"],
+          "homeBases": [{"baseId": "telnof", "verification": "reported_unverified_this_session"}],
+          "implementationStatus": "planned",
+          "flightProfileId": "",
+          "hasHud": true,
+          "weaponsMenu": true,
+          "assets": {"exteriorModel": {"status": "missing"}, "cockpit": {"status": "missing"}, "livery": {"status": "missing"}, "sound": {"status": "missing"}, "flightProfile": {"status": "missing"}}
+        },
+        {
+          "id": "f15ia",
+          "nameHe": "",
+          "nameEn": "F-15IA",
+          "designation": "F-15IA (F-15EX derived)",
+          "type": "strike_fighter",
+          "crew": 2,
+          "serviceStatus": "ordered",
+          "statusNote": "25 contracted (signed around Jan 2026) + 25 option; second squadron approved May 2026; deliveries planned from 2031. Hebrew name not announced (left empty on purpose).",
+          "statusSources": ["src_aviationist_f15ia_deal", "src_twz_extra_squadrons"],
+          "homeBases": [],
+          "implementationStatus": "planned",
+          "flightProfileId": "",
+          "hasHud": true,
+          "weaponsMenu": false,
+          "assets": {"exteriorModel": {"status": "missing"}, "cockpit": {"status": "missing"}, "livery": {"status": "missing"}, "sound": {"status": "missing"}, "flightProfile": {"status": "missing"}}
+        }
+      ]
+    },
+    {
+      "id": "nachshon",
+      "nameEn": "Gulfstream G550 / G-V special mission (\"Nachshon\" family)",
+      "manufacturer": "Gulfstream Aerospace / IAI-Elta mission systems",
+      "variants": [
+        {
+          "id": "oron",
+          "nameHe": "אורון",
+          "nameEn": "Nachshon Oron",
+          "designation": "Gulfstream G550 ISR",
+          "type": "isr",
+          "rolesHe": ["מודיעין", "סיור"],
+          "crew": 0,
+          "crewNote": "Crew size not published in sources reviewed.",
+          "serviceStatus": "active",
+          "statusNote": "Formally introduced at Nevatim on 4 April 2021 with 122 Squadron.",
+          "statusSources": ["src_aviationist_oron", "src_twz_oron", "src_wiki_122sqn"],
+          "homeBases": [{"baseId": "nevatim", "verification": "documented"}],
+          "implementationStatus": "planned",
+          "flightProfileId": "",
+          "hasHud": false,
+          "weaponsMenu": false,
+          "missionEquipment": ["game_isr_sensor_suite"],
+          "assets": {"exteriorModel": {"status": "missing"}, "cockpit": {"status": "missing"}, "livery": {"status": "missing"}, "sound": {"status": "missing"}, "flightProfile": {"status": "missing"}}
+        },
+        {
+          "id": "eitam",
+          "nameHe": "עיטם",
+          "nameEn": "Nachshon Eitam",
+          "designation": "Gulfstream G550 CAEW (AEW&C)",
+          "type": "aew",
+          "rolesHe": ["התרעה מוקדמת", "בקרה"],
+          "crew": 0,
+          "serviceStatus": "active",
+          "statusNote": "Operated by 122 Squadron at Nevatim.",
+          "statusSources": ["src_wiki_122sqn"],
+          "homeBases": [{"baseId": "nevatim", "verification": "documented"}],
+          "implementationStatus": "planned",
+          "flightProfileId": "",
+          "hasHud": false,
+          "weaponsMenu": false,
+          "missionEquipment": ["game_aew_radar"],
+          "assets": {"exteriorModel": {"status": "missing"}, "cockpit": {"status": "missing"}, "livery": {"status": "missing"}, "sound": {"status": "missing"}, "flightProfile": {"status": "missing"}}
+        },
+        {
+          "id": "shavit",
+          "nameHe": "שביט",
+          "nameEn": "Nachshon Shavit",
+          "designation": "Gulfstream G-V (sources conflict: G-V vs G500) SIGINT",
+          "type": "sigint",
+          "rolesHe": ["מודיעין אותות"],
+          "crew": 0,
+          "serviceStatus": "active_unconfirmed",
+          "statusNote": "Listed with 122 Squadron in reference sources; airframe designation conflicts; current status not confirmed by a recent specialist source.",
+          "statusSources": ["src_wiki_122sqn"],
+          "homeBases": [{"baseId": "nevatim", "verification": "reported_unverified_this_session"}],
+          "implementationStatus": "planned",
+          "flightProfileId": "",
+          "hasHud": false,
+          "weaponsMenu": false,
+          "missionEquipment": ["game_sigint_suite"],
+          "assets": {"exteriorModel": {"status": "missing"}, "cockpit": {"status": "missing"}, "livery": {"status": "missing"}, "sound": {"status": "missing"}, "flightProfile": {"status": "missing"}}
+        }
+      ]
+    }
+  ],
+  "outOfScopeNotes": [
+    "KC-46A 'Gideon' tanker: first delivered May 2026 (src_breakingdef_kc46) — support aircraft, outside the combat/strike/ISR scope; candidate for an AI tanker later.",
+    "Helicopters (AH-64, CH-53, UH-60) and UAVs (Hermes, Heron families) are outside the current fixed-wing piloted scope."
+  ]
+}

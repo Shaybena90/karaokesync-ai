@@ -1,0 +1,667 @@
+{
+ "generator": "espeak-ng eSpeak NG text-to-speech: 1.51  Data at: /usr/lib/x86_64-linux-gnu/espeak-ng-data",
+ "quality": "placeholder",
+ "sampleRate": 22050,
+ "clips": {
+  "control/base_hatzerim": {
+   "seconds": 1.23,
+   "textHe": "חצרים",
+   "pron": "XatseQ\"'im"
+  },
+  "control/base_hatzor": {
+   "seconds": 1.049,
+   "textHe": "חצור",
+   "pron": "Xats'oQ\""
+  },
+  "control/base_nevatim": {
+   "seconds": 1.007,
+   "textHe": "נבטים",
+   "pron": "nevat'im"
+  },
+  "control/base_ramatdavid": {
+   "seconds": 1.262,
+   "textHe": "רמת דוד",
+   "pron": "Q\"am'at d'avid"
+  },
+  "control/base_ramon": {
+   "seconds": 0.89,
+   "textHe": "רמון",
+   "pron": "Q\"am'on"
+  },
+  "control/base_telnof": {
+   "seconds": 0.983,
+   "textHe": "תל נוף",
+   "pron": "tel n'of"
+  },
+  "control/check_fuel": {
+   "seconds": 1.065,
+   "textHe": "בדוק דלק",
+   "pron": "bd'ok d'elek"
+  },
+  "control/contact_tower": {
+   "seconds": 1.458,
+   "textHe": "עבור למגדל",
+   "pron": "?av'oQ\" lemigd'al"
+  },
+  "control/continue_plan": {
+   "seconds": 1.956,
+   "textHe": "המשך לפי התכנית",
+   "pron": "hemS'eX lef'i hatoXn'it"
+  },
+  "control/control_word": {
+   "seconds": 1.007,
+   "textHe": "בקרה",
+   "pron": "bakaQ\"'a"
+  },
+  "control/cs_dorban": {
+   "seconds": 0.965,
+   "textHe": "דורבן",
+   "pron": "doQ\"b'an"
+  },
+  "control/cs_ofroni": {
+   "seconds": 0.955,
+   "textHe": "עפרוני",
+   "pron": "efQ\"on'i"
+  },
+  "control/cs_shahaf": {
+   "seconds": 0.937,
+   "textHe": "שחף",
+   "pron": "S'aXaf"
+  },
+  "control/cs_zamir": {
+   "seconds": 0.911,
+   "textHe": "זמיר",
+   "pron": "zam'iQ\""
+  },
+  "control/d1": {
+   "seconds": 0.801,
+   "textHe": "אחת",
+   "pron": "'aXat"
+  },
+  "control/identified": {
+   "seconds": 0.9,
+   "textHe": "מזוהה",
+   "pron": "mezuh'e"
+  },
+  "control/roger": {
+   "seconds": 1.039,
+   "textHe": "קיבלתי",
+   "pron": "kib'alti"
+  },
+  "pilot/airborne": {
+   "seconds": 0.976,
+   "textHe": "באוויר",
+   "pron": "ba?av'iQ\""
+  },
+  "pilot/alt1": {
+   "seconds": 0.692,
+   "textHe": "אלף",
+   "pron": "'elef"
+  },
+  "pilot/alt10": {
+   "seconds": 1.421,
+   "textHe": "עשרת אלפים",
+   "pron": "?as'eQ\"et alaf'im"
+  },
+  "pilot/alt11": {
+   "seconds": 1.475,
+   "textHe": "אחד עשר אלף",
+   "pron": "'aXad ?as'aQ\" 'elef"
+  },
+  "pilot/alt12": {
+   "seconds": 1.469,
+   "textHe": "שנים עשר אלף",
+   "pron": "Sn'em ?as'aQ\" 'elef"
+  },
+  "pilot/alt13": {
+   "seconds": 1.545,
+   "textHe": "שלושה עשר אלף",
+   "pron": "SloS'a ?as'aQ\" 'elef"
+  },
+  "pilot/alt14": {
+   "seconds": 1.601,
+   "textHe": "ארבעה עשר אלף",
+   "pron": "aQ\"ba?'a ?as'aQ\" 'elef"
+  },
+  "pilot/alt15": {
+   "seconds": 1.612,
+   "textHe": "חמישה עשר אלף",
+   "pron": "XamiS'a ?as'aQ\" 'elef"
+  },
+  "pilot/alt2": {
+   "seconds": 0.878,
+   "textHe": "אלפיים",
+   "pron": "alp'ajim"
+  },
+  "pilot/alt3": {
+   "seconds": 1.372,
+   "textHe": "שלושת אלפים",
+   "pron": "Sl'oSet alaf'im"
+  },
+  "pilot/alt4": {
+   "seconds": 1.373,
+   "textHe": "ארבעת אלפים",
+   "pron": "aQ\"b'aat alaf'im"
+  },
+  "pilot/alt5": {
+   "seconds": 1.457,
+   "textHe": "חמשת אלפים",
+   "pron": "Xam'eSet alaf'im"
+  },
+  "pilot/alt6": {
+   "seconds": 1.332,
+   "textHe": "ששת אלפים",
+   "pron": "S'eSet alaf'im"
+  },
+  "pilot/alt7": {
+   "seconds": 1.309,
+   "textHe": "שבעת אלפים",
+   "pron": "Sv'aat alaf'im"
+  },
+  "pilot/alt8": {
+   "seconds": 1.299,
+   "textHe": "שמונת אלפים",
+   "pron": "Sm'onat alaf'im"
+  },
+  "pilot/alt9": {
+   "seconds": 1.306,
+   "textHe": "תשעת אלפים",
+   "pron": "t'iSat alaf'im"
+  },
+  "pilot/altitude_word": {
+   "seconds": 0.845,
+   "textHe": "בגובה",
+   "pron": "beg'ova"
+  },
+  "pilot/at_hold": {
+   "seconds": 1.508,
+   "textHe": "בנקודת המתנה",
+   "pron": "binkud'at hamtan'a"
+  },
+  "pilot/base_hatzerim": {
+   "seconds": 1.129,
+   "textHe": "חצרים",
+   "pron": "XatseQ\"'im"
+  },
+  "pilot/base_hatzor": {
+   "seconds": 0.967,
+   "textHe": "חצור",
+   "pron": "Xats'oQ\""
+  },
+  "pilot/base_nevatim": {
+   "seconds": 0.929,
+   "textHe": "נבטים",
+   "pron": "nevat'im"
+  },
+  "pilot/base_ramatdavid": {
+   "seconds": 1.175,
+   "textHe": "רמת דוד",
+   "pron": "Q\"am'at d'avid"
+  },
+  "pilot/base_ramon": {
+   "seconds": 0.804,
+   "textHe": "רמון",
+   "pron": "Q\"am'on"
+  },
+  "pilot/base_telnof": {
+   "seconds": 0.913,
+   "textHe": "תל נוף",
+   "pron": "tel n'of"
+  },
+  "pilot/bingo": {
+   "seconds": 1.119,
+   "textHe": "דלק מינימום",
+   "pron": "d'elek m'inimum"
+  },
+  "pilot/cleared_land": {
+   "seconds": 1.254,
+   "textHe": "מותר לנחות",
+   "pron": "mut'aQ\" linX'ot"
+  },
+  "pilot/cleared_tko": {
+   "seconds": 1.377,
+   "textHe": "מותר להמריא",
+   "pron": "mut'aQ\" lehamQ\"'i"
+  },
+  "pilot/climbing_to": {
+   "seconds": 1.38,
+   "textHe": "מטפס לגובה",
+   "pron": "metap'es lag'ova"
+  },
+  "pilot/contact_control": {
+   "seconds": 1.46,
+   "textHe": "עבור לבקרה",
+   "pron": "?av'oQ\" lebakaQ\"'a"
+  },
+  "pilot/contact_tower": {
+   "seconds": 1.364,
+   "textHe": "עבור למגדל",
+   "pron": "?av'oQ\" lemigd'al"
+  },
+  "pilot/control_word": {
+   "seconds": 0.898,
+   "textHe": "בקרה",
+   "pron": "bakaQ\"'a"
+  },
+  "pilot/cs_dorban": {
+   "seconds": 0.876,
+   "textHe": "דורבן",
+   "pron": "doQ\"b'an"
+  },
+  "pilot/cs_ofroni": {
+   "seconds": 0.883,
+   "textHe": "עפרוני",
+   "pron": "efQ\"on'i"
+  },
+  "pilot/cs_shahaf": {
+   "seconds": 0.873,
+   "textHe": "שחף",
+   "pron": "S'aXaf"
+  },
+  "pilot/cs_zamir": {
+   "seconds": 0.826,
+   "textHe": "זמיר",
+   "pron": "zam'iQ\""
+  },
+  "pilot/d0": {
+   "seconds": 0.724,
+   "textHe": "אפס",
+   "pron": "'efes"
+  },
+  "pilot/d1": {
+   "seconds": 0.749,
+   "textHe": "אחת",
+   "pron": "'aXat"
+  },
+  "pilot/d2": {
+   "seconds": 0.8,
+   "textHe": "שתיים",
+   "pron": "St'ajim"
+  },
+  "pilot/d3": {
+   "seconds": 0.834,
+   "textHe": "שלוש",
+   "pron": "Sal'oS"
+  },
+  "pilot/d4": {
+   "seconds": 0.845,
+   "textHe": "ארבע",
+   "pron": "?aQ\"b'a"
+  },
+  "pilot/d5": {
+   "seconds": 0.833,
+   "textHe": "חמש",
+   "pron": "Xam'eS"
+  },
+  "pilot/d6": {
+   "seconds": 0.686,
+   "textHe": "שש",
+   "pron": "S'eS"
+  },
+  "pilot/d7": {
+   "seconds": 0.833,
+   "textHe": "שבע",
+   "pron": "Sev'a"
+  },
+  "pilot/d8": {
+   "seconds": 0.763,
+   "textHe": "שמונה",
+   "pron": "Sm'one"
+  },
+  "pilot/d9": {
+   "seconds": 0.758,
+   "textHe": "תשע",
+   "pron": "t'eSa"
+  },
+  "pilot/feet": {
+   "seconds": 0.791,
+   "textHe": "רגל",
+   "pron": "Q\"'egel"
+  },
+  "pilot/final_gear_down": {
+   "seconds": 1.932,
+   "textHe": "בסופי, גלגלים בחוץ",
+   "pron": "basof'i, galgal'im baX'uts"
+  },
+  "pilot/form_turn_left": {
+   "seconds": 2.005,
+   "textHe": "מבנה, פנייה שמאלה, עכשיו",
+   "pron": "mivn'e, pnij'a sm'ola, ?aSS'av"
+  },
+  "pilot/inbound_landing": {
+   "seconds": 1.397,
+   "textHe": "נכנס לנחיתה",
+   "pron": "niXn'as linXit'a"
+  },
+  "pilot/isr_area": {
+   "seconds": 2.02,
+   "textHe": "הגעתי לאזור הסיור",
+   "pron": "higa?'ti la?ez'oQ\" hasij'uQ\""
+  },
+  "pilot/isr_done": {
+   "seconds": 1.473,
+   "textHe": "האיסוף הושלם",
+   "pron": "ha?is'uf huSl'am"
+  },
+  "pilot/isr_start": {
+   "seconds": 1.426,
+   "textHe": "מתחיל באיסוף",
+   "pron": "matX'il ba?is'uf"
+  },
+  "pilot/over": {
+   "seconds": 0.778,
+   "textHe": "מעל",
+   "pron": "me?'al"
+  },
+  "pilot/ready_taxi": {
+   "seconds": 1.365,
+   "textHe": "מוכן להסעה",
+   "pron": "muX'an lehasa'a"
+  },
+  "pilot/ready_tko": {
+   "seconds": 1.426,
+   "textHe": "מוכן להמראה",
+   "pron": "muX'an lehamQ\"a'a"
+  },
+  "pilot/report_final": {
+   "seconds": 1.282,
+   "textHe": "דווח בסופי",
+   "pron": "daw'aX basof'i"
+  },
+  "pilot/roger": {
+   "seconds": 0.961,
+   "textHe": "קיבלתי",
+   "pron": "kib'alti"
+  },
+  "pilot/rtb": {
+   "seconds": 1.376,
+   "textHe": "חוזר לבסיס",
+   "pron": "Xoz'eQ\" labas'is"
+  },
+  "pilot/runway_word": {
+   "seconds": 0.857,
+   "textHe": "מסלול",
+   "pron": "masl'ul"
+  },
+  "pilot/rw_C": {
+   "seconds": 1.0,
+   "textHe": "מרכזי",
+   "pron": "meQ\"kaz'i"
+  },
+  "pilot/rw_L": {
+   "seconds": 0.761,
+   "textHe": "שמאלי",
+   "pron": "smal'i"
+  },
+  "pilot/rw_R": {
+   "seconds": 0.81,
+   "textHe": "ימני",
+   "pron": "jemen'i"
+  },
+  "pilot/status_ok": {
+   "seconds": 1.297,
+   "textHe": "הכל תקין",
+   "pron": "hak'ol tak'in"
+  },
+  "pilot/taxi_to_hold": {
+   "seconds": 1.948,
+   "textHe": "הסע לנקודת המתנה",
+   "pron": "has'a lenekud'at hamtan'a"
+  },
+  "pilot/tower_word": {
+   "seconds": 0.869,
+   "textHe": "מגדל",
+   "pron": "migd'al"
+  },
+  "pilot/wp_mitzpe_ramon": {
+   "seconds": 1.206,
+   "textHe": "מצפה רמון",
+   "pron": "mitsp'e Q\"am'on"
+  },
+  "pilot/wp_sde_boker": {
+   "seconds": 1.066,
+   "textHe": "שדה בוקר",
+   "pron": "sd'e b'okeQ\""
+  },
+  "pilot/wp_yeruham": {
+   "seconds": 0.993,
+   "textHe": "ירוחם",
+   "pron": "jeQ\"uX'am"
+  },
+  "range/cs_dorban": {
+   "seconds": 0.962,
+   "textHe": "דורבן",
+   "pron": "doQ\"b'an"
+  },
+  "range/cs_ofroni": {
+   "seconds": 0.956,
+   "textHe": "עפרוני",
+   "pron": "efQ\"on'i"
+  },
+  "range/cs_shahaf": {
+   "seconds": 0.96,
+   "textHe": "שחף",
+   "pron": "S'aXaf"
+  },
+  "range/cs_zamir": {
+   "seconds": 0.911,
+   "textHe": "זמיר",
+   "pron": "zam'iQ\""
+  },
+  "range/d1": {
+   "seconds": 0.814,
+   "textHe": "אחת",
+   "pron": "'aXat"
+  },
+  "range/range_word": {
+   "seconds": 1.552,
+   "textHe": "מנהל תרגיל",
+   "pron": "menah'el taQ\"g'il"
+  },
+  "range/target_hit": {
+   "seconds": 1.598,
+   "textHe": "פגיעה במטרה",
+   "pron": "pgi?'a bamataQ\"'a"
+  },
+  "tower/base_hatzerim": {
+   "seconds": 1.155,
+   "textHe": "חצרים",
+   "pron": "XatseQ\"'im"
+  },
+  "tower/base_hatzor": {
+   "seconds": 0.974,
+   "textHe": "חצור",
+   "pron": "Xats'oQ\""
+  },
+  "tower/base_nevatim": {
+   "seconds": 0.949,
+   "textHe": "נבטים",
+   "pron": "nevat'im"
+  },
+  "tower/base_ramatdavid": {
+   "seconds": 1.205,
+   "textHe": "רמת דוד",
+   "pron": "Q\"am'at d'avid"
+  },
+  "tower/base_ramon": {
+   "seconds": 0.811,
+   "textHe": "רמון",
+   "pron": "Q\"am'on"
+  },
+  "tower/base_telnof": {
+   "seconds": 0.927,
+   "textHe": "תל נוף",
+   "pron": "tel n'of"
+  },
+  "tower/check_gear": {
+   "seconds": 1.243,
+   "textHe": "בדוק גלגלים!",
+   "pron": "bd'ok galgal'im"
+  },
+  "tower/cleared_land": {
+   "seconds": 1.258,
+   "textHe": "מותר לנחות",
+   "pron": "mut'aQ\" linX'ot"
+  },
+  "tower/cleared_tko": {
+   "seconds": 1.387,
+   "textHe": "מותר להמריא",
+   "pron": "mut'aQ\" lehamQ\"'i"
+  },
+  "tower/contact_control": {
+   "seconds": 1.458,
+   "textHe": "עבור לבקרה",
+   "pron": "?av'oQ\" lebakaQ\"'a"
+  },
+  "tower/cs_dorban": {
+   "seconds": 0.896,
+   "textHe": "דורבן",
+   "pron": "doQ\"b'an"
+  },
+  "tower/cs_ofroni": {
+   "seconds": 0.865,
+   "textHe": "עפרוני",
+   "pron": "efQ\"on'i"
+  },
+  "tower/cs_shahaf": {
+   "seconds": 0.905,
+   "textHe": "שחף",
+   "pron": "S'aXaf"
+  },
+  "tower/cs_zamir": {
+   "seconds": 0.836,
+   "textHe": "זמיר",
+   "pron": "zam'iQ\""
+  },
+  "tower/d0": {
+   "seconds": 0.753,
+   "textHe": "אפס",
+   "pron": "'efes"
+  },
+  "tower/d1": {
+   "seconds": 0.778,
+   "textHe": "אחת",
+   "pron": "'aXat"
+  },
+  "tower/d2": {
+   "seconds": 0.813,
+   "textHe": "שתיים",
+   "pron": "St'ajim"
+  },
+  "tower/d3": {
+   "seconds": 0.838,
+   "textHe": "שלוש",
+   "pron": "Sal'oS"
+  },
+  "tower/d4": {
+   "seconds": 0.858,
+   "textHe": "ארבע",
+   "pron": "?aQ\"b'a"
+  },
+  "tower/d5": {
+   "seconds": 0.854,
+   "textHe": "חמש",
+   "pron": "Xam'eS"
+  },
+  "tower/d6": {
+   "seconds": 0.702,
+   "textHe": "שש",
+   "pron": "S'eS"
+  },
+  "tower/d7": {
+   "seconds": 0.831,
+   "textHe": "שבע",
+   "pron": "Sev'a"
+  },
+  "tower/d8": {
+   "seconds": 0.785,
+   "textHe": "שמונה",
+   "pron": "Sm'one"
+  },
+  "tower/d9": {
+   "seconds": 0.787,
+   "textHe": "תשע",
+   "pron": "t'eSa"
+  },
+  "tower/good_landing": {
+   "seconds": 1.289,
+   "textHe": "נחיתה טובה",
+   "pron": "neXit'a tov'a"
+  },
+  "tower/goodbye": {
+   "seconds": 1.067,
+   "textHe": "להתראות",
+   "pron": "lehitQ\"a'ot"
+  },
+  "tower/no_taxi_clear": {
+   "seconds": 1.927,
+   "textHe": "לא קיבלת אישור הסעה",
+   "pron": "l'o kib'alta iS'uQ\" hasa'a"
+  },
+  "tower/no_tko_clear": {
+   "seconds": 1.426,
+   "textHe": "לא אושרה המראה",
+   "pron": "l'o uSQ\"'a hamQ\"a'a"
+  },
+  "tower/report_final": {
+   "seconds": 1.287,
+   "textHe": "דווח בסופי",
+   "pron": "daw'aX basof'i"
+  },
+  "tower/runway_word": {
+   "seconds": 0.865,
+   "textHe": "מסלול",
+   "pron": "masl'ul"
+  },
+  "tower/rw_C": {
+   "seconds": 1.014,
+   "textHe": "מרכזי",
+   "pron": "meQ\"kaz'i"
+  },
+  "tower/rw_L": {
+   "seconds": 0.774,
+   "textHe": "שמאלי",
+   "pron": "smal'i"
+  },
+  "tower/rw_R": {
+   "seconds": 0.83,
+   "textHe": "ימני",
+   "pron": "jemen'i"
+  },
+  "tower/stop": {
+   "seconds": 0.914,
+   "textHe": "עצור",
+   "pron": "?ats'oQ\""
+  },
+  "tower/taxi_to_hold": {
+   "seconds": 1.953,
+   "textHe": "הסע לנקודת המתנה",
+   "pron": "has'a lenekud'at hamtan'a"
+  },
+  "tower/tower_word": {
+   "seconds": 0.865,
+   "textHe": "מגדל",
+   "pron": "migd'al"
+  },
+  "tower/vacate_end": {
+   "seconds": 1.676,
+   "textHe": "פנה בסוף המסלול",
+   "pron": "pn'e bes'of hamasl'ul"
+  },
+  "tower/wind_calm": {
+   "seconds": 1.196,
+   "textHe": "רוח שקטה",
+   "pron": "Q\"'uaX Sket'a"
+  },
+  "wingman/number_two": {
+   "seconds": 0.777,
+   "textHe": "שתיים",
+   "pron": "St'ajim"
+  },
+  "wingman/two_in_pos": {
+   "seconds": 0.866,
+   "textHe": "בעמדה",
+   "pron": "ba?emd'a"
+  }
+ }
+}

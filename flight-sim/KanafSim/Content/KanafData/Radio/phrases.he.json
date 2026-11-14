@@ -1,0 +1,1088 @@
+{
+ "schemaVersion": 1,
+ "language": "he-IL",
+ "notes": "Original GAME dialogue inspired by publicly known aviation radio style. It is NOT an official IAF/ATC procedure or phraseology. Pronunciation strings ('pron') are espeak-ng Hebrew phoneme mnemonics, hand-written and used to generate placeholder voice audio; ' marks stress, Q\" uvular r, X = ח/כ, ? = glottal stop.",
+ "voices": [
+  {
+   "id": "tower",
+   "nameHe": "מגדל",
+   "espeak": {
+    "variant": "m3",
+    "pitch": 38,
+    "speed": 168
+   },
+   "role": "tower"
+  },
+  {
+   "id": "control",
+   "nameHe": "בקרה",
+   "espeak": {
+    "variant": "f2",
+    "pitch": 55,
+    "speed": 165
+   },
+   "role": "controller"
+  },
+  {
+   "id": "pilot",
+   "nameHe": "טייס (אתה)",
+   "espeak": {
+    "variant": "m1",
+    "pitch": 45,
+    "speed": 172
+   },
+   "role": "player"
+  },
+  {
+   "id": "wingman",
+   "nameHe": "מספר 2",
+   "espeak": {
+    "variant": "m7",
+    "pitch": 30,
+    "speed": 175
+   },
+   "role": "formation"
+  },
+  {
+   "id": "range",
+   "nameHe": "מנהל התרגיל",
+   "espeak": {
+    "variant": "m5",
+    "pitch": 42,
+    "speed": 160
+   },
+   "role": "range"
+  }
+ ],
+ "channels": [
+  {
+   "id": "tower",
+   "nameHe": "מגדל"
+  },
+  {
+   "id": "control",
+   "nameHe": "בקרה"
+  },
+  {
+   "id": "formation",
+   "nameHe": "מבנה"
+  },
+  {
+   "id": "range",
+   "nameHe": "מנהל תרגיל"
+  }
+ ],
+ "fragments": {
+  "d0": {
+   "he": "אפס",
+   "pron": "'efes"
+  },
+  "d1": {
+   "he": "אחת",
+   "pron": "'aXat"
+  },
+  "d2": {
+   "he": "שתיים",
+   "pron": "St'ajim"
+  },
+  "d3": {
+   "he": "שלוש",
+   "pron": "Sal'oS"
+  },
+  "d4": {
+   "he": "ארבע",
+   "pron": "?aQ\"b'a"
+  },
+  "d5": {
+   "he": "חמש",
+   "pron": "Xam'eS"
+  },
+  "d6": {
+   "he": "שש",
+   "pron": "S'eS"
+  },
+  "d7": {
+   "he": "שבע",
+   "pron": "Sev'a"
+  },
+  "d8": {
+   "he": "שמונה",
+   "pron": "Sm'one"
+  },
+  "d9": {
+   "he": "תשע",
+   "pron": "t'eSa"
+  },
+  "alt1": {
+   "he": "אלף",
+   "pron": "'elef"
+  },
+  "alt2": {
+   "he": "אלפיים",
+   "pron": "alp'ajim"
+  },
+  "alt3": {
+   "he": "שלושת אלפים",
+   "pron": "Sl'oSet alaf'im"
+  },
+  "alt4": {
+   "he": "ארבעת אלפים",
+   "pron": "aQ\"b'aat alaf'im"
+  },
+  "alt5": {
+   "he": "חמשת אלפים",
+   "pron": "Xam'eSet alaf'im"
+  },
+  "alt6": {
+   "he": "ששת אלפים",
+   "pron": "S'eSet alaf'im"
+  },
+  "alt7": {
+   "he": "שבעת אלפים",
+   "pron": "Sv'aat alaf'im"
+  },
+  "alt8": {
+   "he": "שמונת אלפים",
+   "pron": "Sm'onat alaf'im"
+  },
+  "alt9": {
+   "he": "תשעת אלפים",
+   "pron": "t'iSat alaf'im"
+  },
+  "alt10": {
+   "he": "עשרת אלפים",
+   "pron": "?as'eQ\"et alaf'im"
+  },
+  "alt11": {
+   "he": "אחד עשר אלף",
+   "pron": "'aXad ?as'aQ\" 'elef"
+  },
+  "alt12": {
+   "he": "שנים עשר אלף",
+   "pron": "Sn'em ?as'aQ\" 'elef"
+  },
+  "alt13": {
+   "he": "שלושה עשר אלף",
+   "pron": "SloS'a ?as'aQ\" 'elef"
+  },
+  "alt14": {
+   "he": "ארבעה עשר אלף",
+   "pron": "aQ\"ba?'a ?as'aQ\" 'elef"
+  },
+  "alt15": {
+   "he": "חמישה עשר אלף",
+   "pron": "XamiS'a ?as'aQ\" 'elef"
+  },
+  "feet": {
+   "he": "רגל",
+   "pron": "Q\"'egel"
+  },
+  "rw_L": {
+   "he": "שמאלי",
+   "pron": "smal'i"
+  },
+  "rw_R": {
+   "he": "ימני",
+   "pron": "jemen'i"
+  },
+  "rw_C": {
+   "he": "מרכזי",
+   "pron": "meQ\"kaz'i"
+  },
+  "base_ramon": {
+   "he": "רמון",
+   "pron": "Q\"am'on"
+  },
+  "base_nevatim": {
+   "he": "נבטים",
+   "pron": "nevat'im"
+  },
+  "base_hatzerim": {
+   "he": "חצרים",
+   "pron": "XatseQ\"'im"
+  },
+  "base_telnof": {
+   "he": "תל נוף",
+   "pron": "tel n'of"
+  },
+  "base_ramatdavid": {
+   "he": "רמת דוד",
+   "pron": "Q\"am'at d'avid"
+  },
+  "base_hatzor": {
+   "he": "חצור",
+   "pron": "Xats'oQ\""
+  },
+  "cs_ofroni": {
+   "he": "עפרוני",
+   "pron": "efQ\"on'i"
+  },
+  "cs_dorban": {
+   "he": "דורבן",
+   "pron": "doQ\"b'an"
+  },
+  "cs_shahaf": {
+   "he": "שחף",
+   "pron": "S'aXaf"
+  },
+  "cs_zamir": {
+   "he": "זמיר",
+   "pron": "zam'iQ\""
+  },
+  "wp_mitzpe_ramon": {
+   "he": "מצפה רמון",
+   "pron": "mitsp'e Q\"am'on"
+  },
+  "wp_yeruham": {
+   "he": "ירוחם",
+   "pron": "jeQ\"uX'am"
+  },
+  "wp_sde_boker": {
+   "he": "שדה בוקר",
+   "pron": "sd'e b'okeQ\""
+  },
+  "tower_word": {
+   "he": "מגדל",
+   "pron": "migd'al"
+  },
+  "control_word": {
+   "he": "בקרה",
+   "pron": "bakaQ\"'a"
+  },
+  "range_word": {
+   "he": "מנהל תרגיל",
+   "pron": "menah'el taQ\"g'il"
+  },
+  "runway_word": {
+   "he": "מסלול",
+   "pron": "masl'ul"
+  },
+  "ready_taxi": {
+   "he": "מוכן להסעה",
+   "pron": "muX'an lehasa'a"
+  },
+  "taxi_to_hold": {
+   "he": "הסע לנקודת המתנה",
+   "pron": "has'a lenekud'at hamtan'a"
+  },
+  "stop": {
+   "he": "עצור",
+   "pron": "?ats'oQ\""
+  },
+  "no_taxi_clear": {
+   "he": "לא קיבלת אישור הסעה",
+   "pron": "l'o kib'alta iS'uQ\" hasa'a"
+  },
+  "at_hold": {
+   "he": "בנקודת המתנה",
+   "pron": "binkud'at hamtan'a"
+  },
+  "ready_tko": {
+   "he": "מוכן להמראה",
+   "pron": "muX'an lehamQ\"a'a"
+  },
+  "wind_calm": {
+   "he": "רוח שקטה",
+   "pron": "Q\"'uaX Sket'a"
+  },
+  "cleared_tko": {
+   "he": "מותר להמריא",
+   "pron": "mut'aQ\" lehamQ\"'i"
+  },
+  "no_tko_clear": {
+   "he": "לא אושרה המראה",
+   "pron": "l'o uSQ\"'a hamQ\"a'a"
+  },
+  "contact_control": {
+   "he": "עבור לבקרה",
+   "pron": "?av'oQ\" lebakaQ\"'a"
+  },
+  "goodbye": {
+   "he": "להתראות",
+   "pron": "lehitQ\"a'ot"
+  },
+  "airborne": {
+   "he": "באוויר",
+   "pron": "ba?av'iQ\""
+  },
+  "climbing_to": {
+   "he": "מטפס לגובה",
+   "pron": "metap'es lag'ova"
+  },
+  "identified": {
+   "he": "מזוהה",
+   "pron": "mezuh'e"
+  },
+  "continue_plan": {
+   "he": "המשך לפי התכנית",
+   "pron": "hemS'eX lef'i hatoXn'it"
+  },
+  "over": {
+   "he": "מעל",
+   "pron": "me?'al"
+  },
+  "roger": {
+   "he": "קיבלתי",
+   "pron": "kib'alti"
+  },
+  "check_fuel": {
+   "he": "בדוק דלק",
+   "pron": "bd'ok d'elek"
+  },
+  "bingo": {
+   "he": "דלק מינימום",
+   "pron": "d'elek m'inimum"
+  },
+  "rtb": {
+   "he": "חוזר לבסיס",
+   "pron": "Xoz'eQ\" labas'is"
+  },
+  "contact_tower": {
+   "he": "עבור למגדל",
+   "pron": "?av'oQ\" lemigd'al"
+  },
+  "inbound_landing": {
+   "he": "נכנס לנחיתה",
+   "pron": "niXn'as linXit'a"
+  },
+  "report_final": {
+   "he": "דווח בסופי",
+   "pron": "daw'aX basof'i"
+  },
+  "final_gear_down": {
+   "he": "בסופי, גלגלים בחוץ",
+   "pron": "basof'i, galgal'im baX'uts"
+  },
+  "cleared_land": {
+   "he": "מותר לנחות",
+   "pron": "mut'aQ\" linX'ot"
+  },
+  "check_gear": {
+   "he": "בדוק גלגלים!",
+   "pron": "bd'ok galgal'im"
+  },
+  "good_landing": {
+   "he": "נחיתה טובה",
+   "pron": "neXit'a tov'a"
+  },
+  "vacate_end": {
+   "he": "פנה בסוף המסלול",
+   "pron": "pn'e bes'of hamasl'ul"
+  },
+  "status_ok": {
+   "he": "הכל תקין",
+   "pron": "hak'ol tak'in"
+  },
+  "altitude_word": {
+   "he": "בגובה",
+   "pron": "beg'ova"
+  },
+  "isr_area": {
+   "he": "הגעתי לאזור הסיור",
+   "pron": "higa?'ti la?ez'oQ\" hasij'uQ\""
+  },
+  "isr_start": {
+   "he": "מתחיל באיסוף",
+   "pron": "matX'il ba?is'uf"
+  },
+  "isr_done": {
+   "he": "האיסוף הושלם",
+   "pron": "ha?is'uf huSl'am"
+  },
+  "target_hit": {
+   "he": "פגיעה במטרה",
+   "pron": "pgi?'a bamataQ\"'a"
+  },
+  "two_in_pos": {
+   "he": "בעמדה",
+   "pron": "ba?emd'a"
+  },
+  "form_turn_left": {
+   "he": "מבנה, פנייה שמאלה, עכשיו",
+   "pron": "mivn'e, pnij'a sm'ola, ?aSS'av"
+  },
+  "number_two": {
+   "he": "שתיים",
+   "pron": "St'ajim"
+  }
+ },
+ "messages": [
+  {
+   "id": "p_req_taxi",
+   "channel": "tower",
+   "voice": "pilot",
+   "parts": [
+    "@tower_word",
+    "$base",
+    ",",
+    "$cs",
+    ",",
+    "@ready_taxi"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "ground",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "t_taxi_clear",
+   "channel": "tower",
+   "voice": "tower",
+   "parts": [
+    "$cs",
+    ",",
+    "@tower_word",
+    "$base",
+    ",",
+    "@taxi_to_hold",
+    ",",
+    "@runway_word",
+    "$rw"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "ground",
+   "needsAck": true,
+   "phase": 1
+  },
+  {
+   "id": "p_ack_taxi",
+   "channel": "tower",
+   "voice": "pilot",
+   "parts": [
+    "@taxi_to_hold",
+    ",",
+    "@runway_word",
+    "$rw",
+    ",",
+    "$cs"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "ground",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "t_stop_no_clear",
+   "channel": "tower",
+   "voice": "tower",
+   "parts": [
+    "$cs",
+    ",",
+    "@stop",
+    ",",
+    "@no_taxi_clear"
+   ],
+   "priority": 4,
+   "cooldownS": 40,
+   "topic": "ground_warn",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "p_ready_tko",
+   "channel": "tower",
+   "voice": "pilot",
+   "parts": [
+    "$cs",
+    ",",
+    "@at_hold",
+    ",",
+    "@ready_tko"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "ground",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "t_tko_clear",
+   "channel": "tower",
+   "voice": "tower",
+   "parts": [
+    "$cs",
+    ",",
+    "@wind_calm",
+    ",",
+    "@runway_word",
+    "$rw",
+    ",",
+    "@cleared_tko"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "ground",
+   "needsAck": true,
+   "phase": 1
+  },
+  {
+   "id": "p_ack_tko",
+   "channel": "tower",
+   "voice": "pilot",
+   "parts": [
+    "@cleared_tko",
+    ",",
+    "$cs"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "ground",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "t_no_tko_clear",
+   "channel": "tower",
+   "voice": "tower",
+   "parts": [
+    "$cs",
+    ",",
+    "@no_tko_clear"
+   ],
+   "priority": 4,
+   "cooldownS": 120,
+   "topic": "ground_warn",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "t_contact_control",
+   "channel": "tower",
+   "voice": "tower",
+   "parts": [
+    "$cs",
+    ",",
+    "@contact_control",
+    ",",
+    "@goodbye"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "handoff",
+   "needsAck": true,
+   "phase": 1
+  },
+  {
+   "id": "p_ack_control",
+   "channel": "tower",
+   "voice": "pilot",
+   "parts": [
+    "@contact_control",
+    ",",
+    "$cs"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "handoff",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "p_checkin_control",
+   "channel": "control",
+   "voice": "pilot",
+   "parts": [
+    "@control_word",
+    ",",
+    "$cs",
+    ",",
+    "@airborne",
+    ",",
+    "@climbing_to",
+    "$altK",
+    "@feet"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "checkin",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "c_radar_contact",
+   "channel": "control",
+   "voice": "control",
+   "parts": [
+    "$cs",
+    ",",
+    "@control_word",
+    ",",
+    "@identified",
+    ",",
+    "@continue_plan"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "checkin",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "p_wp_report",
+   "channel": "control",
+   "voice": "pilot",
+   "parts": [
+    "$cs",
+    ",",
+    "@over",
+    "$wp"
+   ],
+   "priority": 2,
+   "cooldownS": 5,
+   "topic": "wp",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "c_roger",
+   "channel": "control",
+   "voice": "control",
+   "parts": [
+    "$cs",
+    ",",
+    "@roger"
+   ],
+   "priority": 1,
+   "cooldownS": 8,
+   "topic": "roger",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "p_status",
+   "channel": "control",
+   "voice": "pilot",
+   "parts": [
+    "$cs",
+    ",",
+    "@status_ok",
+    ",",
+    "@altitude_word",
+    "$altK",
+    "@feet"
+   ],
+   "priority": 2,
+   "cooldownS": 10,
+   "topic": "status",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "c_check_fuel",
+   "channel": "control",
+   "voice": "control",
+   "parts": [
+    "$cs",
+    ",",
+    "@check_fuel"
+   ],
+   "priority": 3,
+   "cooldownS": 300,
+   "topic": "fuel",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "p_rtb",
+   "channel": "control",
+   "voice": "pilot",
+   "parts": [
+    "$cs",
+    ",",
+    "@bingo",
+    ",",
+    "@rtb"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "rtb",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "p_rtb_plain",
+   "channel": "control",
+   "voice": "pilot",
+   "parts": [
+    "$cs",
+    ",",
+    "@rtb"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "rtb",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "c_contact_tower",
+   "channel": "control",
+   "voice": "control",
+   "parts": [
+    "$cs",
+    ",",
+    "@contact_tower",
+    "$base"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "rtb",
+   "needsAck": true,
+   "phase": 1
+  },
+  {
+   "id": "p_ack_tower",
+   "channel": "control",
+   "voice": "pilot",
+   "parts": [
+    "@contact_tower",
+    "$base",
+    ",",
+    "$cs"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "rtb",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "p_inbound",
+   "channel": "tower",
+   "voice": "pilot",
+   "parts": [
+    "@tower_word",
+    "$base",
+    ",",
+    "$cs",
+    ",",
+    "@inbound_landing"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "approach",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "t_report_final",
+   "channel": "tower",
+   "voice": "tower",
+   "parts": [
+    "$cs",
+    ",",
+    "@tower_word",
+    "$base",
+    ",",
+    "@runway_word",
+    "$rw",
+    ",",
+    "@report_final"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "approach",
+   "needsAck": true,
+   "phase": 1
+  },
+  {
+   "id": "p_ack_report_final",
+   "channel": "tower",
+   "voice": "pilot",
+   "parts": [
+    "@report_final",
+    ",",
+    "$cs"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "approach",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "p_final",
+   "channel": "tower",
+   "voice": "pilot",
+   "parts": [
+    "$cs",
+    ",",
+    "@final_gear_down"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "final",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "t_cleared_land",
+   "channel": "tower",
+   "voice": "tower",
+   "parts": [
+    "$cs",
+    ",",
+    "@wind_calm",
+    ",",
+    "@runway_word",
+    "$rw",
+    ",",
+    "@cleared_land"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "final",
+   "needsAck": true,
+   "phase": 1
+  },
+  {
+   "id": "p_ack_land",
+   "channel": "tower",
+   "voice": "pilot",
+   "parts": [
+    "@cleared_land",
+    ",",
+    "$cs"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "final",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "t_check_gear",
+   "channel": "tower",
+   "voice": "tower",
+   "parts": [
+    "$cs",
+    ",",
+    "@check_gear"
+   ],
+   "priority": 5,
+   "cooldownS": 60,
+   "topic": "gear_warn",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "t_landed_good",
+   "channel": "tower",
+   "voice": "tower",
+   "parts": [
+    "$cs",
+    ",",
+    "@good_landing",
+    ",",
+    "@vacate_end"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "landed",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "t_landed",
+   "channel": "tower",
+   "voice": "tower",
+   "parts": [
+    "$cs",
+    ",",
+    "@vacate_end"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "landed",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "p_roger",
+   "channel": "*",
+   "voice": "pilot",
+   "parts": [
+    "@roger",
+    ",",
+    "$cs"
+   ],
+   "priority": 1,
+   "cooldownS": 3,
+   "topic": "pilot_roger",
+   "needsAck": false,
+   "phase": 1
+  },
+  {
+   "id": "p_isr_area",
+   "channel": "control",
+   "voice": "pilot",
+   "parts": [
+    "$cs",
+    ",",
+    "@isr_area"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "isr",
+   "needsAck": false,
+   "phase": 3
+  },
+  {
+   "id": "p_isr_start",
+   "channel": "control",
+   "voice": "pilot",
+   "parts": [
+    "$cs",
+    ",",
+    "@isr_start"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "isr",
+   "needsAck": false,
+   "phase": 3
+  },
+  {
+   "id": "p_isr_done",
+   "channel": "control",
+   "voice": "pilot",
+   "parts": [
+    "$cs",
+    ",",
+    "@isr_done",
+    ",",
+    "@rtb"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "isr",
+   "needsAck": false,
+   "phase": 3
+  },
+  {
+   "id": "r_target_hit",
+   "channel": "range",
+   "voice": "range",
+   "parts": [
+    "$cs",
+    ",",
+    "@range_word",
+    ",",
+    "@target_hit"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "range",
+   "needsAck": false,
+   "phase": 2
+  },
+  {
+   "id": "w_in_position",
+   "channel": "formation",
+   "voice": "wingman",
+   "parts": [
+    "@number_two",
+    ",",
+    "@two_in_pos"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "form",
+   "needsAck": false,
+   "phase": 3
+  },
+  {
+   "id": "p_form_turn_left",
+   "channel": "formation",
+   "voice": "pilot",
+   "parts": [
+    "@form_turn_left"
+   ],
+   "priority": 2,
+   "cooldownS": 20,
+   "topic": "form",
+   "needsAck": false,
+   "phase": 3
+  }
+ ],
+ "replies": [
+  {
+   "id": "r_req_taxi",
+   "labelHe": "בקשת הסעה",
+   "pilotMessage": "p_req_taxi"
+  },
+  {
+   "id": "r_ack_taxi",
+   "labelHe": "אישור חוזר: הסעה",
+   "pilotMessage": "p_ack_taxi"
+  },
+  {
+   "id": "r_ready_tko",
+   "labelHe": "מוכן להמראה",
+   "pilotMessage": "p_ready_tko"
+  },
+  {
+   "id": "r_ack_tko",
+   "labelHe": "אישור חוזר: המראה",
+   "pilotMessage": "p_ack_tko"
+  },
+  {
+   "id": "r_ack_control",
+   "labelHe": "אישור: עבור לבקרה",
+   "pilotMessage": "p_ack_control"
+  },
+  {
+   "id": "r_checkin",
+   "labelHe": "התחברות לבקרה",
+   "pilotMessage": "p_checkin_control"
+  },
+  {
+   "id": "r_status",
+   "labelHe": "דיווח מצב",
+   "pilotMessage": "p_status"
+  },
+  {
+   "id": "r_rtb",
+   "labelHe": "חוזר לבסיס",
+   "pilotMessage": "p_rtb_plain"
+  },
+  {
+   "id": "r_rtb_fuel",
+   "labelHe": "דלק מינימום — חוזר לבסיס",
+   "pilotMessage": "p_rtb"
+  },
+  {
+   "id": "r_ack_tower",
+   "labelHe": "אישור: עבור למגדל",
+   "pilotMessage": "p_ack_tower"
+  },
+  {
+   "id": "r_inbound",
+   "labelHe": "נכנס לנחיתה",
+   "pilotMessage": "p_inbound"
+  },
+  {
+   "id": "r_ack_report_final",
+   "labelHe": "אישור: אדווח בסופי",
+   "pilotMessage": "p_ack_report_final"
+  },
+  {
+   "id": "r_final",
+   "labelHe": "בסופי, גלגלים בחוץ",
+   "pilotMessage": "p_final"
+  },
+  {
+   "id": "r_ack_land",
+   "labelHe": "אישור חוזר: נחיתה",
+   "pilotMessage": "p_ack_land"
+  },
+  {
+   "id": "r_roger",
+   "labelHe": "קיבלתי",
+   "pilotMessage": "p_roger"
+  }
+ ]
+}

@@ -1,0 +1,22 @@
+{
+  "name": "negev",
+  "format": "uint16 little-endian, row 0 = north edge, col 0 = west edge; regular lat/lon grid; samples on edges (PixelIsPoint)",
+  "width": 2049,
+  "height": 2049,
+  "south": 30.4,
+  "north": 31.5,
+  "west": 34.3,
+  "east": 35.4,
+  "heightMinMeters": -428.0,
+  "heightMaxMeters": 1028.0,
+  "verticalDatum": "EGM2008 geoid (approximately mean sea level)",
+  "horizontalDatum": "WGS84 (EPSG:4326)",
+  "approxSpacingMeters": {
+    "northSouth": 59.69003906250008,
+    "eastWest": 51.277757352574326
+  },
+  "surfaceModel": "DSM (includes buildings/vegetation)",
+  "source": "Copernicus DEM GLO-30 via s3://copernicus-dem-30m (AWS Open Data)",
+  "attribution": "Produced using Copernicus WorldDEM-30 © DLR e.V. 2010-2014 and © Airbus Defence and Space GmbH 2014-2018 provided under COPERNICUS by the European Union and ESA; all rights reserved.",
+  "coverageClass": "real_elevation_data"
+}

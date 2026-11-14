@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "notes": "Places are real; scenarios, adversaries, targets and callsigns are fictional. Waypoints are approximate public town/landmark locations used as game navigation points.",
+  "callsignPool": [
+    {"id": "ofroni", "he": "עפרוני", "pron": "efQ\"on'i"},
+    {"id": "dorban", "he": "דורבן", "pron": "doQ\"b'an"},
+    {"id": "shahaf", "he": "שחף", "pron": "S'aXaf"},
+    {"id": "zamir", "he": "זמיר", "pron": "zam'iQ\""}
+  ],
+  "timesOfDay": [
+    {"id": "dawn", "nameHe": "שחר", "localHour": 6.0},
+    {"id": "noon", "nameHe": "צהריים", "localHour": 12.0},
+    {"id": "sunset", "nameHe": "שקיעה", "localHour": 17.4},
+    {"id": "night", "nameHe": "לילה", "localHour": 22.0}
+  ],
+  "missions": [
+    {
+      "id": "free_flight",
+      "type": "free_flight",
+      "nameHe": "טיסה חופשית",
+      "briefingHe": "טיסה חופשית מעל הנגב. אין מטרה מחייבת; ניתן לנחות בכל מסלול. סיום: נחיתה ועצירה, או יציאה מהתפריט.",
+      "aircraft": ["*"],
+      "allowAnyBase": true,
+      "callsign": "ofroni",
+      "start": {"type": "runway_hold", "runwayEnd": "auto"},
+      "objectives": [
+        {"id": "takeoff", "type": "airborne", "textHe": "המראה", "optional": true},
+        {"id": "land", "type": "landed_stopped", "textHe": "נחיתה ועצירה מלאה", "optional": true}
+      ],
+      "success": "none",
+      "phase": 1
+    },
+    {
+      "id": "pattern_practice",
+      "type": "takeoff_landing",
+      "nameHe": "תרגול המראה ונחיתה",
+      "briefingHe": "המראה מהמסלול הפעיל, טיסת הקפה בגובה כ־2,000 רגל מעל הקרקע, והנחתה על אותו מסלול. הצלחה: נגיעה על המסלול בקצב שקיעה נמוך מ־3 מ'/ש' ועצירה מלאה על המסלול.",
+      "aircraft": ["*"],
+      "allowAnyBase": true,
+      "callsign": "ofroni",
+      "start": {"type": "runway_hold", "runwayEnd": "auto"},
+      "objectives": [
+        {"id": "takeoff", "type": "airborne", "textHe": "המראה"},
+        {"id": "climb", "type": "reach_agl", "valueFt": 1500, "textHe": "טיפוס ל־1,500 רגל מעל הקרקע"},
+        {"id": "downwind", "type": "distance_from_base", "valueNm": 3.0, "textHe": "התרחקות לפחות 3 מייל לטובת ההקפה"},
+        {"id": "land", "type": "landed_on_runway", "maxSinkMs": 3.0, "textHe": "נחיתה רכה על המסלול"},
+        {"id": "stop", "type": "stopped_on_runway", "textHe": "עצירה מלאה על המסלול"}
+      ],
+      "success": "all_required",
+      "timeLimitS": 1800,
+      "scoring": {"touchdownSinkWeight": 40, "centrelineWeight": 30, "timeWeight": 10, "smoothnessWeight": 20},
+      "phase": 1
+    },
+    {
+      "id": "nav_negev",
+      "type": "navigation",
+      "nameHe": "ניווט בנגב",
+      "briefingHe": "ניווט לפי נקודות: מצפה רמון, ירוחם ושדה בוקר, וחזרה לנחיתה בבסיס היציאה. עבור כל נקודה בטווח 1.5 מייל.",
+      "aircraft": ["*"],
+      "allowAnyBase": true,
+      "callsign": "dorban",
+      "start": {"type": "runway_hold", "runwayEnd": "auto"},
+      "waypoints": [
+        {"id": "mitzpe_ramon", "nameHe": "מצפה רמון", "lat": 30.6104, "lon": 34.8015, "radiusNm": 1.5, "altFt": 6000},
+        {"id": "yeruham", "nameHe": "ירוחם", "lat": 30.9877, "lon": 34.9294, "radiusNm": 1.5, "altFt": 6000},
+        {"id": "sde_boker", "nameHe": "שדה בוקר", "lat": 30.8740, "lon": 34.7930, "radiusNm": 1.5, "altFt": 5000}
+      ],
+      "objectives": [
+        {"id": "takeoff", "type": "airborne", "textHe": "המראה"},
+        {"id": "wps", "type": "waypoints_in_order", "textHe": "מעבר בכל נקודות הניווט לפי הסדר"},
+        {"id": "land", "type": "landed_on_runway", "maxSinkMs": 3.5, "textHe": "נחיתה בבסיס"},
+        {"id": "stop", "type": "stopped_on_runway", "textHe": "עצירה מלאה"}
+      ],
+      "success": "all_required",
+      "timeLimitS": 3600,
+      "phase": 1
+    },
+    {"id": "formation", "type": "formation", "nameHe": "טיסת מבנה", "phase": 3, "aircraft": ["*"], "briefingHe": "מתוכנן לשלב 3.", "objectives": []},
+    {"id": "dogfight_training", "type": "air_combat", "nameHe": "קרב אוויר מול יריבים בדיוניים", "phase": 2, "aircraft": ["f16i"], "briefingHe": "מתוכנן לשלב 2.", "objectives": []},
+    {"id": "strike_training", "type": "strike", "nameHe": "תקיפת מטרות אימון בדיוניות", "phase": 2, "aircraft": ["f16i"], "briefingHe": "מתוכנן לשלב 2.", "objectives": []},
+    {"id": "isr_patrol", "type": "isr", "nameHe": "סיור ואיסוף משחקי", "phase": 3, "aircraft": ["oron", "shavit", "eitam"], "briefingHe": "מתוכנן לשלב 3 (מטוסי המשימה טרם מומשו).", "objectives": []}
+  ]
+}

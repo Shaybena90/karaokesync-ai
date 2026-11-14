@@ -1,0 +1,12 @@
+core-tests/build/
+# Unreal generated
+KanafSim/Binaries/
+KanafSim/Intermediate/
+KanafSim/Saved/
+KanafSim/DerivedDataCache/
+KanafSim/.vs/
+KanafSim/*.sln
+KanafSim/Platforms/
+# never commit keys
+*.key
+KanafSim/Config/*Secrets*.ini

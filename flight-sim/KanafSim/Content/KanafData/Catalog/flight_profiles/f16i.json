@@ -1,0 +1,119 @@
+{
+  "schemaVersion": 1,
+  "id": "f16i",
+  "dataStatusVocabulary": {
+    "reference_unverified": "Commonly published generic F-16 / F100 figure, not verified against a source in this session and not F-16I specific",
+    "textbook_generic_f16": "From the public textbook F-16 model (Stevens & Lewis, based on NASA TP-1538) — generic F-16, not F-16I",
+    "game_estimate": "Estimated for gameplay; plausible magnitude, not a real figure",
+    "game_value": "Pure gameplay tuning value"
+  },
+  "geometry": {
+    "wingAreaM2": {"v": 27.87, "s": "reference_unverified"},
+    "spanM": {"v": 9.96, "s": "reference_unverified"},
+    "meanChordM": {"v": 3.45, "s": "textbook_generic_f16"},
+    "lengthM": {"v": 15.06, "s": "reference_unverified"},
+    "heightM": {"v": 5.09, "s": "reference_unverified"}
+  },
+  "mass": {
+    "emptyKg": {"v": 10000, "s": "game_estimate", "note": "F-16I is heavier than an F-16C (CFTs, dorsal spine); real figure not public in reviewed sources"},
+    "crewKg": {"v": 200, "s": "game_value"},
+    "internalFuelKg": {"v": 3160, "s": "reference_unverified", "note": "generic F-16C internal fuel"},
+    "cftFuelKg": {"v": 1360, "s": "game_estimate", "note": "conformal tanks are permanently modelled as fitted"},
+    "inertiaRefMassKg": {"v": 9295, "s": "textbook_generic_f16"},
+    "IxxKgM2": {"v": 12875, "s": "textbook_generic_f16"},
+    "IyyKgM2": {"v": 75674, "s": "textbook_generic_f16"},
+    "IzzKgM2": {"v": 85552, "s": "textbook_generic_f16"},
+    "IxzKgM2": {"v": 1331, "s": "textbook_generic_f16"}
+  },
+  "engine": {
+    "nameEn": "F100-PW-229 (as modelled)", "s": "reference_unverified",
+    "milThrustN": {"v": 79200, "s": "reference_unverified"},
+    "abThrustN": {"v": 129400, "s": "reference_unverified"},
+    "idleThrustFraction": {"v": 0.06, "s": "game_value"},
+    "spoolUpTimeS": {"v": 4.0, "s": "game_value"},
+    "spoolDownTimeS": {"v": 3.0, "s": "game_value"},
+    "tsfcMilKgPerNs": {"v": 2.15e-5, "s": "game_estimate"},
+    "tsfcAbKgPerNs": {"v": 5.5e-5, "s": "game_estimate"},
+    "densityLapseExponent": {"v": 0.75, "s": "game_value"},
+    "machThrustGain": {"v": 0.25, "s": "game_value"}
+  },
+  "aero": {
+    "CL0": {"v": 0.05, "s": "game_value"},
+    "CLalphaPerRad": {"v": 3.6, "s": "game_value"},
+    "alphaStallDeg": {"v": 26.0, "s": "game_value"},
+    "CLpostStallDrop": {"v": 0.45, "s": "game_value"},
+    "CD0": {"v": 0.024, "s": "game_value", "note": "includes CFTs"},
+    "inducedK": {"v": 0.13, "s": "game_value"},
+    "machCrit": {"v": 0.88, "s": "game_value"},
+    "waveDragPeak": {"v": 0.028, "s": "game_value"},
+    "flapCL": {"v": 0.25, "s": "game_value"},
+    "flapCD": {"v": 0.02, "s": "game_value"},
+    "gearCD": {"v": 0.022, "s": "game_value"},
+    "speedbrakeCD": {"v": 0.06, "s": "game_value"},
+    "storeCDPerKg": {"v": 0.0000045, "s": "game_value"},
+    "CYbeta": {"v": -0.9, "s": "game_value"},
+    "CYdr": {"v": 0.15, "s": "game_value"},
+    "Cm0": {"v": 0.0, "s": "game_value"},
+    "CmAlpha": {"v": -0.25, "s": "game_value", "note": "made statically stable for robustness; real F-16 is relaxed-stability with FBW"},
+    "CmQ": {"v": -6.0, "s": "game_value"},
+    "CmDe": {"v": -0.9, "s": "game_value"},
+    "ClBeta": {"v": -0.08, "s": "game_value"},
+    "ClP": {"v": -0.35, "s": "game_value"},
+    "ClDa": {"v": -0.12, "s": "game_value"},
+    "ClDr": {"v": 0.01, "s": "game_value"},
+    "CnBeta": {"v": 0.12, "s": "game_value"},
+    "CnR": {"v": -0.35, "s": "game_value"},
+    "CnDr": {"v": -0.06, "s": "game_value"},
+    "maxElevatorDeg": {"v": 25, "s": "reference_unverified"},
+    "maxAileronDeg": {"v": 21.5, "s": "reference_unverified"},
+    "maxRudderDeg": {"v": 30, "s": "reference_unverified"},
+    "surfaceRateDegS": {"v": 60, "s": "game_value"}
+  },
+  "limits": {
+    "maxG": {"v": 9.0, "s": "reference_unverified"},
+    "minG": {"v": -3.0, "s": "reference_unverified"},
+    "aoaLimitDeg": {"v": 25.0, "s": "reference_unverified", "note": "F-16 FBW AoA limiter magnitude; schedule simplified"},
+    "maxRollRateDegS": {"v": 240, "s": "game_value"},
+    "gearMaxSpeedKt": {"v": 300, "s": "game_value"},
+    "maxTouchdownSinkMs": {"v": 4.5, "s": "game_value"},
+    "hardLandingSinkMs": {"v": 3.0, "s": "game_value"}
+  },
+  "handling": {
+    "rotateSpeedKt": {"v": 150, "s": "game_value"},
+    "approachAoaDeg": {"v": 13.0, "s": "game_value", "note": "on-speed AoA used by the beginner approach aid and the test autopilot"},
+    "approachSpeedKt": {"v": 150, "s": "game_value"},
+    "gearRetractTimeS": {"v": 6.0, "s": "game_value"}
+  },
+  "gear": {
+    "s": "game_value",
+    "contacts": [
+      {"id": "nose", "posM": [4.3, 0.0, 1.95], "springNPerM": 115000, "damperNsPerM": 22000, "maxStrokeM": 0.35, "steerable": true, "brakes": false},
+      {"id": "left_main", "posM": [-0.7, -1.2, 1.95], "springNPerM": 420000, "damperNsPerM": 62000, "maxStrokeM": 0.35, "steerable": false, "brakes": true},
+      {"id": "right_main", "posM": [-0.7, 1.2, 1.95], "springNPerM": 420000, "damperNsPerM": 62000, "maxStrokeM": 0.35, "steerable": false, "brakes": true}
+    ],
+    "rollingFriction": 0.025,
+    "brakeFriction": 0.55,
+    "lateralFriction": 0.75,
+    "maxSteerDeg": 32,
+    "highSpeedSteerDeg": 8,
+    "steerBlendKt": 40
+  },
+  "structure": {
+    "s": "game_value",
+    "crashPoints": [
+      {"id": "nose_tip", "posM": [7.6, 0.0, 0.3]},
+      {"id": "nozzle", "posM": [-6.6, 0.0, 0.2], "tailStrikeTolerantSinkMs": 1.5},
+      {"id": "ventral_fin", "posM": [-4.6, 0.0, 0.75], "tailStrikeTolerantSinkMs": 1.5},
+      {"id": "left_wingtip", "posM": [-1.5, -4.98, 0.15]},
+      {"id": "right_wingtip", "posM": [-1.5, 4.98, 0.15]},
+      {"id": "fin_top", "posM": [-6.0, 0.0, -3.1]},
+      {"id": "belly", "posM": [0.0, 0.0, 1.0]}
+    ]
+  },
+  "cockpit": {
+    "eyePointM": [4.4, 0.0, -0.75],
+    "s": "game_estimate",
+    "instruments": ["hud", "airspeed", "altimeter", "heading", "attitude", "vvi", "aoa", "g", "fuel", "rpm", "ftit", "nozzle", "gear", "flaps", "speedbrake", "warnings"],
+    "representationNote": "Game cockpit: functional instruments arranged generically. Not a reconstruction of the F-16I panel."
+  }
+}

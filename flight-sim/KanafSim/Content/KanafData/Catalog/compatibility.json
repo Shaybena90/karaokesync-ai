@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "checkedDate": "2026-11-14",
+  "evidenceLevels": {
+    "documented": "At least one specialist/major/official source states the aircraft variant carries/used this store. SELECTABLE.",
+    "reported": "Only aggregator/forum sources. Shown greyed-out, NOT selectable.",
+    "in_integration": "Integration publicly reported as in progress. NOT selectable.",
+    "research_candidate": "Listed for research; no source found yet. NOT selectable."
+  },
+  "selectableEvidence": ["documented"],
+  "stationMappingNote": "Station positions are a GAME ASSUMPTION based on the standard 9-station F-16 layout (1/9 wingtips, 2-3 and 7-8 outboard, 4/6 inboard heavy, 5 centreline). Public sources reviewed do not document per-station clearance for the F-16I.",
+  "stations": {
+    "f16i": [
+      {"id": "1", "side": "L", "posM": [-0.9, -4.95, 0.05], "maxKg": 150, "kind": "wingtip"},
+      {"id": "2", "side": "L", "posM": [-0.6, -4.1, 0.35], "maxKg": 200, "kind": "outboard"},
+      {"id": "3", "side": "L", "posM": [-0.3, -3.1, 0.45], "maxKg": 1600, "kind": "mid"},
+      {"id": "4", "side": "L", "posM": [0.0, -2.1, 0.5], "maxKg": 2100, "kind": "inboard"},
+      {"id": "5", "side": "C", "posM": [0.4, 0.0, 1.0], "maxKg": 1000, "kind": "centreline"},
+      {"id": "6", "side": "R", "posM": [0.0, 2.1, 0.5], "maxKg": 2100, "kind": "inboard"},
+      {"id": "7", "side": "R", "posM": [-0.3, 3.1, 0.45], "maxKg": 1600, "kind": "mid"},
+      {"id": "8", "side": "R", "posM": [-0.6, 4.1, 0.35], "maxKg": 200, "kind": "outboard"},
+      {"id": "9", "side": "R", "posM": [-0.9, 4.95, 0.05], "maxKg": 150, "kind": "wingtip"}
+    ]
+  },
+  "entries": [
+    {"aircraft": "f16i", "weapon": "python5", "evidence": "documented", "sources": ["src_airforcetech_f16i", "src_globalsecurity_f16i"], "gameStations": ["1", "2", "8", "9"]},
+    {"aircraft": "f16i", "weapon": "spice1000", "evidence": "documented", "sources": ["src_19fortyfive_f16i", "src_globalmilitary_f16i"], "gameStations": ["3", "4", "6", "7"], "note": "Search summary of the 2026 article: an F-16I can lift four SPICE 1000."},
+    {"aircraft": "f16i", "weapon": "gbu39", "evidence": "documented", "sources": ["src_19fortyfive_f16i", "src_globalmilitary_f16i"], "gameStations": ["3", "7"], "note": "Combat use by F-16I reported; pylon/rack details unclear in public sources."},
+    {"aircraft": "f16i", "weapon": "aim120", "evidence": "reported", "sources": ["src_globalmilitary_f16i"], "gameStations": ["1", "2", "8", "9"], "note": "Only an aggregator in this session; needs a specialist/official source."},
+    {"aircraft": "f16i", "weapon": "spice2000", "evidence": "reported", "sources": ["src_globalmilitary_f16i"], "gameStations": ["4", "6"]},
+    {"aircraft": "f16i", "weapon": "gbu31", "evidence": "research_candidate", "sources": [], "gameStations": ["4", "6"]},
+    {"aircraft": "f15i", "weapon": "gbu31", "evidence": "documented", "sources": ["src_armyrec_f15i_gbu31"], "gameStations": []},
+    {"aircraft": "f15i", "weapon": "gbu28", "evidence": "reported", "sources": ["src_boltflight_f15i"], "gameStations": []},
+    {"aircraft": "f15i", "weapon": "aim120", "evidence": "reported", "sources": ["src_boltflight_f15i"], "gameStations": []},
+    {"aircraft": "f35i", "weapon": "spice1000", "evidence": "in_integration", "sources": ["src_aviationist_spice_f35"], "gameStations": []},
+    {"aircraft": "f35i", "weapon": "aim120", "evidence": "research_candidate", "sources": [], "gameStations": []},
+    {"aircraft": "f35i", "weapon": "gbu31", "evidence": "research_candidate", "sources": [], "gameStations": []}
+  ],
+  "presets": [
+    {"id": "f16i_clean", "aircraft": "f16i", "nameHe": "נקי — ללא חימוש", "stations": {}},
+    {"id": "f16i_aa_training", "aircraft": "f16i", "nameHe": "אימון אוויר-אוויר: 2× Python-5", "stations": {"1": "python5", "9": "python5"}},
+    {"id": "f16i_strike_spice", "aircraft": "f16i", "nameHe": "אימון תקיפה: 2× Python-5, 2× SPICE-1000", "stations": {"1": "python5", "9": "python5", "4": "spice1000", "6": "spice1000"}},
+    {"id": "f16i_strike_sdb", "aircraft": "f16i", "nameHe": "אימון תקיפה: 2× Python-5, 8× GBU-39", "stations": {"1": "python5", "9": "python5", "3": "gbu39", "7": "gbu39"}},
+    {"id": "f16i_invalid_demo", "aircraft": "f16i", "nameHe": "(בדיקה) תצורה לא נתמכת — AIM-120", "stations": {"1": "aim120", "9": "aim120"}, "testOnly": true}
+  ]
+}
