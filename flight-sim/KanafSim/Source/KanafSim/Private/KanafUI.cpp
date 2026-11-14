@@ -15,6 +15,7 @@
 #include "Widgets/SBoxPanel.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
+#include "Kanaf/Geo.h"
 #include "Kanaf/Json.h"
 #include "KanafAircraftPawn.h"
 #include "KanafConvert.h"
