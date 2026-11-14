@@ -1,5 +1,5 @@
 """Built-in animated backgrounds: 30 looping clips made by FFmpeg from a short
-"recipe" each, and 18 3D scenes (GLSL shaders in /backgrounds3d, drawn ahead of
+"recipe" each, and 23 3D scenes (GLSL shaders in /backgrounds3d, drawn ahead of
 time by web/scripts/render-3d-backgrounds.mjs into web/public/backgrounds). The same recipe makes the preview clip the website plays and the
 clip the worker puts behind the lyrics in an exported video, so both look the
 same. Every recipe is periodic in time (it only uses whole turns of sin/cos and
@@ -213,6 +213,11 @@ def _all() -> list[AnimatedBackground]:
         ("party-balloons", "בלונים", "Party balloons"),
         ("forest-fireflies", "יער גחליליות", "Firefly forest"),
         ("mountain-lake", "אגם הררי", "Mountain lake"),
+        ("logo-spin", "לוגו מסתובב", "Spinning logo"),
+        ("speaker-pulse", "רמקול פועם", "Pumping speaker"),
+        ("speaker-duo", "רמקולים ולוגו", "Speakers and logo"),
+        ("logo-neon", "שלט ניאון", "Neon sign"),
+        ("logo-equalizer", "אקולייזר תלת מימד", "3D equalizer"),
     ]
     return [AnimatedBackground(i, he, en, s, src) for i, he, en, s, src in items] + [
         AnimatedBackground(i, he, en, 10, None, "3d") for i, he, en in scenes

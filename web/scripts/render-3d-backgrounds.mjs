@@ -36,6 +36,9 @@ const outDir = opt('--out', OUT)
 const preview = opt('--preview', '') // e.g. 0,3.3,6.6: a picture of these moments instead of a clip
 const ids = args.length ? args : readdirSync(SHADERS).filter((f) => f.endsWith('.frag')).map((f) => f.replace('.frag', ''))
 const common = readFileSync(join(SHADERS, 'common.glsl'), 'utf8')
+// `#include "lib/x.glsl"` lines pull in shared pieces (the 3D logo, the speaker).
+const withIncludes = (src) =>
+  src.replace(/^#include "([\w/.-]+)"\s*$/gm, (_, file) => withIncludes(readFileSync(join(SHADERS, file), 'utf8')))
 
 function run(cmd, argv, input) {
   return new Promise((resolve, reject) => {
@@ -47,7 +50,7 @@ function run(cmd, argv, input) {
 
 async function renderOne(browser, id) {
   const page = await browser.newPage()
-  const source = `#version 300 es\nprecision highp float;\n${common}\n${readFileSync(join(SHADERS, `${id}.frag`), 'utf8')}`
+  const source = `#version 300 es\nprecision highp float;\n${common}\n${withIncludes(readFileSync(join(SHADERS, `${id}.frag`), 'utf8'))}`
   const err = await page.evaluate(
     ({ source, w, h }) => {
       const c = document.createElement('canvas')

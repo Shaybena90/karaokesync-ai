@@ -73,10 +73,10 @@ describe('countdown designs', () => {
 })
 
 describe('built-in animated backgrounds', () => {
-  it('has 30 classic and 18 in 3D, each with a clip and a picture', () => {
+  it('has 30 classic and 23 in 3D, each with a clip and a picture', () => {
     expect(ANIMATED_BACKGROUNDS.filter((b) => b.kind !== '3d')).toHaveLength(30)
-    expect(ANIMATED_BACKGROUNDS.filter((b) => b.kind === '3d')).toHaveLength(18)
-    expect(new Set(ANIMATED_BACKGROUNDS.map((b) => b.id)).size).toBe(48)
+    expect(ANIMATED_BACKGROUNDS.filter((b) => b.kind === '3d')).toHaveLength(23)
+    expect(new Set(ANIMATED_BACKGROUNDS.map((b) => b.id)).size).toBe(53)
     expect(animatedClipUrl('aurora')).toBe('/backgrounds/aurora.mp4')
     expect(DEFAULT_STYLE.animated_background).toBeNull()
   })

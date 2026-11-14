@@ -34,8 +34,8 @@ CLASSIC = [b.id for b in ab.BACKGROUNDS.values() if b.kind == "classic"]
 SCENES = [b.id for b in ab.BACKGROUNDS.values() if b.kind == "3d"]
 
 
-def test_thirty_classic_and_eighteen_3d_backgrounds_with_names():
-    assert len(CLASSIC) == 30 and len(SCENES) == 18
+def test_thirty_classic_and_twenty_three_3d_backgrounds_with_names():
+    assert len(CLASSIC) == 30 and len(SCENES) == 23
     for bg in ab.BACKGROUNDS.values():
         assert re.fullmatch(r"[a-z]+(-[a-z]+)*", bg.id) and bg.name_he and bg.name_en
         assert bg.seconds in (10, 20)
@@ -61,8 +61,9 @@ def test_every_3d_scene_has_its_shader_and_its_clip(bg_id):
                           "-f", "rawvideo", "-pix_fmt", "gray", "-"], check=True, capture_output=True).stdout
     n = 96 * 54
     frames = [raw[i * n:(i + 1) * n] for i in range(len(raw) // n)]
-    steps = [_diff(frames[i], frames[i + 1]) for i in range(0, len(frames) - 1, 10)]
-    assert _diff(frames[-1], frames[0]) <= max(steps) * 1.5 + 1
+    # every step, not a sample: scenes on a beat jump on purpose at each hit
+    steps = [_diff(frames[i], frames[i + 1]) for i in range(len(frames) - 1)]
+    assert _diff(frames[-1], frames[0]) <= max(steps) * 1.2 + 1
 
 
 @pytest.mark.parametrize("bg_id", CLASSIC)
