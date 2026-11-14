@@ -24,6 +24,12 @@ export function Layout() {
                 </svg>
               </NavLink>
             )}
+            {session && (
+              <NavLink to="/lyrics-sources" className={navClass} aria-label={t('nav.lyricsSources')}>
+                <span className="hidden sm:inline">{t('nav.lyricsSources')}</span>
+                <span className="sm:hidden" aria-hidden="true">📚</span>
+              </NavLink>
+            )}
             <button
               type="button"
               onClick={() => setLocale(locale === 'he' ? 'en' : 'he')}

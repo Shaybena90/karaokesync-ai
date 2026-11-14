@@ -19,6 +19,7 @@ const ProjectPage = named(() => import('./pages/ProjectPage'), 'ProjectPage')
 const ProjectsPage = named(() => import('./pages/ProjectsPage'), 'ProjectsPage')
 const StylePage = named(() => import('./pages/StylePage'), 'StylePage')
 const WorkerPage = named(() => import('./pages/WorkerPage'), 'WorkerPage')
+const LyricsSourcesPage = named(() => import('./pages/LyricsSourcesPage'), 'LyricsSourcesPage')
 const UploadPage = named(() => import('./pages/UploadPage'), 'UploadPage')
 
 const pageFallback = (
@@ -48,6 +49,7 @@ export default function App() {
                 <Route path="projects/:id/edit" element={<RequireAuth><EditorPage /></RequireAuth>} />
                 <Route path="projects/:id/style" element={<RequireAuth><StylePage /></RequireAuth>} />
                 <Route path="worker" element={<RequireAuth><WorkerPage /></RequireAuth>} />
+                <Route path="lyrics-sources" element={<RequireAuth><LyricsSourcesPage /></RequireAuth>} />
                 <Route path="*" element={<HomePage />} />
               </Route>
             </Routes>

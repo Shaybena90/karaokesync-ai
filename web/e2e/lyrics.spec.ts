@@ -126,3 +126,14 @@ test('my own lyrics websites: add, search them on the new-song screen, remove', 
   await sites.getByRole('button', { name: 'הסר את blocked.example' }).click()
   await expect.poll(() => (backend.userMetadata.lyrics_sources as unknown[]).length).toBe(1)
 })
+
+test('the lyrics websites have their own page in the menu', async ({ page, backend }) => {
+  await page.goto('/projects')
+  await page.getByRole('link', { name: 'אתרי מילים' }).click()
+  await expect(page).toHaveURL(/\/lyrics-sources$/)
+  const sites = page.getByTestId('lyrics-sources')
+  await sites.getByRole('textbox', { name: 'כתובת החיפוש באתר' }).fill('https://shirim.example/search?q=test')
+  await sites.getByRole('button', { name: 'הוסף אתר' }).click()
+  await expect.poll(() => backend.userMetadata.lyrics_sources).toEqual([{ name: 'shirim.example', url: 'https://shirim.example/search?q={q}' }])
+  await expect(sites.getByText('https://shirim.example/search?q={q}').first()).toBeVisible()
+})

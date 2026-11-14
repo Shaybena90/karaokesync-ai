@@ -229,17 +229,19 @@ export function LyricsSearchPanel({ initialQuery, durationMs, busy = false, mode
 }
 
 /** "My lyrics websites": add a site by pasting its search address, or remove one. */
-function SourcesManager({
+export function SourcesManager({
   sources,
   add,
   remove,
+  defaultOpen = false,
 }: {
   sources: { name: string; url: string }[]
   add: (name: string, url: string) => Promise<string>
   remove: (index: number) => Promise<void>
+  defaultOpen?: boolean
 }) {
   const { t } = useI18n()
-  const [open, setOpen] = useState(false)
+  const [open, setOpen] = useState(defaultOpen)
   const [name, setName] = useState('')
   const [url, setUrl] = useState('')
   const [saving, setSaving] = useState(false)
