@@ -47,6 +47,7 @@
   --k-stroke: 0em;
   --k-stroke-color: #000;
   --k-shadow: none;
+  --k-3d: none;
   --k-font: "Heebo", system-ui, sans-serif;
   --k-weight: 700;
   --k-scale: 1;
@@ -70,6 +71,7 @@
 .kw-outline {
   color: var(--k-stroke-color);
   -webkit-text-stroke: var(--k-stroke) var(--k-stroke-color);
+  text-shadow: var(--k-3d, none); /* 3D letters: extruded copies behind the word */
 }
 .kw-fill {
   position: absolute;

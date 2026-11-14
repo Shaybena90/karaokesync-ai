@@ -7,8 +7,9 @@ interface Props {
 }
 
 /**
- * 30 built-in moving backgrounds that loop for the whole song (in the preview
- * and in the exported video). The colour gradient shows when none is chosen.
+ * Built-in moving backgrounds that loop for the whole song (in the preview and
+ * in the exported video): 3D scenes first, then the classic ones. The colour
+ * gradient shows when none is chosen.
  */
 export function AnimatedBackgroundPicker({ value, onChange }: Props) {
   const { t, locale } = useI18n()
@@ -29,7 +30,7 @@ export function AnimatedBackgroundPicker({ value, onChange }: Props) {
           <span className="flex aspect-video items-center justify-center bg-gradient-to-br from-slate-800 to-violet-900 text-lg">🚫</span>
           <span className="block truncate px-1.5 py-1">{t('style.animatedBg.none')}</span>
         </button>
-        {ANIMATED_BACKGROUNDS.map((bg) => (
+        {[...ANIMATED_BACKGROUNDS.filter((b) => b.kind === '3d'), ...ANIMATED_BACKGROUNDS.filter((b) => b.kind !== '3d')].map((bg) => (
           <button
             key={bg.id}
             type="button"
@@ -39,8 +40,16 @@ export function AnimatedBackgroundPicker({ value, onChange }: Props) {
             className={card(value === bg.id)}
             data-bg-id={bg.id}
           >
-            <img src={animatedThumbUrl(bg.id)} alt="" loading="lazy" className="aspect-video w-full object-cover" />
-            <span className="block truncate px-1.5 py-1">{locale === 'he' ? bg.he : bg.en}</span>
+            <span className="relative block">
+              <img src={animatedThumbUrl(bg.id)} alt="" loading="lazy" className="aspect-video w-full object-cover" />
+              {bg.kind === '3d' && (
+                <span className="absolute end-1 top-1 rounded-md bg-black/60 px-1 text-[10px] font-bold leading-4 text-amber-200">3D</span>
+              )}
+            </span>
+            <span className="block truncate px-1.5 py-1">
+              {bg.kind === '3d' && <span className="sr-only">3D </span>}
+              {locale === 'he' ? bg.he : bg.en}
+            </span>
           </button>
         ))}
       </div>

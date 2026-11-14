@@ -30,7 +30,7 @@ def one(bg_id: str) -> str:
 
 
 def main() -> None:
-    ids = sys.argv[1:] or list(BACKGROUNDS)
+    ids = sys.argv[1:] or [b.id for b in BACKGROUNDS.values() if b.source]  # 3D: web/scripts/render-3d-backgrounds.mjs
     OUT.mkdir(parents=True, exist_ok=True)
     with ThreadPoolExecutor(4) as pool:
         for line in pool.map(one, ids):

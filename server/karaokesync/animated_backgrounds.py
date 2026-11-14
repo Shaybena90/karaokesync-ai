@@ -1,5 +1,6 @@
 """Built-in animated backgrounds: 30 looping clips made by FFmpeg from a short
-"recipe" each. The same recipe makes the preview clip the website plays and the
+"recipe" each, and 12 3D scenes (GLSL shaders in /backgrounds3d, drawn ahead of
+time by web/scripts/render-3d-backgrounds.mjs into web/public/backgrounds). The same recipe makes the preview clip the website plays and the
 clip the worker puts behind the lyrics in an exported video, so both look the
 same. Every recipe is periodic in time (it only uses whole turns of sin/cos and
 whole steps of moving patterns), so the clip loops without a visible jump, and
@@ -26,7 +27,8 @@ class AnimatedBackground:
     name_he: str
     name_en: str
     seconds: int  # length of one loop
-    source: str  # FFmpeg filter graph (no inputs) that draws one loop
+    source: str | None  # FFmpeg filter graph (no inputs) that draws one loop; None = a 3D scene
+    kind: str = "classic"  # "classic" (FFmpeg recipe) | "3d" (pre-drawn clip only)
 
     @property
     def duration_ms(self) -> int:
@@ -192,15 +194,37 @@ def _all() -> list[AnimatedBackground]:
         ("silk", "משי", "Silk", 10, f(STRIPES, ["#1f1147", "#6d28d9", "#c4b5fd", "#fdf4ff", "#6d28d9"])),
         ("midnight", "חצות", "Midnight", 20, g(["#020024", "#1d1db5", "#00506b", "#3b0080"], "radial", 8)),
     ]
-    return [AnimatedBackground(i, he, en, s, src) for i, he, en, s, src in items]
+    scenes = [  # 3D scenes: backgrounds3d/<id>.frag, 10 s loops
+        ("neon-tunnel", "מנהרת ניאון", "Neon tunnel"),
+        ("retro-terrain", "הרי רטרו", "Retro mountains"),
+        ("chrome-orbs", "כדורי כרום", "Chrome orbs"),
+        ("liquid-chrome", "מתכת נוזלית", "Liquid chrome"),
+        ("ringed-planet", "כוכב לכת", "Ringed planet"),
+        ("stage-lights", "במת הופעה", "Concert stage"),
+        ("gold-rings", "טבעות זהב", "Gold rings"),
+        ("disco-ball", "כדור דיסקו", "Disco ball"),
+        ("star-warp", "מסע בין כוכבים", "Star warp"),
+        ("hex-floor", "רצפת משושים", "Hexagon floor"),
+        ("ocean-sunset", "ים בשקיעה", "Ocean sunset"),
+        ("cube-field", "קוביות מרחפות", "Floating cubes"),
+    ]
+    return [AnimatedBackground(i, he, en, s, src) for i, he, en, s, src in items] + [
+        AnimatedBackground(i, he, en, 10, None, "3d") for i, he, en in scenes
+    ]
 
 
 BACKGROUNDS: dict[str, AnimatedBackground] = {b.id: b for b in _all()}
+
+# The clips the website plays, committed to the repository (the worker runs
+# from a copy of it, so it can use exactly the same files).
+PREBUILT_DIR = Path(__file__).resolve().parents[2] / "web" / "public" / "backgrounds"
 
 
 def render_clip(bg_id: str, out: Path, crf: int = 26, timeout: float = 600) -> Path:
     """Draw one loop of the background into an MP4 (H.264, no sound)."""
     bg = BACKGROUNDS[bg_id]
+    if bg.source is None:
+        raise ValueError(f"{bg_id} is a 3D scene: it is drawn by web/scripts/render-3d-backgrounds.mjs")
     out.parent.mkdir(parents=True, exist_ok=True)
     tmp = out.with_suffix(".part.mp4")
     cmd = [
@@ -218,8 +242,20 @@ def render_clip(bg_id: str, out: Path, crf: int = 26, timeout: float = 600) -> P
 def cached_clip(bg_id: str, cache_dir: Path) -> Path:
     """The background's clip, drawn once and kept in cache_dir for later exports
     (a changed recipe gets a new file name, so an old clip is never reused)."""
-    digest = hashlib.sha1(BACKGROUNDS[bg_id].source.encode()).hexdigest()[:10]
+    digest = hashlib.sha1((BACKGROUNDS[bg_id].source or "").encode()).hexdigest()[:10]
     out = cache_dir / f"{bg_id}-{digest}.mp4"
     if not out.exists():
         render_clip(bg_id, out)
     return out
+
+
+def clip_for(bg_id: str, cache_dir: Path, prebuilt_dir: Path = PREBUILT_DIR) -> Path:
+    """The clip to put behind the lyrics: the website's own file when this copy
+    of the project has it (identical to the preview), otherwise drawn here from
+    the recipe. A 3D scene only exists as a file (FileNotFoundError without it)."""
+    prebuilt = prebuilt_dir / f"{bg_id}.mp4"
+    if prebuilt.is_file():
+        return prebuilt
+    if BACKGROUNDS[bg_id].source is None:
+        raise FileNotFoundError(prebuilt)
+    return cached_clip(bg_id, cache_dir)

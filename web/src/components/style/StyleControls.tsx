@@ -3,7 +3,7 @@ import { AnimatedBackgroundPicker } from './AnimatedBackgroundPicker'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { MessageKey } from '../../i18n/he'
 import { ensureFonts } from '../../lib/fonts'
-import { COUNTDOWNS, ENTRANCES, FONTS, PRESETS, type FontName, type SubtitleStyle } from '../../lib/subtitleStyle'
+import { COUNTDOWNS, ENTRANCES, FONTS, PRESETS, TEXT_3D_KINDS, text3dShadow, type FontName, type SubtitleStyle } from '../../lib/subtitleStyle'
 
 interface Props {
   style: SubtitleStyle
@@ -98,6 +98,37 @@ export function StyleControls({ style, onChange }: Props) {
           <Toggle label={t('style.glow')} checked={style.glow} onChange={(v) => set('glow', v)} />
           <Toggle label={t('style.textBox')} checked={style.text_box} onChange={(v) => set('text_box', v)} />
         </div>
+        <Row label={t('style.text3d')}>
+          <div role="radiogroup" aria-label={t('style.text3d')} className="grid grid-cols-3 gap-1.5 sm:grid-cols-5">
+            {TEXT_3D_KINDS.map((k) => (
+              <button
+                key={k}
+                type="button"
+                role="radio"
+                aria-checked={style.text_3d === k}
+                onClick={() => set('text_3d', k)}
+                className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl px-1 pb-1.5 pt-1 text-xs transition ${
+                  style.text_3d === k ? 'bg-violet-500/30 font-semibold ring-2 ring-violet-300' : 'bg-white/5 hover:bg-white/10'
+                }`}
+              >
+                <span
+                  aria-hidden="true"
+                  className="text-2xl font-black leading-none"
+                  style={{ fontFamily: `"${style.font}", "Heebo", sans-serif`, color: style.text_color, textShadow: text3dShadow(k, style.depth_color) }}
+                >
+                  שיר
+                </span>
+                {t(`style.text3d.${k}`)}
+              </button>
+            ))}
+          </div>
+          {style.text_3d !== 'none' && (
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              <Color label={t('style.depthColor')} value={style.depth_color} onChange={(v) => set('depth_color', v)} />
+            </div>
+          )}
+          <p className="mt-1.5 text-xs text-white/45">{t('style.text3dHint')}</p>
+        </Row>
       </Section>
 
       <Section title={t('style.layout')}>

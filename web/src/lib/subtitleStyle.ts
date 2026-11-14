@@ -41,6 +41,48 @@ export type CountdownDesign = (typeof COUNTDOWNS)[number]
 export type PresetName = 'classic' | 'neon' | 'tiktok' | 'custom'
 
 /**
+ * 3D lettering — same numbers as TEXT_3D in server/karaokesync/styles.py:
+ * depth as a fraction of the font size, and the direction the letters go back
+ * in (x, y; y grows downwards).
+ */
+export const TEXT_3D = {
+  none: null,
+  block: [0.09, 0.6, 0.8],
+  deep: [0.16, 0, 1],
+  retro: [0.2, -0.7, 0.7],
+  float: [0.06, 0, 1],
+} as const
+export type Text3D = keyof typeof TEXT_3D
+export const TEXT_3D_KINDS = Object.keys(TEXT_3D) as Text3D[]
+const TEXT_3D_STEP = 0.01
+
+/** #rrggbb made darker (factor < 1). */
+function shade(hex: string, factor: number): string {
+  const v = [1, 3, 5].map((i) => Math.min(255, Math.round(parseInt(hex.slice(i, i + 2), 16) * factor)))
+  return `#${v.map((x) => x.toString(16).padStart(2, '0')).join('')}`
+}
+
+/**
+ * CSS text-shadow that extrudes the letters (one copy per 1% of the font size,
+ * darker towards the back) with a soft shadow behind — the same copies the
+ * video draws (text_3d_layers in exports/ass.py). The first shadow is on top.
+ */
+export function text3dShadow(kind: Text3D, color: string): string {
+  const spec = TEXT_3D[kind]
+  if (!spec) return 'none'
+  const [depth, dx, dy] = spec
+  const n = Math.max(1, Math.round(depth / TEXT_3D_STEP))
+  const em = (v: number) => `${v.toFixed(3)}em`
+  const parts: string[] = []
+  for (let k = 1; k <= n; k++) {
+    const d = (depth * k) / n
+    parts.push(`${em(dx * d)} ${em(dy * d)} 0 ${shade(color, 1 - (0.55 * k) / n)}`)
+  }
+  parts.push(kind === 'float' ? `0 ${em(0.32)} ${em(0.1)} rgb(0 0 0 / 0.62)` : `${em(dx * (depth + 0.04))} ${em(dy * (depth + 0.04))} ${em(0.06)} rgb(0 0 0 / 0.56)`)
+  return parts.join(', ')
+}
+
+/**
  * A background file shown behind the lyrics, looping, from start_ms to end_ms
  * (null = from the beginning / to the end of the song). Later clips are on top.
  */
@@ -69,6 +111,8 @@ export interface SubtitleStyle {
   animation: Animation
   entrance: Entrance
   countdown: CountdownDesign
+  text_3d: Text3D
+  depth_color: string
   show_next_line: boolean
   backgrounds: BackgroundClip[]
   /** A built-in moving background for the whole song (lib/animatedBackgrounds.ts), or null. */
@@ -92,6 +136,8 @@ export const DEFAULT_STYLE: SubtitleStyle = {
   animation: 'fill',
   entrance: 'rise',
   countdown: 'dots',
+  text_3d: 'none',
+  depth_color: '#7c3aed',
   show_next_line: true,
   backgrounds: [],
   animated_background: null,
@@ -190,6 +236,8 @@ export function normalizeStyle(raw: unknown): SubtitleStyle {
     animation: pick('animation', oneOf(['fill', 'word', 'none'])),
     entrance: pick('entrance', oneOf(ENTRANCES)),
     countdown: pick('countdown', oneOf(COUNTDOWNS)),
+    text_3d: pick('text_3d', oneOf(TEXT_3D_KINDS)),
+    depth_color: pick('depth_color', color),
     show_next_line: pick('show_next_line', bool),
     backgrounds: normalizeClips(r.backgrounds),
     animated_background: typeof r.animated_background === 'string' && ANIMATED_IDS.has(r.animated_background)
@@ -218,6 +266,7 @@ export function styleVars(style: SubtitleStyle): CSSProperties {
     // Without an outline the outline layer must disappear completely (no halo).
     '--k-stroke-color': style.text_box || style.outline === 0 ? 'transparent' : style.outline_color,
     '--k-shadow': filters.join(' ') || 'none',
+    '--k-3d': text3dShadow(style.text_3d, style.depth_color),
     '--k-font': `"${style.font}", "Heebo", system-ui, sans-serif`,
     '--k-weight': String(FONTS[style.font]),
     '--k-bg': `linear-gradient(135deg, ${style.background_color}, ${style.background_color2})`,

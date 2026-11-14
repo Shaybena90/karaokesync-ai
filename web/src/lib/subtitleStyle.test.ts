@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ANIMATED_BACKGROUNDS, animatedClipUrl } from './animatedBackgrounds'
-import { COUNTDOWNS, DEFAULT_STYLE, ENTRANCES, FONTS, PRESETS, clipWindow, normalizeStyle, styleVars } from './subtitleStyle'
+import { COUNTDOWNS, DEFAULT_STYLE, ENTRANCES, FONTS, PRESETS, clipWindow, normalizeStyle, styleVars, text3dShadow } from './subtitleStyle'
 
 describe('subtitle style', () => {
   it('falls back to defaults / preset values for invalid input', () => {
@@ -73,9 +73,10 @@ describe('countdown designs', () => {
 })
 
 describe('built-in animated backgrounds', () => {
-  it('has 30, each with a clip and a picture', () => {
-    expect(ANIMATED_BACKGROUNDS).toHaveLength(30)
-    expect(new Set(ANIMATED_BACKGROUNDS.map((b) => b.id)).size).toBe(30)
+  it('has 30 classic and 12 in 3D, each with a clip and a picture', () => {
+    expect(ANIMATED_BACKGROUNDS.filter((b) => b.kind !== '3d')).toHaveLength(30)
+    expect(ANIMATED_BACKGROUNDS.filter((b) => b.kind === '3d')).toHaveLength(12)
+    expect(new Set(ANIMATED_BACKGROUNDS.map((b) => b.id)).size).toBe(42)
     expect(animatedClipUrl('aurora')).toBe('/backgrounds/aurora.mp4')
     expect(DEFAULT_STYLE.animated_background).toBeNull()
   })
@@ -84,5 +85,23 @@ describe('built-in animated backgrounds', () => {
     expect(normalizeStyle({ animated_background: 'galaxy' }).animated_background).toBe('galaxy')
     expect(normalizeStyle({ animated_background: '../../etc' }).animated_background).toBeNull()
     expect(normalizeStyle({ animated_background: 5 }).animated_background).toBeNull()
+  })
+})
+
+describe('3D lettering', () => {
+  it('extrudes the letters in the depth colour, darker towards the back', () => {
+    expect(text3dShadow('none', '#7c3aed')).toBe('none')
+    const parts = text3dShadow('deep', '#808080').split(', ')
+    expect(parts).toHaveLength(16 + 1) // 16 copies and a soft shadow
+    expect(parts[0]).toBe('0.000em 0.010em 0 #7c7c7c')
+    expect(parts[15]).toBe('0.000em 0.160em 0 #3a3a3a')
+    expect(parts[16]).toContain('rgb(0 0 0')
+  })
+
+  it('is off by default and keeps only known kinds', () => {
+    expect(DEFAULT_STYLE.text_3d).toBe('none')
+    expect(normalizeStyle({ text_3d: 'retro', depth_color: '#112233' })).toMatchObject({ text_3d: 'retro', depth_color: '#112233' })
+    expect(normalizeStyle({ text_3d: 'spin', depth_color: 'red' })).toMatchObject({ text_3d: 'none', depth_color: '#7c3aed' })
+    expect((styleVars({ ...DEFAULT_STYLE, text_3d: 'block' }) as Record<string, string>)['--k-3d']).toContain('em')
   })
 })

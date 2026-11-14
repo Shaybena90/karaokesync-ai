@@ -16,7 +16,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from ..styles import SubtitleStyle
+from ..styles import TEXT_3D, TEXT_3D_STEP, SubtitleStyle
 from .measure import TextMeasurer, resolve_directions, visual_order, word_direction
 
 RTL_LANGUAGES = {"he", "yi", "ar", "fa", "ur", "ps", "sd", "ug"}
@@ -51,6 +51,31 @@ def tag_color(hex_color: str) -> str:
     """#rrggbb -> &HBBGGRR& (the form override tags like \\1c expect)."""
     r, g, b = hex_color[1:3], hex_color[3:5], hex_color[5:7]
     return f"&H{b}{g}{r}&".upper()
+
+
+def shade(hex_color: str, factor: float) -> str:
+    """#rrggbb made darker (factor < 1)."""
+    rgb = [round(int(hex_color[i:i + 2], 16) * factor) for i in (1, 3, 5)]
+    return "#" + "".join(f"{min(255, v):02x}" for v in rgb)
+
+
+def text_3d_layers(kind: str, color: str) -> list[tuple[float, float, str, int, float]]:
+    """The copies of a line that make 3D letters, drawn back to front:
+    (dx, dy, colour, alpha, blur) with offsets as fractions of the font size.
+    First a soft shadow, then the extrusion from the back (darkest) to just
+    behind the letters. Mirrors text3dShadow() in the web player."""
+    if kind not in TEXT_3D:
+        return []
+    depth, dx, dy = TEXT_3D[kind]
+    n = max(1, round(depth / TEXT_3D_STEP))
+    if kind == "float":
+        layers = [(0.0, 0.32, "#000000", 0x60, 0.1)]
+    else:
+        layers = [(dx * (depth + 0.04), dy * (depth + 0.04), "#000000", 0x70, 0.06)]
+    for k in range(n, 0, -1):
+        d = depth * k / n
+        layers.append((dx * d, dy * d, shade(color, 1 - 0.55 * k / n), 0, 0.0))
+    return layers
 
 
 def escape_text(text: str) -> str:
@@ -331,8 +356,19 @@ def build_ass(
         dur = entrance_duration(style.entrance, start, line["words"][0]["start_ms"], style.animation != "none")
         enter = entrance_tags(style.entrance, dur, cx, y, fs, W, cx - total / 2 - space / 2, cx + total / 2 + space / 2,
                               ya, yb, rtl)
+        # 3D letters: copies of the line behind it, moving with it (same entrance).
+        for ox, oy, color, alpha, blur in text_3d_layers(style.text_3d, style.depth_color):
+            dx, dy = ox * fs, oy * fs
+            moved = entrance_tags(style.entrance, dur, cx + dx, y + dy, fs, W, cx - total / 2 - space / 2 + dx,
+                                  cx + total / 2 + space / 2 + dx, round(ya + dy), round(yb + dy), rtl)
+            edge = 0 if style.text_box else base_outline
+            soft = f"\\blur{blur * fs:.1f}" if blur else ""
+            out.append(f"Dialogue: 0,{ass_time(start)},{ass_time(end)},Base,,0,0,0,,"
+                       f"{{\\an5{moved}\\fs{fs:.1f}\\1c{tag_color(color)}\\3c{tag_color(color)}\\bord{edge}\\shad0"
+                       f"\\1a&H{alpha:02X}&\\3a&H{alpha:02X}&{soft}}}{text}")
+        face_shadow = "\\shad0" if style.text_3d != "none" else ""
         out.append(f"Dialogue: 0,{ass_time(start)},{ass_time(end)},Base,,0,0,0,,"
-                   f"{{\\an5{enter}\\fs{fs:.1f}}}{text}")
+                   f"{{\\an5{enter}\\fs{fs:.1f}{face_shadow}}}{text}")
         if i in counted:
             out += countdown_events(style.countdown, line["start_ms"], cx, y - fs * 1.25, fs, W, rtl,
                                     style.highlight_color, style.text_color)

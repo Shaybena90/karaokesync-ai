@@ -87,6 +87,19 @@ FontName = Literal[
 # What counts down before singing starts (after the intro or a long break).
 Countdown = Literal["none", "dots", "numbers", "zoom", "bar", "pulse"]
 
+# 3D lettering: the words are extruded backwards in `depth_color` (darker
+# towards the back), with a soft shadow behind. Same numbers in the web player
+# (lib/subtitleStyle.ts text3dShadow): depth as a fraction of the font size and
+# the direction the letters go back in (x, y; y grows downwards).
+Text3D = Literal["none", "block", "deep", "retro", "float"]
+TEXT_3D: dict[str, tuple[float, float, float]] = {
+    "block": (0.09, 0.6, 0.8),   # short, down-right
+    "deep": (0.16, 0.0, 1.0),    # deep, straight down
+    "retro": (0.2, -0.7, 0.7),  # long, down-left (80s posters)
+    "float": (0.06, 0.0, 1.0),   # thin, hovering over a shadow far below
+}
+TEXT_3D_STEP = 0.01  # one copy per 1% of the font size
+
 # How a line comes on screen (same look in the player and in the video).
 Entrance = Literal[
     "none",
@@ -122,6 +135,8 @@ class SubtitleStyle(BaseModel):
     animation: Literal["fill", "word", "none"] = "fill"
     entrance: Entrance = "rise"
     countdown: Countdown = "dots"
+    text_3d: Text3D = "none"
+    depth_color: str = "#7c3aed"
     show_next_line: bool = True
     backgrounds: list[BackgroundClip] = Field(default_factory=list)
     # A built-in moving background (animated_backgrounds.py) for the whole song,
@@ -147,7 +162,7 @@ class SubtitleStyle(BaseModel):
                 continue
         return clips
 
-    @field_validator("text_color", "highlight_color", "outline_color", "background_color", "background_color2")
+    @field_validator("text_color", "highlight_color", "outline_color", "background_color", "background_color2", "depth_color")
     @classmethod
     def _hex(cls, v: str) -> str:
         if not HEX.match(v):

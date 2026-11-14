@@ -140,8 +140,8 @@ test('choose a Hebrew font and a line entrance effect', async ({ page, backend }
 
 test('choose a built-in animated background for the whole song', async ({ page, backend }) => {
   const picker = page.getByRole('radiogroup', { name: /רקע מונפש מוכן/ })
-  expect(await picker.getByRole('radio').count()).toBe(31) // 30 backgrounds and "none"
-  await expect(picker.locator('img').first()).toHaveAttribute('src', '/backgrounds/sunset.jpg')
+  expect(await picker.getByRole('radio').count()).toBe(43) // 12 in 3D, 30 classic and "none"
+  await expect(picker.locator('img').first()).toHaveAttribute('src', '/backgrounds/neon-tunnel.jpg') // 3D first
   await picker.getByRole('radio', { name: 'גלקסיה' }).click()
   await expect.poll(() => (backend.stylePatches.at(-1)?.style as { animated_background?: string })?.animated_background).toBe('galaxy')
   const layer = page.getByTestId('background-layers').locator('video')
@@ -151,4 +151,24 @@ test('choose a built-in animated background for the whole song', async ({ page, 
   await picker.getByRole('radio', { name: /ללא – צבעים בלבד/ }).click()
   await expect.poll(() => (backend.stylePatches.at(-1)?.style as { animated_background?: string | null })?.animated_background).toBeNull()
   await expect(page.getByTestId('background-layers')).toHaveCount(0)
+})
+
+test('3D background and 3D Hebrew letters, in the preview and saved', async ({ page, backend }) => {
+  const last = () => backend.stylePatches.at(-1)?.style as { animated_background?: string; text_3d?: string; depth_color?: string }
+  await page.getByRole('radiogroup', { name: /רקע מונפש מוכן/ }).getByRole('radio', { name: /כדור דיסקו/ }).click()
+  await expect.poll(() => last()?.animated_background).toBe('disco-ball')
+  await expect(page.getByTestId('background-layers').locator('video')).toHaveAttribute('src', '/backgrounds/disco-ball.mp4')
+
+  const kinds = page.getByRole('radiogroup', { name: 'כתב תלת מימד' })
+  expect(await kinds.getByRole('radio').count()).toBe(5)
+  await kinds.getByRole('radio', { name: /עמוק/ }).click()
+  await expect.poll(() => last()?.text_3d).toBe('deep')
+  const shadow = () => page.evaluate(() => getComputedStyle(document.querySelector('.kw-outline')!).textShadow)
+  await expect.poll(shadow).toContain('rgb(')
+  expect((await shadow()).split('px').length).toBeGreaterThan(30) // many extruded copies
+
+  await page.getByLabel('צבע העומק').fill('#ff0000')
+  await expect.poll(() => last()?.depth_color).toBe('#ff0000')
+  await kinds.getByRole('radio', { name: /רגיל/ }).click()
+  await expect.poll(shadow).toBe('none')
 })

@@ -11,7 +11,7 @@ from pathlib import Path
 import httpx
 
 from ..animated_backgrounds import BACKGROUNDS as ANIMATED_BACKGROUNDS
-from ..animated_backgrounds import cached_clip
+from ..animated_backgrounds import clip_for
 from ..config import Settings
 from ..exports.ass import build_ass
 from ..exports.measure import measurer_for
@@ -153,8 +153,8 @@ def _animated_layer(settings: Settings, style: SubtitleStyle, duration_ms: int) 
         return []
     bg = ANIMATED_BACKGROUNDS[style.animated_background]
     try:
-        clip = cached_clip(bg.id, Path(settings.worker_tmp_dir) / "animated-backgrounds")
-    except (subprocess.SubprocessError, OSError) as exc:
+        clip = clip_for(bg.id, Path(settings.worker_tmp_dir) / "animated-backgrounds")
+    except (subprocess.SubprocessError, OSError, ValueError) as exc:
         log.warning("animated background %s could not be drawn: %s", bg.id, type(exc).__name__)
         raise PipelineError("background_failed", retryable=True) from exc
     return [BackgroundLayer(clip, "video", 0, duration_ms, bg.duration_ms)]

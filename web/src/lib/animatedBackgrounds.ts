@@ -1,5 +1,5 @@
 /**
- * Built-in moving backgrounds — mirror of server/karaokesync/animated_backgrounds.py
+ * Built-in moving backgrounds (30 classic + 12 in 3D) — mirror of server/karaokesync/animated_backgrounds.py
  * (a server test checks the lists match). Each one is a short clip that loops
  * seamlessly, drawn from the same FFmpeg recipe the video export uses.
  * Files: public/backgrounds/<id>.mp4 (the clip) and <id>.jpg (a small picture).
@@ -10,6 +10,8 @@ export interface AnimatedBackground {
   en: string
   /** Length of one loop. */
   seconds: number
+  /** A 3D scene (drawn ahead of time from a shader in /backgrounds3d). */
+  kind?: '3d'
 }
 
 export const ANIMATED_BACKGROUNDS: readonly AnimatedBackground[] = [
@@ -43,6 +45,18 @@ export const ANIMATED_BACKGROUNDS: readonly AnimatedBackground[] = [
   { id: 'digital-rain', he: "גשם דיגיטלי", en: 'Digital rain', seconds: 10 },
   { id: 'silk', he: "משי", en: 'Silk', seconds: 10 },
   { id: 'midnight', he: "חצות", en: 'Midnight', seconds: 20 },
+  { id: 'neon-tunnel', he: "מנהרת ניאון", en: 'Neon tunnel', seconds: 10, kind: '3d' },
+  { id: 'retro-terrain', he: "הרי רטרו", en: 'Retro mountains', seconds: 10, kind: '3d' },
+  { id: 'chrome-orbs', he: "כדורי כרום", en: 'Chrome orbs', seconds: 10, kind: '3d' },
+  { id: 'liquid-chrome', he: "מתכת נוזלית", en: 'Liquid chrome', seconds: 10, kind: '3d' },
+  { id: 'ringed-planet', he: "כוכב לכת", en: 'Ringed planet', seconds: 10, kind: '3d' },
+  { id: 'stage-lights', he: "במת הופעה", en: 'Concert stage', seconds: 10, kind: '3d' },
+  { id: 'gold-rings', he: "טבעות זהב", en: 'Gold rings', seconds: 10, kind: '3d' },
+  { id: 'disco-ball', he: "כדור דיסקו", en: 'Disco ball', seconds: 10, kind: '3d' },
+  { id: 'star-warp', he: "מסע בין כוכבים", en: 'Star warp', seconds: 10, kind: '3d' },
+  { id: 'hex-floor', he: "רצפת משושים", en: 'Hexagon floor', seconds: 10, kind: '3d' },
+  { id: 'ocean-sunset', he: "ים בשקיעה", en: 'Ocean sunset', seconds: 10, kind: '3d' },
+  { id: 'cube-field', he: "קוביות מרחפות", en: 'Floating cubes', seconds: 10, kind: '3d' },
 ]
 
 export const ANIMATED_IDS: ReadonlySet<string> = new Set(ANIMATED_BACKGROUNDS.map((b) => b.id))
