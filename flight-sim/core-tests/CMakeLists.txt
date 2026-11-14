@@ -32,3 +32,7 @@ add_test(NAME kanaf_tests COMMAND kanaf_tests)
 add_executable(kanaf_radio_render tests/radio_render.cpp)
 target_link_libraries(kanaf_radio_render kanaf_core)
 target_compile_definitions(kanaf_radio_render PRIVATE KANAF_DATA_DIR="${DATA_DIR}")
+
+add_executable(kanaf_preview_export tests/preview_export.cpp)
+target_link_libraries(kanaf_preview_export kanaf_core)
+target_compile_definitions(kanaf_preview_export PRIVATE KANAF_DATA_DIR="${DATA_DIR}")

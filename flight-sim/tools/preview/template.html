@@ -1,0 +1,554 @@
+<title>כנף — תצוגה מקדימה</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: simulator-console look (deliberately single dark theme): header, viewport, timeline, radio log; second tab = menu screen mock-ups */
+:root {
+  color-scheme: dark;
+  --bg: #0c1013;
+  --panel: #131a1f;
+  --line: #24303a;
+  --fg: #e6ebee;
+  --dim: #8d9aa3;
+  --accent: #59cc8c;      /* same green as the in-game UI */
+  --warn: #ffbf40;
+  --bad: #ff6a5a;
+  --hud: #4dff73;
+  --ui: "Heebo", "Arial Hebrew", "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--bg); color: var(--fg); }
+body { font-family: var(--ui); font-size: 15px; line-height: 1.5; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 14px 32px; }
+.wrap { max-width: 1180px; margin: 0 auto; display: flex; flex-direction: column; gap: 14px; }
+header { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; justify-content: space-between; }
+h1 { font-size: 26px; margin: 0; font-weight: 700; letter-spacing: .01em; text-wrap: balance; }
+h1 span { color: var(--accent); }
+.note { font-size: 13px; color: var(--warn); border: 1px solid #5a4620; background: #2a210f; padding: 6px 10px; border-radius: 6px; max-width: 640px; }
+.tabs { display: flex; gap: 6px; border-bottom: 1px solid var(--line); }
+.tab { background: none; border: 0; color: var(--dim); font: 500 16px var(--ui); padding: 8px 14px; cursor: pointer; border-bottom: 2px solid transparent; }
+.tab[aria-selected="true"] { color: var(--fg); border-color: var(--accent); }
+.tab:focus-visible, button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.view { position: relative; width: 100%; aspect-ratio: 16 / 9; max-height: 72vh; background: #000; border: 1px solid var(--line); border-radius: 8px; overflow: hidden; touch-action: none; }
+.view canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+#sub { position: absolute; top: 12px; right: 12px; max-width: min(70%, 640px); background: rgba(0,0,0,.6); border-radius: 6px; padding: 8px 12px; direction: rtl; }
+#sub b { display: block; color: var(--accent); font-size: 13px; }
+#sub div { font-size: clamp(14px, 2.2vw, 20px); }
+#phaseTag { position: absolute; top: 12px; left: 12px; font: 600 12px var(--mono); color: var(--fg); background: rgba(0,0,0,.55); padding: 4px 8px; border-radius: 4px; direction: ltr; }
+#viewHint { position: absolute; bottom: 10px; left: 12px; font-size: 12px; color: rgba(255,255,255,.65); direction: rtl; }
+.controls { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+.group { display: flex; gap: 4px; align-items: center; flex-wrap: wrap; }
+.group label { color: var(--dim); font-size: 13px; margin-inline-end: 4px; }
+button.b { background: var(--panel); color: var(--fg); border: 1px solid var(--line); border-radius: 6px; padding: 6px 12px; font: 500 14px var(--ui); cursor: pointer; }
+button.b[aria-pressed="true"] { background: #1d4a33; border-color: var(--accent); }
+button.b:hover { border-color: #3a4a56; }
+.timeline { display: flex; flex-direction: column; gap: 4px; }
+#scrub { width: 100%; accent-color: var(--accent); }
+#marks { width: 100%; height: 18px; display: block; }
+.tl-row { display: flex; justify-content: space-between; font: 12px var(--mono); color: var(--dim); direction: ltr; }
+.cols { display: grid; grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 820px) { .cols { grid-template-columns: minmax(0, 1fr); } }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 12px 14px; min-width: 0; }
+.card h2 { font-size: 16px; margin: 0 0 8px; color: var(--accent); }
+.radio-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; max-height: 300px; overflow-y: auto; }
+.radio-list li { display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 8px; padding: 5px 6px; border-radius: 4px; cursor: pointer; }
+.radio-list li:hover, .radio-list li.on { background: #1a242b; }
+.radio-list .t { font: 12px var(--mono); color: var(--dim); direction: ltr; text-align: left; padding-top: 2px; }
+.radio-list .s { font-size: 12px; color: var(--accent); }
+.facts { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 4px 12px; font-size: 14px; }
+.facts dt { color: var(--dim); }
+.facts dd { margin: 0; font-variant-numeric: tabular-nums; }
+.small { font-size: 12px; color: var(--dim); }
+/* --- menu mock-ups (mirrors KanafUI.cpp: right-docked dark panel, green accent) --- */
+.screens { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 520px), 1fr)); gap: 14px; }
+.screen { position: relative; aspect-ratio: 16 / 10; border-radius: 8px; overflow: hidden; border: 1px solid var(--line); background: #1b1d1f center / cover no-repeat; }
+.screen .cap { position: absolute; left: 8px; bottom: 6px; font-size: 12px; color: rgba(255,255,255,.7); background: rgba(0,0,0,.5); padding: 2px 6px; border-radius: 4px; }
+.mpanel { position: absolute; inset: 0 0 0 auto; width: 54%; background: rgba(8,10,13,.88); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px; overflow: hidden; direction: rtl; }
+.mpanel h3 { margin: 0; font-size: 19px; color: var(--accent); }
+.mpanel .sub { font-size: 11px; color: var(--dim); margin-top: -4px; }
+.mbtn { background: #1f2429; border-radius: 4px; padding: 5px 10px; font-size: 13px; color: var(--fg); }
+.mbtn.sel { background: #26734d; }
+.mbtn.off { color: #6c757b; }
+.mtxt { font-size: 11.5px; color: var(--dim); }
+.mbad { font-size: 11.5px; color: var(--bad); }
+.mwarn { font-size: 11.5px; color: var(--warn); }
+.mfoot { margin-top: auto; display: flex; gap: 8px; }
+.mfoot .mbtn { flex: 0 0 auto; }
+.badge { font-size: 10.5px; padding: 0 5px; border-radius: 3px; margin-inline-start: 6px; }
+.b-active { background: #1d4a33; color: #b8f0cf; }
+.b-ordered { background: #4a3c1d; color: #f5d99a; }
+.b-retired { background: #3a2626; color: #f0b8b8; }
+.b-unconf { background: #2a3540; color: #c4d4e0; }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>כנף <span>F-16I סופה</span> · רמון</h1>
+    <div class="note">תצוגה מקדימה בדפדפן (Three.js), לא רינדור Unreal. הטיסה, השטח, המסלולים והקשר מגיעים כמות שהם מליבת הסימולציה האמיתית; המודל והקוקפיט זמניים, כמו במשחק.</div>
+  </header>
+
+  <div class="tabs" role="tablist">
+    <button class="tab" role="tab" id="tab-flight" aria-selected="true" aria-controls="pane-flight">טיסה</button>
+    <button class="tab" role="tab" id="tab-menus" aria-selected="false" aria-controls="pane-menus">מסכי התפריט</button>
+  </div>
+
+  <section id="pane-flight" role="tabpanel" aria-labelledby="tab-flight" class="wrap" style="max-width:none;padding:0">
+    <div class="view" id="view">
+      <canvas id="gl"></canvas>
+      <canvas id="hud" dir="ltr"></canvas>
+      <div id="sub" hidden><b id="subSpk"></b><div id="subTxt"></div></div>
+      <div id="phaseTag">GROUND</div>
+      <div id="viewHint">גרירה: סיבוב מבט</div>
+    </div>
+
+    <div class="controls">
+      <div class="group"><button class="b" id="play" aria-pressed="true">השהה</button></div>
+      <div class="group"><label>מהירות</label>
+        <button class="b" data-speed="1" aria-pressed="true">×1</button>
+        <button class="b" data-speed="4" aria-pressed="false">×4</button>
+        <button class="b" data-speed="12" aria-pressed="false">×12</button>
+      </div>
+      <div class="group"><label>מצלמה</label>
+        <button class="b" data-cam="chase" aria-pressed="true">חיצונית</button>
+        <button class="b" data-cam="cockpit" aria-pressed="false">קוקפיט</button>
+      </div>
+      <div class="group"><label>שעה</label>
+        <button class="b" data-tod="noon" aria-pressed="true">צהריים</button>
+        <button class="b" data-tod="sunset" aria-pressed="false">שקיעה</button>
+        <button class="b" data-tod="night" aria-pressed="false">לילה</button>
+      </div>
+      <div class="group"><button class="b" id="sound" aria-pressed="false">הפעל קול קשר</button></div>
+    </div>
+
+    <div class="timeline">
+      <input type="range" id="scrub" min="0" max="500" step="0.1" value="0" aria-label="ציר זמן">
+      <canvas id="marks" dir="ltr"></canvas>
+      <div class="tl-row"><span id="tNow">0:00</span><span id="tPhase"></span><span id="tEnd">0:00</span></div>
+    </div>
+
+    <div class="cols">
+      <div class="card">
+        <h2>רשת הקשר</h2>
+        <ul class="radio-list" id="radioList"></ul>
+        <p class="small">קולות זמניים (espeak-ng) אחרי שרשרת אפקט הרדיו של המשחק. קליק על הודעה קופץ אליה. הקול מושמע רק במהירות ×1.</p>
+      </div>
+      <div class="card">
+        <h2>סיכום הטיסה הזו</h2>
+        <dl class="facts" id="facts"></dl>
+        <p class="small">טייס־הבדיקה האוטומטי של הליבה: מבקש הסעה, מסיע לסף, מקבל אישור, ממריא, טס הקפה, ונוחת ב־25L. גובה: Copernicus DEM GLO-30 © DLR e.V. 2010-2014, © Airbus Defence and Space GmbH 2014-2018, Copernicus/EU/ESA. צבעי הקרקע: השלמה אמנותית. מסלולים: OurAirports.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="pane-menus" role="tabpanel" aria-labelledby="tab-menus" hidden>
+    <p class="small" style="margin:0 0 10px">שחזור בדפדפן של מבנה המסכים מ־KanafUI.cpp, עם הנתונים האמיתיים מהקטלוג. במשחק הפאנל מעוצב ב־Slate בגופן Noto Sans Hebrew, ומשמאלו נראה ההאנגר התלת־ממדי.</p>
+    <div class="screens" id="screens"></div>
+  </section>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+const DATA = /*__DATA__*/null;
+(function () {
+  "use strict";
+  const F = DATA.frames, R = DATA.radio, M = DATA.meta, T_END = F[F.length - 1][0];
+  // frame fields
+  const I = { t:0, n:1, e:2, d:3, roll:4, pitch:5, hdg:6, kcas:7, altft:8, aglft:9, aoa:10, nz:11, gear:12, flap:13, sb:14, thr:15, ab:16, fuel:17, vvi:18, mach:19, phase:20 };
+  const D2R = Math.PI / 180;
+
+  // ---------- three.js scene ----------
+  const glCanvas = document.getElementById("gl"), hud = document.getElementById("hud"), view = document.getElementById("view");
+  const renderer = new THREE.WebGLRenderer({ canvas: glCanvas, antialias: true });
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(60, 16 / 9, 1, 120000);
+  const toV = (n, e, up) => new THREE.Vector3(e, up, -n);   // NED -> three (x east, y up, z south)
+
+  // terrain
+  const N = M.gridN, half = M.half, raw = Uint8Array.from(atob(DATA.terrain), c => c.charCodeAt(0));
+  const dv = new DataView(raw.buffer);
+  const pos = new Float32Array(N * N * 3), col = new Float32Array(N * N * 3), msl = new Float32Array(N * N);
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    const k = i * N + j, up = dv.getInt16(k * 4, true) / 4, h = dv.getInt16(k * 4 + 2, true);
+    const n = half - i * (2 * half / (N - 1)), e = -half + j * (2 * half / (N - 1));
+    pos[k * 3] = e; pos[k * 3 + 1] = up; pos[k * 3 + 2] = -n; msl[k] = h;
+  }
+  // Coarse grid (137 m) would poke through the runways between samples: sink terrain near runways.
+  M.runways.forEach(rw => {
+    const ax = rw.a[1], az = -rw.a[0], bx = rw.b[1], bz = -rw.b[0], dx = bx - ax, dz = bz - az, L = Math.hypot(dx, dz), ux = dx / L, uz = dz / L, w = (rw.w || 45) / 2 + 160;
+    for (let k = 0; k < N * N; k++) {
+      const px = pos[k * 3] - ax, pz = pos[k * 3 + 2] - az, along = px * ux + pz * uz, lat = Math.abs(-px * uz + pz * ux);
+      if (lat > w || along < -250 || along > L + 250) continue;
+      const hr = rw.a[2] + (rw.b[2] - rw.a[2]) * Math.min(1, Math.max(0, along / L));
+      pos[k * 3 + 1] = Math.min(pos[k * 3 + 1], hr - 1.5);
+    }
+  });
+  const idx = [];
+  for (let i = 0; i < N - 1; i++) for (let j = 0; j < N - 1; j++) { const k = i * N + j; idx.push(k, k + N, k + 1, k + 1, k + N, k + N + 1); }
+  const tg = new THREE.BufferGeometry();
+  tg.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+  tg.setIndex(idx);
+  tg.computeVertexNormals();
+  const nrm = tg.getAttribute("normal");
+  const lerp3 = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t];
+  for (let k = 0; k < N * N; k++) {   // artistic desert palette, same rule as AKanafTerrainActor::ColorFor
+    const h = msl[k], slope = 1 - nrm.getY(k);
+    const low = [0.55, 0.47, 0.36], mid = [0.62, 0.52, 0.40], high = [0.48, 0.40, 0.33], rock = [0.36, 0.30, 0.26];
+    let c = h < 400 ? lerp3(low, mid, Math.max(0, (h + 350) / 750)) : lerp3(mid, high, Math.min(1, (h - 400) / 600));
+    c = lerp3(c, rock, Math.min(1, Math.max(0, (slope - 0.12) / 0.45)));
+    col.set(c, k * 3);
+  }
+  tg.setAttribute("color", new THREE.BufferAttribute(col, 3));
+  const terrainMat = new THREE.MeshLambertMaterial({ vertexColors: true });
+  scene.add(new THREE.Mesh(tg, terrainMat));
+
+  // runways with canvas-texture markings
+  const lightsGeo = [];
+  M.runways.forEach(rw => {
+    const a = toV(rw.a[0], rw.a[1], rw.a[2] + 0.4), b = toV(rw.b[0], rw.b[1], rw.b[2] + 0.4);
+    const len = a.distanceTo(b), w = rw.w || 45;
+    const cv = document.createElement("canvas"); cv.width = 64; cv.height = 1024;
+    const g = cv.getContext("2d");
+    g.fillStyle = "#1a1b1c"; g.fillRect(0, 0, 64, 1024);
+    g.fillStyle = "#d8d8d8";
+    const px = 1024 / len;
+    for (let s = 120; s < len - 120; s += 50) g.fillRect(30.5, s * px, 3, 30 * px);
+    [6, len - 36].forEach(s0 => { for (let l = 4; l < 60; l += 5) g.fillRect(l, s0 * px, 2.5, 30 * px); });
+    const tex = new THREE.CanvasTexture(cv);
+    tex.anisotropy = 8;
+    const geo = new THREE.PlaneGeometry(w, len);
+    const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex }));
+    mesh.rotation.x = -Math.PI / 2;            // plane length axis -> world z
+    const mid = a.clone().add(b).multiplyScalar(0.5), dir = b.clone().sub(a);
+    const grp = new THREE.Group();
+    grp.position.copy(mid);
+    grp.rotation.y = Math.atan2(dir.x, dir.z); // align length axis with the runway
+    grp.add(mesh);
+    scene.add(grp);
+    // edge light positions
+    const right = new THREE.Vector3().crossVectors(dir.clone().normalize(), new THREE.Vector3(0, 1, 0));
+    for (let s = 0; s <= len; s += 150) for (const side of [-1, 1]) {
+      const p = a.clone().add(dir.clone().normalize().multiplyScalar(s)).add(right.clone().multiplyScalar(side * (w / 2 + 2)));
+      lightsGeo.push(p.x, p.y + 0.8, p.z);
+    }
+  });
+  const lg = new THREE.BufferGeometry();
+  lg.setAttribute("position", new THREE.Float32BufferAttribute(lightsGeo, 3));
+  const runwayLights = new THREE.Points(lg, new THREE.PointsMaterial({ color: 0xffd9a0, size: 3, sizeAttenuation: false }));
+  scene.add(runwayLights);
+
+  // placeholder F-16I (same primitive breakdown as KanafPlaceholderModel.cpp), nose = -z
+  function buildAircraft(withStores) {
+    const root = new THREE.Group();
+    const camo = new THREE.MeshStandardMaterial({ color: 0x8a8370, roughness: 0.6, metalness: 0.25 });
+    const dark = new THREE.MeshStandardMaterial({ color: 0x151517, roughness: 0.5, metalness: 0.6 });
+    const glass = new THREE.MeshStandardMaterial({ color: 0x1b2a38, roughness: 0.1, metalness: 0.2, transparent: true, opacity: 0.75 });
+    const store = new THREE.MeshStandardMaterial({ color: 0xb8bab0, roughness: 0.5, metalness: 0.3 });
+    const B = (x, y, z) => new THREE.Vector3(y, -z, -x);  // body (x fwd, y right, z down) -> local
+    const add = (geo, mat, p, rot) => { const m = new THREE.Mesh(geo, mat); m.position.copy(p); if (rot) m.rotation.set(rot[0], rot[1], rot[2]); root.add(m); return m; };
+    const alongX = [Math.PI / 2, 0, 0];
+    add(new THREE.CylinderGeometry(0.62, 0.62, 12.2, 18), camo, B(-0.4, 0, 0), alongX);
+    add(new THREE.ConeGeometry(0.6, 2.4, 18), camo, B(7.2, 0, 0), [-Math.PI / 2, 0, 0]);
+    add(new THREE.BoxGeometry(1.0, 0.75, 3.8), camo, B(1.8, 0, 0.75));
+    add(new THREE.BoxGeometry(0.7, 0.45, 7.5), camo, B(-0.8, 0, -0.7));
+    add(new THREE.BoxGeometry(0.45, 0.5, 6.2), camo, B(-0.6, -0.78, -0.3));
+    add(new THREE.BoxGeometry(0.45, 0.5, 6.2), camo, B(-0.6, 0.78, -0.3));
+    // swept wings as extruded trapezoids
+    const wing = (side) => {
+      const s = new THREE.Shape();
+      s.moveTo(0, 2.6); s.lineTo(0, -2.4); s.lineTo(side * 4.35, -2.9); s.lineTo(side * 4.35, -1.9); s.lineTo(0, 2.6);
+      const g = new THREE.ExtrudeGeometry(s, { depth: 0.12, bevelEnabled: false });
+      const m = new THREE.Mesh(g, camo);
+      m.rotation.x = -Math.PI / 2; m.position.copy(B(-1.0, side * 0.6, 0.05));
+      root.add(m);
+    };
+    wing(1); wing(-1);
+    const stab = (side) => {
+      const s = new THREE.Shape();
+      s.moveTo(0, 0.6); s.lineTo(0, -1.3); s.lineTo(side * 2.6, -1.6); s.lineTo(side * 2.6, -0.9); s.lineTo(0, 0.6);
+      const m = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: 0.08, bevelEnabled: false }), camo);
+      m.rotation.x = -Math.PI / 2; m.position.copy(B(-5.6, side * 0.5, 0.05)); root.add(m);
+    };
+    stab(1); stab(-1);
+    const fin = new THREE.Shape();
+    fin.moveTo(0, 0); fin.lineTo(-3.4, 0); fin.lineTo(-4.4, 3.2); fin.lineTo(-3.2, 3.2); fin.lineTo(0, 0);
+    const finM = new THREE.Mesh(new THREE.ExtrudeGeometry(fin, { depth: 0.12, bevelEnabled: false }), camo);
+    finM.rotation.y = Math.PI / 2; finM.position.copy(B(-3.4, -0.06, -0.55)); root.add(finM);
+    const canopy = add(new THREE.SphereGeometry(1, 20, 14), glass, B(4.4, 0, -0.75));
+    canopy.scale.set(0.42, 0.37, 1.7);
+    add(new THREE.CylinderGeometry(0.5, 0.42, 0.9, 16), dark, B(-7.0, 0, 0), alongX);
+    const gear = new THREE.Group();
+    [[4.3, 0, 0.45], [-0.7, -1.2, 0.7], [-0.7, 1.2, 0.7]].forEach(([x, y, wd]) => {
+      const leg = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 1.15, 8), store); leg.position.copy(B(x, y, 1.15)); gear.add(leg);
+      const wh = new THREE.Mesh(new THREE.CylinderGeometry(wd / 2, wd / 2, 0.22, 16), dark); wh.position.copy(B(x, y, 1.95 - wd / 2)); wh.rotation.z = Math.PI / 2; gear.add(wh);
+    });
+    root.add(gear);
+    if (withStores) [[-0.9, -4.95, 0.13], [-0.9, 4.95, 0.13]].forEach(([x, y, z]) => {   // 2x Python-5 (stations 1 & 9)
+      add(new THREE.CylinderGeometry(0.08, 0.08, 3.1, 10), store, B(x, y, z), alongX);
+    });
+    const plume = new THREE.Mesh(new THREE.ConeGeometry(0.42, 4, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xff9a3c, transparent: true, opacity: 0.0, depthWrite: false }));
+    plume.position.copy(B(-9.4, 0, 0)); plume.rotation.set(Math.PI / 2, 0, 0); root.add(plume);
+    return { root, gear, plume, canopy };
+  }
+  const ac = buildAircraft(true);
+  ac.root.rotation.order = "YXZ";
+  scene.add(ac.root);
+
+  // lighting / time of day
+  const sun = new THREE.DirectionalLight(0xffffff, 1.0), amb = new THREE.HemisphereLight(0xbfd4e6, 0x6b5a45, 0.55);
+  scene.add(sun, sun.target, amb);
+  const TOD = {
+    noon:   { sky: 0x9cc3e4, fog: 0xc9c2b0, sunEl: 52, sunAz: 190, sunI: 1.05, amb: 0.6, hud: "#4dff73", lights: false },
+    sunset: { sky: 0xe39a6a, fog: 0xc98a62, sunEl: 3, sunAz: 245, sunI: 0.9, amb: 0.35, hud: "#4dff73", lights: true },
+    night:  { sky: 0x05080f, fog: 0x070a10, sunEl: 35, sunAz: 120, sunI: 0.08, amb: 0.07, hud: "#2bb34a", lights: true },
+  };
+  let tod = "noon";
+  function applyTod() {
+    const p = TOD[tod];
+    scene.background = new THREE.Color(p.sky);
+    scene.fog = new THREE.Fog(p.fog, 6000, tod === "night" ? 30000 : 45000);
+    const el = p.sunEl * D2R, az = p.sunAz * D2R;
+    sun.position.set(Math.sin(az) * Math.cos(el), Math.sin(el), -Math.cos(az) * Math.cos(el)).multiplyScalar(10000);
+    sun.color.set(tod === "sunset" ? 0xffb37a : tod === "night" ? 0x9fb4ff : 0xfff6e8);
+    sun.intensity = p.sunI; amb.intensity = p.amb;
+    runwayLights.visible = p.lights;
+  }
+  applyTod();
+
+  // ---------- playback state ----------
+  let t = 33, playing = true, speed = 1, cam = "chase", soundOn = false;
+  let orbitYaw = 200, orbitPitch = -10, headYaw = 0, headPitch = -8, chaseDist = 34;
+  const scrub = document.getElementById("scrub");
+  scrub.max = T_END.toFixed(1);
+  const fmt = s => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+  document.getElementById("tEnd").textContent = fmt(T_END);
+
+  function sample(time) {
+    const k = Math.min(F.length - 2, Math.max(0, Math.floor(time / 0.2)));
+    const a = F[k], b = F[k + 1], u = Math.min(1, Math.max(0, (time - a[0]) / (b[0] - a[0] || 1)));
+    const o = a.slice();
+    for (let i = 1; i < 20; i++) {
+      if (i === I.hdg) { let dh = b[i] - a[i]; if (dh > 180) dh -= 360; if (dh < -180) dh += 360; o[i] = (a[i] + dh * u + 360) % 360; }
+      else o[i] = a[i] + (b[i] - a[i]) * u;
+    }
+    return o;
+  }
+
+  // ---------- radio ----------
+  const audios = R.map(r => { const a = new Audio("data:audio/mpeg;base64," + DATA.audio[r.file]); a.preload = "auto"; return a; });
+  const list = document.getElementById("radioList");
+  R.forEach((r, i) => {
+    const li = document.createElement("li");
+    li.innerHTML = `<span class="t">${fmt(r.t)}</span><span><span class="s">${r.speaker} · ${r.channel}</span><br>${r.text}</span>`;
+    li.addEventListener("click", () => { seek(Math.max(0, r.t - 0.3)); });
+    list.appendChild(li);
+  });
+  let lastT = t;
+  function radioTick(prev, now) {
+    const sub = document.getElementById("sub");
+    let active = -1;
+    R.forEach((r, i) => {
+      if (now >= r.t && now < r.t + r.dur + 2) active = i;
+      if (soundOn && speed === 1 && playing && prev < r.t && now >= r.t) { audios.forEach(a => a.pause()); audios[i].currentTime = 0; audios[i].play().catch(() => {}); }
+    });
+    list.querySelectorAll("li").forEach((li, i) => li.classList.toggle("on", i === active));
+    if (active >= 0) { sub.hidden = false; document.getElementById("subSpk").textContent = R[active].speaker + " · " + R[active].channel; document.getElementById("subTxt").textContent = R[active].text; }
+    else sub.hidden = true;
+  }
+
+  // ---------- HUD (port of KanafHUD.cpp) ----------
+  const hctx = hud.getContext("2d");
+  function drawHud(s) {
+    const W = hud.width, H = hud.height, dpr = W / hud.clientWidth;
+    hctx.clearRect(0, 0, W, H);
+    hctx.direction = "ltr"; hctx.textAlign = "left";  // instrument captions are LTR inside the RTL page
+    const C = TOD[tod].hud;
+    hctx.lineWidth = 1.6 * dpr; hctx.strokeStyle = C; hctx.fillStyle = C;
+    const font = (px) => (hctx.font = `600 ${px * dpr}px "IBM Plex Mono", monospace`);
+    const txt = (str, x, y, px = 14, center = false) => { font(px); const w = center ? hctx.measureText(str).width / 2 : 0; hctx.fillText(str, x - w, y); };
+    const line = (x1, y1, x2, y2) => { hctx.beginPath(); hctx.moveTo(x1, y1); hctx.lineTo(x2, y2); hctx.stroke(); };
+    if (cam === "cockpit") {
+      const vfov = camera.fov * D2R, ppd = (H / 2) / Math.tan(vfov / 2) * Math.tan(D2R);
+      const Bx = W / 2 - headYaw * ppd, By = H / 2 + headPitch * ppd;
+      if (Math.abs(headYaw) < 25 && Math.abs(headPitch + 8) < 25) {
+        const phi = s[I.roll] * D2R, al = [Math.cos(phi), -Math.sin(phi)], pe = [Math.sin(phi), Math.cos(phi)], lim = H * 0.28;
+        for (let L = -30; L <= 30; L += 5) {
+          const dd = (s[I.pitch] - L) * ppd; if (Math.abs(dd) > lim) continue;
+          const cx = Bx + pe[0] * dd, cy = By + pe[1] * dd, half = L === 0 ? W * 0.18 : 70 * dpr, gap = L === 0 ? 40 * dpr : 25 * dpr;
+          hctx.setLineDash(L < 0 ? [8 * dpr, 6 * dpr] : []);
+          line(cx - al[0] * half, cy - al[1] * half, cx - al[0] * gap, cy - al[1] * gap);
+          line(cx + al[0] * gap, cy + al[1] * gap, cx + al[0] * half, cy + al[1] * half);
+          hctx.setLineDash([]);
+          if (L) txt(String(L), cx + al[0] * half + 6 * dpr, cy + al[1] * half + 4 * dpr, 11);
+        }
+        line(Bx - 18 * dpr, By, Bx - 6 * dpr, By + 6 * dpr); line(Bx - 6 * dpr, By + 6 * dpr, Bx, By); line(Bx, By, Bx + 6 * dpr, By + 6 * dpr); line(Bx + 6 * dpr, By + 6 * dpr, Bx + 18 * dpr, By);
+        if (s[I.aglft] > 3) { const fy = By + s[I.aoa] * ppd; hctx.strokeRect(Bx - 7 * dpr, fy - 7 * dpr, 14 * dpr, 14 * dpr); line(Bx - 22 * dpr, fy, Bx - 7 * dpr, fy); line(Bx + 7 * dpr, fy, Bx + 22 * dpr, fy); line(Bx, fy - 7 * dpr, Bx, fy - 17 * dpr); }
+        const Sx = Bx - W * 0.24, Ax = Bx + W * 0.17;
+        hctx.strokeRect(Sx - 5 * dpr, By - 16 * dpr, 78 * dpr, 26 * dpr); txt(String(Math.round(s[I.kcas])).padStart(4), Sx, By + 3 * dpr, 17);
+        txt(`M ${s[I.mach].toFixed(2)}`, Sx, By + 30 * dpr, 12); txt(`G ${s[I.nz].toFixed(1)}`, Sx, By + 48 * dpr, 12); txt(`AOA ${s[I.aoa].toFixed(1)}`, Sx, By + 66 * dpr, 12);
+        txt(`THR ${Math.round(s[I.thr] * 100)}%${s[I.ab] > 0.05 ? " AB" : ""}`, Sx, By + 84 * dpr, 12);
+        hctx.strokeRect(Ax - 5 * dpr, By - 16 * dpr, 92 * dpr, 26 * dpr); txt(String(Math.round(s[I.altft])).padStart(5), Ax, By + 3 * dpr, 17);
+        txt(`VS ${s[I.vvi] >= 0 ? "+" : ""}${Math.round(s[I.vvi])}`, Ax, By + 30 * dpr, 12);
+        if (s[I.aglft] < 1500) txt(`R ${Math.max(0, Math.round(s[I.aglft]))}`, Ax, By + 48 * dpr, 12);
+        const Hy = By - H * 0.3;
+        for (let k = -3; k <= 3; k++) { const h = Math.floor(s[I.hdg] / 10) * 10 + k * 10, x = Bx + (h - s[I.hdg]) * 6 * dpr; line(x, Hy, x, Hy + 8 * dpr); txt(String(((h % 360 + 360) % 360) / 10 | 0).padStart(2, "0"), x, Hy - 6 * dpr, 11, true); }
+        line(Bx, Hy + 10 * dpr, Bx, Hy + 20 * dpr);
+        if (s[I.gear] > 0.99) txt("GEAR DN", Bx, By + H * 0.22, 12, true);
+      }
+      // generic digital panel (game cockpit, not an F-16I replica)
+      const top = H * 0.82, lit = tod !== "noon";
+      hctx.fillStyle = "rgba(5,6,8,0.88)"; hctx.fillRect(0, top, W, H - top);
+      const tc = lit ? "#ff9e40" : "#d9e6e6", dim = lit ? "#99602a" : "#7f8a8a";
+      const cells = [["KCAS", Math.round(s[I.kcas])], ["ALT FT", Math.round(s[I.altft])], ["AGL FT", Math.max(0, Math.round(s[I.aglft]))], ["HDG", String(Math.round(s[I.hdg])).padStart(3, "0")],
+        ["VVI", Math.round(s[I.vvi])], ["AOA", s[I.aoa].toFixed(1)], ["G", s[I.nz].toFixed(1)], ["THR %", Math.round(s[I.thr] * 100)], ["FUEL KG", Math.round(s[I.fuel])]];
+      const cw = W / (cells.length + 1);
+      cells.forEach(([cap, v], i) => {
+        const x = cw * (i + 0.5);
+        hctx.strokeStyle = dim; hctx.lineWidth = dpr; hctx.strokeRect(x + 3 * dpr, top + 8 * dpr, cw - 6 * dpr, 46 * dpr);
+        hctx.fillStyle = dim; txt(cap, x + cw / 2, top + 22 * dpr, 10, true);
+        hctx.fillStyle = tc; txt(String(v), x + cw / 2, top + 44 * dpr, 16, true);
+      });
+      const gy = top + 64 * dpr, gc = s[I.gear] > 0.99 ? "#22dd44" : s[I.gear] > 0.01 ? "#ff3322" : "#333";
+      for (let g = 0; g < 3; g++) { hctx.fillStyle = gc; hctx.fillRect(cw * 0.5 + g * 22 * dpr, gy, 15 * dpr, 15 * dpr); }
+      hctx.fillStyle = tc; txt(`GEAR   FLAPS ${s[I.flap] > 0.5 ? "DN" : "UP"}   SPD BRK ${s[I.sb] > 0.05 ? "OPEN" : "CLOSED"}`, cw * 0.5 + 76 * dpr, gy + 12 * dpr, 11);
+      hctx.fillStyle = "rgba(255,210,60,0.75)"; txt("GAME COCKPIT · placeholder, not an F-16I panel replica", W - 360 * dpr, H - 8 * dpr, 10);
+    } else {
+      hctx.fillStyle = "rgba(0,0,0,0.5)"; hctx.fillRect(10 * dpr, H - 112 * dpr, 250 * dpr, 100 * dpr);
+      hctx.fillStyle = "#e6f2e6";
+      txt(`KCAS ${String(Math.round(s[I.kcas])).padStart(4)}   M ${s[I.mach].toFixed(2)}`, 20 * dpr, H - 90 * dpr, 12);
+      txt(`ALT ${Math.round(s[I.altft])} ft  AGL ${Math.max(0, Math.round(s[I.aglft]))}`, 20 * dpr, H - 70 * dpr, 12);
+      txt(`HDG ${String(Math.round(s[I.hdg])).padStart(3, "0")}  VS ${Math.round(s[I.vvi])} fpm`, 20 * dpr, H - 50 * dpr, 12);
+      txt(`G ${s[I.nz].toFixed(1)}  AOA ${s[I.aoa].toFixed(1)}  GEAR ${s[I.gear] > 0.99 ? "DN" : s[I.gear] > 0.01 ? "TRN" : "UP"}`, 20 * dpr, H - 30 * dpr, 12);
+    }
+  }
+
+  // ---------- timeline markers ----------
+  const marks = document.getElementById("marks");
+  const PH = { ground: "#5a6670", hold: "#5a6670", takeoff_roll: "#e0a040", initial_climb: "#59cc8c", pattern: "#4a90d9", final: "#c26bd9", flare: "#ff6a5a", rollout: "#e0a040", stopped: "#5a6670" };
+  function drawMarks() {
+    const w = marks.clientWidth, h = marks.clientHeight, dpr = window.devicePixelRatio || 1;
+    marks.width = w * dpr; marks.height = h * dpr;
+    const g = marks.getContext("2d"); g.scale(dpr, dpr);
+    for (let k = 0; k < F.length - 1; k++) { g.fillStyle = PH[F[k][I.phase]] || "#5a6670"; g.fillRect((F[k][0] / T_END) * w, 0, (0.2 / T_END) * w + 1, 6); }
+    g.fillStyle = "#e6ebee"; R.forEach(r => g.fillRect((r.t / T_END) * w - 1, 8, 2, 9));
+  }
+
+  // ---------- interaction ----------
+  let drag = null;
+  view.addEventListener("pointerdown", e => { drag = { x: e.clientX, y: e.clientY }; view.setPointerCapture(e.pointerId); });
+  view.addEventListener("pointermove", e => {
+    if (!drag) return;
+    const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag = { x: e.clientX, y: e.clientY };
+    if (cam === "chase") { orbitYaw += dx * 0.3; orbitPitch = Math.max(-75, Math.min(30, orbitPitch - dy * 0.25)); }
+    else { headYaw = Math.max(-150, Math.min(150, headYaw - dx * 0.2)); headPitch = Math.max(-60, Math.min(80, headPitch - dy * 0.2)); }
+  });
+  view.addEventListener("pointerup", () => (drag = null));
+  view.addEventListener("wheel", e => { if (cam === "chase") { chaseDist = Math.max(14, Math.min(300, chaseDist * (e.deltaY > 0 ? 1.12 : 0.89))); e.preventDefault(); } }, { passive: false });
+  function seek(v) { t = v; lastT = v; scrub.value = v; }
+  scrub.addEventListener("input", () => seek(parseFloat(scrub.value)));
+  const playBtn = document.getElementById("play");
+  playBtn.addEventListener("click", () => { playing = !playing; playBtn.textContent = playing ? "השהה" : "נגן"; playBtn.setAttribute("aria-pressed", String(playing)); if (!playing) audios.forEach(a => a.pause()); });
+  const group = (attr, fn) => document.querySelectorAll(`[${attr}]`).forEach(b => b.addEventListener("click", () => {
+    document.querySelectorAll(`[${attr}]`).forEach(x => x.setAttribute("aria-pressed", String(x === b))); fn(b.getAttribute(attr));
+  }));
+  group("data-speed", v => { speed = +v; if (speed !== 1) audios.forEach(a => a.pause()); });
+  group("data-cam", v => { cam = v; camera.fov = v === "cockpit" ? 70 : 60; camera.updateProjectionMatrix(); document.getElementById("viewHint").textContent = v === "cockpit" ? "גרירה: הזזת הראש (מבט חופשי)" : "גרירה: סיבוב · גלגלת: מרחק"; });
+  group("data-tod", v => { tod = v; applyTod(); });
+  const soundBtn = document.getElementById("sound");
+  soundBtn.addEventListener("click", () => { soundOn = !soundOn; soundBtn.setAttribute("aria-pressed", String(soundOn)); soundBtn.textContent = soundOn ? "השתק קשר" : "הפעל קול קשר"; if (!soundOn) audios.forEach(a => a.pause()); });
+  document.querySelectorAll(".tab").forEach(tb => tb.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(x => x.setAttribute("aria-selected", String(x === tb)));
+    document.getElementById("pane-flight").hidden = tb.id !== "tab-flight";
+    document.getElementById("pane-menus").hidden = tb.id !== "tab-menus";
+    if (tb.id === "tab-flight") resize();
+  }));
+
+  // facts
+  const S = M.summary;
+  const facts = [["תוצאה", `${S.result} · ציון ${S.score}/100`], ["משך המשימה", fmt(S.time)], ["מרחק", `${S.km} ק"מ`], ["גובה מרבי", `${S.maxAltFt} רגל`],
+    ["עומס מרבי", `${S.maxG} g`], ["דלק שנצרך", `${S.fuel} ק"ג`], ["שקיעה בנגיעה", `${S.sink} מ'/ש'`], ["סטייה מקו האמצע", `${S.cross} מ'`], ["תצורה", "2× Python-5 (תחנות 1, 9)"]];
+  document.getElementById("facts").innerHTML = facts.map(([k, v]) => `<dt>${k}</dt><dd>${v}</dd>`).join("");
+
+  // ---------- render loop ----------
+  function resize() {
+    const w = view.clientWidth, h = view.clientHeight; if (!w || !h) return;
+    renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2); hud.width = w * dpr; hud.height = h * dpr;
+    drawMarks();
+  }
+  window.addEventListener("resize", resize);
+  resize();
+  let prevNow = performance.now(), camPos = null;
+  function frame(now) {
+    const dt = Math.min(0.1, (now - prevNow) / 1000); prevNow = now;
+    if (playing) { t += dt * speed; if (t >= T_END) { t = T_END; playing = false; playBtn.textContent = "נגן"; } scrub.value = t; }
+    const s = sample(t);
+    radioTick(lastT, t); lastT = t;
+    const p = toV(s[I.n], s[I.e], -s[I.d]);
+    ac.root.position.copy(p);
+    ac.root.rotation.set(s[I.pitch] * D2R, -s[I.hdg] * D2R, -s[I.roll] * D2R);
+    ac.gear.visible = s[I.gear] > 0.3; ac.gear.scale.y = Math.max(0.3, s[I.gear]);
+    ac.plume.material.opacity = s[I.ab] * 0.75;
+    ac.root.visible = cam !== "cockpit";
+    if (cam === "chase") {
+      const yaw = (-s[I.hdg] + orbitYaw) * D2R, pit = orbitPitch * D2R;
+      const want = p.clone().add(new THREE.Vector3(Math.sin(yaw) * Math.cos(pit), Math.sin(pit), Math.cos(yaw) * Math.cos(pit)).multiplyScalar(-chaseDist));
+      camPos = camPos ? camPos.lerp(want, 1 - Math.exp(-dt * 8)) : want;
+      if (camPos.distanceTo(want) > 400) camPos.copy(want);
+      camera.position.copy(camPos); camera.up.set(0, 1, 0); camera.lookAt(p);
+    } else {
+      const q = new THREE.Quaternion().setFromEuler(ac.root.rotation);
+      camera.position.copy(p.clone().add(new THREE.Vector3(0, 0.75, -4.4).applyQuaternion(q)));
+      const head = new THREE.Quaternion().setFromEuler(new THREE.Euler(headPitch * D2R, headYaw * D2R, 0, "YXZ"));
+      camera.quaternion.copy(q).multiply(head);
+      camPos = null;
+    }
+    sun.target.position.copy(p);
+    renderer.render(scene, camera);
+    drawHud(s);
+    document.getElementById("phaseTag").textContent = String(s[I.phase]).toUpperCase().replace("_", " ");
+    document.getElementById("tNow").textContent = fmt(t);
+    document.getElementById("tPhase").textContent = `${Math.round(s[I.kcas])} kt · ${Math.round(s[I.altft])} ft`;
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+
+  // ---------- hangar snapshot + menu mock-ups ----------
+  let hangarImg = "";
+  try {
+    const r2 = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+    r2.setSize(960, 600);
+    const hs = new THREE.Scene(); hs.background = new THREE.Color(0x1c1d1f);
+    const floor = new THREE.Mesh(new THREE.PlaneGeometry(80, 80), new THREE.MeshStandardMaterial({ color: 0x2c2d2f, roughness: 0.8 })); floor.rotation.x = -Math.PI / 2; hs.add(floor);
+    const wall = new THREE.Mesh(new THREE.PlaneGeometry(80, 16), new THREE.MeshStandardMaterial({ color: 0x45433f })); wall.position.set(0, 8, -24); hs.add(wall);
+    const m2 = buildAircraft(true); m2.root.position.y = 1.9; m2.root.rotation.y = -0.6; hs.add(m2.root);
+    hs.add(new THREE.HemisphereLight(0xdfe6ee, 0x3a352e, 0.6));
+    [[6, 12, 6], [-8, 11, 4], [0, 10, -10]].forEach(([x, y, z]) => { const l = new THREE.PointLight(0xfff1dd, 0.9, 60); l.position.set(x, y, z); hs.add(l); });
+    const c2 = new THREE.PerspectiveCamera(45, 1.6, 0.5, 500); c2.position.set(-17, 6.5, 13); c2.lookAt(4, 1.8, 0);
+    r2.render(hs, c2); hangarImg = r2.domElement.toDataURL("image/jpeg", 0.85); r2.dispose();
+  } catch (e) { hangarImg = ""; }
+  const SC = DATA.screens, U = SC.strings;
+  const btn = (txt, cls = "") => `<div class="mbtn ${cls}">${txt}</div>`;
+  const badge = st => ({ active: `<span class="badge b-active">${U.status_active}</span>`, ordered: `<span class="badge b-ordered">${U.status_ordered}</span>`,
+    retired: `<span class="badge b-retired">${U.status_retired}</span>`, active_unconfirmed: `<span class="badge b-unconf">${U.status_active_unconfirmed}</span>` }[st] || "");
+  const panel = (title, body, foot, cap) => `<div class="screen" style="background-image:url(${hangarImg})"><div class="mpanel"><h3>${title}</h3><div class="sub">${U.app_title}</div>${body}<div class="mfoot">${foot}</div></div><div class="cap">${cap}</div></div>`;
+  const html = [];
+  html.push(panel(U.app_title, btn(U.menu_new_flight) + btn(U.menu_tutorial) + btn(U.menu_settings) + btn(U.menu_quit) + `<div class="mtxt" style="margin-top:8px">${U.disclaimer}</div>`, "", "תפריט ראשי"));
+  html.push(panel(U.step_aircraft, `<div class="mtxt">${U.hangar_hint}</div>` + SC.aircraft.map(a => btn(`${a.nameEn} ${a.nameHe}${badge(a.serviceStatus)}`, a.id === "f16i" ? "sel" : (a.flyable ? "" : "off"))).join("")
+    + `<div class="mtxt">${SC.f16iNote}</div>`, btn(U.next) + btn(U.back), "בחירת מטוס — רק דגם שמומש זמין לטיסה"));
+  html.push(panel(U.step_loadout, `<div class="mtxt">${U.loadout_note}</div>` + SC.presets.map(p => btn(p.nameHe, p.valid ? (p.id === "f16i_aa_training" ? "sel" : "") : "off") + (p.valid ? "" : p.errors.map(e => `<div class="mbad">${e}</div>`).join(""))).join("")
+    + `<div class="mtxt">לא ניתנים לבחירה כרגע:</div>` + SC.candidates.map(c => `<div class="mtxt">✗ ${c}</div>`).join(""), btn(U.next) + btn(U.back), "בחירת תצורה — חימוש ללא תיעוד חסום"));
+  html.push(panel(U.step_base, `<div class="mtxt">${U.base_layout_note}</div>` + SC.bases.map(b => btn(`${b.nameHe} (${b.icao})${b.inDem ? "" : "  ⚠"}`, b.id === "ramon" ? "sel" : "")).join("")
+    + `<div class="mtxt" style="color:var(--accent)">${U.base_home}</div><div class="mtxt">מסלול: 25L · 07R/25L (3010 m)</div>`, btn(U.next) + btn(U.back), "בחירת בסיס"));
+  html.push(panel(U.step_briefing, `<div style="font-size:15px;font-weight:700">${SC.mission.nameHe}</div><div class="mtxt" style="color:var(--fg)">${SC.mission.briefingHe}</div>`
+    + `<div class="mtxt" style="color:var(--accent)">${U.briefing_callsign}: עפרוני אחת · רמון · ${U.briefing_runway}: 25L</div>` + SC.mission.objectives.map(o => `<div class="mtxt" style="color:var(--fg)">• ${o}</div>`).join(""),
+    btn(U.fly) + btn(U.back), "תדריך"));
+  html.push(panel(U.summary_title, `<div style="font-size:15px;font-weight:700;color:var(--accent)">${SC.mission.nameHe} — ${S.result}</div>`
+    + [[U.summary_score, `${S.score} / 100`], [U.summary_time, fmt(S.time)], [U.summary_distance, `${S.km} km`], [U.summary_max_alt, `${S.maxAltFt} ft`], [U.summary_max_g, `${S.maxG} g`], [U.summary_fuel, `${S.fuel} kg`], [U.summary_touchdown, `${S.sink} m/s · ${S.cross} m`]]
+      .map(([k, v]) => `<div class="mtxt" style="display:flex;justify-content:space-between;color:var(--fg)"><span style="color:var(--dim)">${k}</span><span>${v}</span></div>`).join("")
+    + SC.mission.objectives.map(o => `<div class="mtxt" style="color:var(--fg)">✓ ${o}</div>`).join(""), btn(U.summary_retry) + btn(U.summary_menu), "סיכום טיסה (מספרים מהטיסה שבלשונית הראשונה)"));
+  document.getElementById("screens").innerHTML = html.join("");
+})();
+</script>
