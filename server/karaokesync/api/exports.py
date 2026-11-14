@@ -52,6 +52,26 @@ class ExportRequest(BaseModel):
     preview: bool = False
 
 
+# Workers older than this cannot make a video opening or a preview (their version is
+# what they report in the `workers` table; see worker.runner.WORKER_VERSION).
+MIN_OPENING_WORKER = "2026-11-14.2"
+
+
+def _worker_too_old(sb: SupabaseClient) -> bool:
+    """True when processing computers are online and none of them is new enough.
+    Unknown (no workers table yet, nobody online) is not "too old": the job waits."""
+    from .worker_status import ONLINE_SECONDS, _parse
+
+    try:
+        rows = sb.select("workers", {"select": "version,last_seen,activity"})
+    except SupabaseError:
+        return False
+    now = datetime.now(timezone.utc)
+    online = [w for w in rows if w.get("activity") != "stopped" and w.get("last_seen")
+              and now - _parse(w["last_seen"]) < timedelta(seconds=ONLINE_SECONDS)]
+    return bool(online) and all(str(w.get("version") or "").split(" ")[0] < MIN_OPENING_WORKER for w in online)
+
+
 def _require_lyrics(sb: SupabaseClient, project: dict) -> list[dict]:
     if project["status"] not in ("ready", "expired"):
         raise HTTPException(status.HTTP_409_CONFLICT, detail="not_ready")
@@ -127,6 +147,8 @@ def exports_router() -> APIRouter:
             if not track or track["status"] != "succeeded" or not track.get("output_path"):
                 raise HTTPException(status.HTTP_409_CONFLICT, detail="instrumental_not_ready")
 
+        if (body.preview or (body.opening and body.opening.active)) and _worker_too_old(sb):
+            raise HTTPException(status.HTTP_409_CONFLICT, detail="worker_outdated")
         existing = sb.select("export_jobs", {"project_id": f"eq.{project_id}", "status": f"in.{ACTIVE}", "select": "*"})
         if existing:
             return existing[0]  # idempotent: one active render per project

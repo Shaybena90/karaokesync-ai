@@ -194,3 +194,34 @@ def test_the_worker_makes_a_short_small_preview(fake_sb, ready_project, tmp_path
     job["options"].pop("preview")
     with pytest.raises(Exception):
         run_export(job, fake_sb, settings, lambda p: None)
+
+
+def test_an_old_worker_is_reported_before_queueing(client, fake_sb, ready_project):  # noqa: F811
+    from datetime import datetime, timezone
+
+    now = datetime.now(timezone.utc).isoformat()
+    fake_sb.tables["workers"] = [{"id": "pc", "version": "2026-11-14 (remote control)", "last_seen": now, "activity": "idle"}]
+    pid = ready_project["id"]
+    r = client.post(f"/projects/{pid}/exports", json={"preview": True}, headers=AUTH)
+    assert r.status_code == 409 and r.json()["detail"] == "worker_outdated"
+    r = client.post(f"/projects/{pid}/exports", json={"opening": {"intro": True}}, headers=AUTH)
+    assert r.json()["detail"] == "worker_outdated"
+    # a plain export still works with the old worker
+    assert client.post(f"/projects/{pid}/exports", json={}, headers=AUTH).status_code == 201
+    fake_sb.tables["export_jobs"].clear()
+    # once an up-to-date worker is online, previews go through
+    from karaokesync.worker.runner import WORKER_VERSION
+
+    fake_sb.tables["workers"].append({"id": "pc2", "version": WORKER_VERSION, "last_seen": now, "activity": "idle"})
+    assert client.post(f"/projects/{pid}/exports", json={"preview": True}, headers=AUTH).status_code == 201
+
+
+def test_every_worker_error_has_a_message():
+    import re as _re
+
+    codes = set()
+    for f in (ROOT / "server" / "karaokesync").rglob("*.py"):
+        codes |= set(_re.findall(r'PipelineError\("([a-z_]+)"', f.read_text(encoding="utf-8")))
+    he = (ROOT / "web" / "src" / "i18n" / "he.ts").read_text(encoding="utf-8")
+    missing = sorted(c for c in codes if f"'error.{c}'" not in he)
+    assert not missing, f"no Hebrew message for: {missing}"

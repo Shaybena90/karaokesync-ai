@@ -32,7 +32,9 @@ log = logging.getLogger("karaokesync.worker")
 
 CLEANUP_INTERVAL_SECONDS = 3600
 # Shown when the worker starts, to tell an up-to-date worker from an old copy.
-WORKER_VERSION = "2026-11-14 (remote control)"
+# The part before the space is compared by the API: features that need a newer
+# worker (the video opening, previews) check it before queueing a job.
+WORKER_VERSION = "2026-11-14.2 (opening + preview)"
 
 
 class Heartbeat:
