@@ -209,3 +209,20 @@ test('a video without opening and title', async ({ page, backend }) => {
   await expect.poll(() => backend.exportJobs.length).toBe(1)
   expect((backend.exportJobs[0].options as { opening: unknown }).opening).toBeNull()
 })
+
+test('preview the whole video (opening, transitions, title) before making it', async ({ page, backend }) => {
+  await page.getByTestId('opening').getByRole('radio', { name: /פיקסלים/ }).click()
+  await page.getByRole('button', { name: /תצוגה מקדימה/ }).click()
+  await expect.poll(() => backend.exportJobs[0]?.options).toMatchObject({ preview: true, resolution: 480, opening: { transition: 'pixelize' } })
+  // when it is ready it plays right here, nothing is downloaded
+  const player = page.getByTestId('video-preview').locator('video')
+  await expect(player).toHaveAttribute('src', /__video/, { timeout: 15000 })
+  expect(backend.apiCalls.some((c) => c.startsWith('VIDEO download=') && c !== 'VIDEO download=null')).toBe(false) // streamed, not saved
+  await expect(page.getByText('👁 תצוגה מקדימה ·')).toBeVisible()
+  await expect(page.getByRole('button', { name: /הורדת הסרטון/ })).toHaveCount(0)
+  // then the real one
+  await page.getByRole('button', { name: /יצירת סרטון/ }).click()
+  await expect.poll(() => backend.exportJobs.length).toBe(2)
+  expect(backend.exportJobs[0].options).not.toHaveProperty('preview')
+  await expect(page.getByRole('button', { name: /הורדת הסרטון/ })).toBeVisible({ timeout: 15000 })
+})

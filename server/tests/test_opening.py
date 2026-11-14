@@ -139,3 +139,58 @@ def test_the_api_keeps_the_choice(client, ready_project):  # noqa: F811
     assert job["options"]["opening"] == {"intro": True, "transition": "pixelize", "title": {"song": "שיר", "artist": "זמר"}}
     bad = {"opening": {"intro": True, "transition": "spin"}}
     assert client.post(f"/projects/{pid}/exports", json=bad, headers=AUTH).status_code == 422
+
+
+def test_previews_are_short_jobs_with_their_own_allowance(client, fake_sb, ready_project, monkeypatch):  # noqa: F811
+    from karaokesync.config import get_settings
+
+    pid = ready_project["id"]
+    monkeypatch.setattr(get_settings(), "max_exports_per_day", 1)
+    monkeypatch.setattr(get_settings(), "max_previews_per_day", 2)
+    body = {"aspect": "9:16", "resolution": 1080, "preview": True, "opening": {"intro": True}}
+    job = client.post(f"/projects/{pid}/exports", json=body, headers=AUTH).json()
+    assert job["options"]["preview"] is True and job["options"]["resolution"] == 480
+    fake_sb.update("export_jobs", {"id": f"eq.{job['id']}"}, {"status": "succeeded"})
+    # a preview does not use up the day's real export
+    real = client.post(f"/projects/{pid}/exports", json={"aspect": "9:16"}, headers=AUTH)
+    assert real.status_code == 201 and "preview" not in real.json()["options"]
+    fake_sb.update("export_jobs", {"id": f"eq.{real.json()['id']}"}, {"status": "succeeded"})
+    assert client.post(f"/projects/{pid}/exports", json={}, headers=AUTH).json()["detail"] == "daily_export_limit"
+    second = client.post(f"/projects/{pid}/exports", json=body, headers=AUTH).json()
+    fake_sb.update("export_jobs", {"id": f"eq.{second['id']}"}, {"status": "succeeded"})
+    assert client.post(f"/projects/{pid}/exports", json=body, headers=AUTH).json()["detail"] == "daily_preview_limit"
+
+
+@needs_ffmpeg
+def test_the_worker_makes_a_short_small_preview(fake_sb, ready_project, tmp_path, monkeypatch):  # noqa: F811
+    import json
+
+    from karaokesync.config import get_settings
+    from karaokesync.worker.export_pipeline import run_export
+
+    from .conftest import make_audio
+
+    clips = tmp_path / "intro"
+    _fake_clips(clips)
+    monkeypatch.setattr(op, "INTRO_DIR", clips)
+    monkeypatch.setattr(op, "PREVIEW_SONG_MS", 4000)
+    monkeypatch.setattr("karaokesync.worker.export_pipeline.PREVIEW_SONG_MS", 4000)
+    monkeypatch.setattr("karaokesync.worker.export_pipeline.ensure_font", lambda family: SYSTEM_FONT)
+    settings = get_settings()
+    monkeypatch.setattr(settings, "worker_tmp_dir", str(tmp_path / "work"))
+    audio = fake_sb.tables["audio_files"][0]
+    audio["duration_ms"] = 9000
+    fake_sb.put_object("audio", audio["storage_path"], make_audio(tmp_path, "mp3", 9))
+    job = fake_sb.insert("export_jobs", {"project_id": ready_project["id"], "user_id": ready_project["user_id"], "format": "mp4",
+                                         "options": {"aspect": "16:9", "resolution": 480, "preview": True,
+                                                     "opening": {"intro": True, "transition": "fade", "title": None}}})
+    path = run_export(job, fake_sb, settings, lambda p: None)
+    assert path.endswith(f"{job['id']}-preview.mp4")
+    info = json.loads(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "stream=height:format=duration", "-of", "json",
+                                      str(fake_sb.objects["exports"][path])], capture_output=True, text=True).stdout)
+    assert info["streams"][0]["height"] == 480
+    assert abs(float(info["format"]["duration"]) - (7.0 + 4.0)) < 0.2   # the intro (8 s - 1 s blend) + 4 s of the song
+    # a real export never accepts 480p
+    job["options"].pop("preview")
+    with pytest.raises(Exception):
+        run_export(job, fake_sb, settings, lambda p: None)

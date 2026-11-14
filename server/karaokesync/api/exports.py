@@ -19,7 +19,7 @@ from pydantic import BaseModel
 from ..config import Settings
 from ..exports.ass import build_ass
 from ..exports.measure import measurer_for
-from ..exports.opening import OpeningOptions
+from ..exports.opening import PREVIEW_RESOLUTION, OpeningOptions
 from ..exports.text_formats import to_lrc, to_srt
 from ..exports.video import RESOLUTIONS, canvas_for
 from ..fonts import ensure_font
@@ -48,6 +48,8 @@ class ExportRequest(BaseModel):
     audio: Literal["original", "instrumental"] = "original"
     # Opening: the KaraokeSync intro, a title card (song + singer) and the transition into the karaoke
     opening: OpeningOptions | None = None
+    # A quick look before the real export: the opening and the song's first seconds, in 480p.
+    preview: bool = False
 
 
 def _require_lyrics(sb: SupabaseClient, project: dict) -> list[dict]:
@@ -129,8 +131,11 @@ def exports_router() -> APIRouter:
         if existing:
             return existing[0]  # idempotent: one active render per project
         since = iso(datetime.now(timezone.utc) - timedelta(days=1))
-        if sb.count("export_jobs", {"user_id": f"eq.{user.id}", "created_at": f"gte.{since}"}) >= settings.max_exports_per_day:
-            raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, detail="daily_export_limit")
+        # Previews have their own (larger) daily allowance, so trying things out does not use up exports.
+        kind = {"options->>preview": "eq.true"} if body.preview else {"options->>preview": "is.null"}
+        limit = settings.max_previews_per_day if body.preview else settings.max_exports_per_day
+        if sb.count("export_jobs", {"user_id": f"eq.{user.id}", "created_at": f"gte.{since}", **kind}) >= limit:
+            raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, detail="daily_preview_limit" if body.preview else "daily_export_limit")
         if sb.count("export_jobs", {"user_id": f"eq.{user.id}", "status": f"in.{ACTIVE}"}) >= MAX_ACTIVE_EXPORTS_PER_USER:
             raise HTTPException(status.HTTP_429_TOO_MANY_REQUESTS, detail="too_many_active_exports")
 
@@ -139,6 +144,7 @@ def exports_router() -> APIRouter:
             "resolution": body.resolution,
             "audio": body.audio,
             "opening": body.opening.model_dump() if body.opening and body.opening.active else None,
+            **({"preview": True, "resolution": PREVIEW_RESOLUTION} if body.preview else {}),
             # Snapshot: later style edits do not change a render that is already queued.
             "style": parse_style(project.get("style")).model_dump(),
         }

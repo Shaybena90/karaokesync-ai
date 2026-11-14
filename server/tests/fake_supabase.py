@@ -14,7 +14,12 @@ def _matches(row: dict, key: str, expr: str) -> bool:
     op, _, value = expr.partition(".")
     if op == "not":
         return not _matches(row, key, value)
-    current = row.get(key)
+    if "->>" in key:  # a field inside a JSON column, as text
+        column, _, field = key.partition("->>")
+        inner = (row.get(column) or {}).get(field)
+        current = None if inner is None else str(inner).lower() if isinstance(inner, bool) else inner
+    else:
+        current = row.get(key)
     if op == "eq":
         return str(current) == value
     if op == "neq":

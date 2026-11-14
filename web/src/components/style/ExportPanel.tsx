@@ -33,6 +33,9 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
   const [jobs, setJobs] = useState<ExportJob[]>([])
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  /** The preview video being watched: a short-lived link to it. */
+  const [watching, setWatching] = useState<{ id: string; url: string } | null>(null)
+  const [waitingFor, setWaitingFor] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     if (!supabase) return
@@ -76,6 +79,35 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
       setBusy(null)
     }
   }
+
+  const watchPreview = useCallback(async (job: ExportJob) => {
+    if (!supabase || !job.output_path) return
+    const { data } = await supabase.storage.from('exports').createSignedUrl(job.output_path, 600)
+    if (data?.signedUrl) setWatching({ id: job.id, url: data.signedUrl })
+  }, [])
+
+  // The preview the user just asked for starts playing by itself when it is ready.
+  useEffect(() => {
+    const job = waitingFor ? jobs.find((j) => j.id === waitingFor) : undefined
+    if (job?.status === 'succeeded' && job.output_path) {
+      setWaitingFor(null)
+      void watchPreview(job)
+    } else if (job && job.status !== 'queued' && job.status !== 'running') {
+      setWaitingFor(null)
+    }
+  }, [jobs, waitingFor, watchPreview])
+
+  const makeVideo = (preview: boolean) =>
+    run(preview ? 'preview' : 'mp4', async () => {
+      await beforeExport()
+      const job = await api.createVideoExport(projectId, aspect, Number(resolution), noVocals && instrumental.ready ? 'instrumental' : 'original',
+        openingRequest(opening), preview)
+      if (preview) {
+        setWatching(null)
+        setWaitingFor(job.id)
+      }
+      await load()
+    })
 
   const downloadVideo = async (job: ExportJob) => {
     if (!supabase || !job.output_path) return
@@ -134,18 +166,40 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
         </label>
         {!instrumental.ready && canRenderVideo && <p className="-mt-2 text-xs text-white/40">{t('export.noVocalsHint')}</p>}
         <OpeningPanel choice={opening} onChange={setOpening} aspect={aspect} />
-        <Button
-          className="w-full"
-          disabled={!canRenderVideo || busy !== null || active || openingProblem(opening) !== null}
-          onClick={() => run('mp4', async () => {
-            await beforeExport()
-            await api.createVideoExport(projectId, aspect, Number(resolution), noVocals && instrumental.ready ? 'instrumental' : 'original',
-              openingRequest(opening))
-            await load()
-          })}
-        >
-          {busy === 'mp4' ? <Spinner className="size-4" /> : '🎬'} {t('export.createVideo')}
-        </Button>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Button
+            variant="ghost"
+            disabled={!canRenderVideo || busy !== null || active || openingProblem(opening) !== null}
+            onClick={() => makeVideo(true)}
+          >
+            {busy === 'preview' ? <Spinner className="size-4" /> : '👁'} {t('export.preview')}
+          </Button>
+          <Button
+            disabled={!canRenderVideo || busy !== null || active || openingProblem(opening) !== null}
+            onClick={() => makeVideo(false)}
+          >
+            {busy === 'mp4' ? <Spinner className="size-4" /> : '🎬'} {t('export.createVideo')}
+          </Button>
+        </div>
+        <p className="text-xs text-white/50">{t('export.previewHint')}</p>
+        {watching && (
+          <div className="space-y-2 rounded-2xl bg-black/30 p-2" data-testid="video-preview">
+            <video
+              key={watching.url}
+              src={watching.url}
+              controls
+              autoPlay
+              playsInline
+              className={`mx-auto w-full rounded-xl ${aspect === '9:16' ? 'max-h-[70vh] max-w-xs' : 'max-h-[60vh]'}`}
+            />
+            <div className="flex items-center justify-between gap-2">
+              <p className="text-xs text-white/60">{t('export.previewWatching')}</p>
+              <button type="button" onClick={() => setWatching(null)} className="min-h-9 rounded-lg px-3 text-xs hover:bg-white/10">
+                ✕ {t('export.opening.hidePreview')}
+              </button>
+            </div>
+          </div>
+        )}
         {!canRenderVideo && <p className="text-xs text-white/50">{t('project.audioGone')}</p>}
         <p className="text-xs text-white/50">{t('export.videoHint')}</p>
       </section>
@@ -158,7 +212,8 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
             <li key={job.id} className="rounded-2xl bg-white/5 p-3">
               <div className="flex items-center justify-between gap-2 text-sm">
                 <span>
-                  🎬 <span dir="ltr">{job.options.aspect} · {job.options.resolution}p</span>
+                  {job.options.preview ? `👁 ${t('export.previewLabel')} · ` : '🎬 '}
+                  <span dir="ltr">{job.options.aspect} · {job.options.resolution}p</span>
                   {job.options.audio === 'instrumental' && ` · 🎵 ${t('vocals.off')}`}
                 </span>
                 <span className="text-xs text-white/50">{new Date(job.created_at).toLocaleString(locale)}</span>
@@ -173,7 +228,12 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
               )}
               {job.status === 'failed' && <p className="mt-2 text-xs text-red-200">{t(errorKey(job.error_code))}</p>}
               <div className="mt-2 flex gap-2">
-                {job.status === 'succeeded' && job.output_path && (
+                {job.status === 'succeeded' && job.output_path && job.options.preview && (
+                  <Button variant="ghost" className="min-h-10 flex-1 text-sm" onClick={() => void watchPreview(job)}>
+                    ▶ {t('export.watchPreview')}
+                  </Button>
+                )}
+                {job.status === 'succeeded' && job.output_path && !job.options.preview && (
                   <Button className="min-h-10 flex-1 text-sm" onClick={() => downloadVideo(job)}>
                     ⬇ {t('export.download')}
                   </Button>

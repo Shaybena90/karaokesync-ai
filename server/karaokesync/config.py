@@ -72,6 +72,7 @@ class Settings(BaseSettings):
     whisper_compute_type: str = "auto"
     fonts_dir: str = str(ROOT_DIR / "server" / "fonts")
     max_exports_per_day: int = 10
+    max_previews_per_day: int = 40  # short low-quality preview videos (see PREVIEW_* in exports/opening.py)
     # Supabase's free plan stores files of up to 50 MB: videos are encoded to fit.
     # Raise it after raising the storage upload limit (Supabase Pro).
     max_export_mb: int = 48

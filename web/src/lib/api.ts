@@ -136,10 +136,11 @@ export const api = {
     resolution: number,
     audio: 'original' | 'instrumental' = 'original',
     opening: { intro: boolean; transition: string; title: { song: string; artist: string } | null } | null = null,
+    preview = false,
   ) =>
     request<ExportJob>(`/projects/${projectId}/exports`, {
       method: 'POST',
-      body: JSON.stringify({ format: 'mp4', aspect, resolution, audio, opening }),
+      body: JSON.stringify({ format: 'mp4', aspect, resolution, audio, opening, preview }),
     }),
   requestInstrumental: (projectId: string) => request<InstrumentalJob>(`/projects/${projectId}/instrumental`, { method: 'POST' }),
   cancelInstrumental: (projectId: string) => request<void>(`/projects/${projectId}/instrumental`, { method: 'DELETE' }),

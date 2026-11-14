@@ -15,7 +15,7 @@ from ..animated_backgrounds import clip_for
 from ..config import Settings
 from ..exports.ass import build_ass
 from ..exports.measure import measurer_for
-from ..exports.opening import ARTIST_FONT, TITLE_FONT, OpeningOptions, opening_files, title_ass
+from ..exports.opening import ARTIST_FONT, PREVIEW_RESOLUTION, PREVIEW_SONG_MS, TITLE_FONT, OpeningOptions, opening_files, title_ass
 from ..exports.video import ASPECTS, RESOLUTIONS, BackgroundLayer, canvas_for, render_mp4
 from ..fonts import ensure_font
 from ..lyrics_data import load_lyrics
@@ -33,7 +33,8 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
     options = job.get("options") or {}
     aspect = options.get("aspect", "16:9")
     resolution = int(options.get("resolution", 1080))
-    if aspect not in ASPECTS or resolution not in RESOLUTIONS:
+    preview = options.get("preview") is True
+    if aspect not in ASPECTS or resolution not in (*RESOLUTIONS, *((PREVIEW_RESOLUTION,) if preview else ())):
         raise PipelineError("invalid_export_options", retryable=False)
     style = parse_style(options.get("style"))
     try:
@@ -83,6 +84,8 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
         ass_text = build_ass(lines, style, project.get("language"), canvas, measurer_for(str(font)), title=project["title"])
 
         duration_ms = int(audio.get("duration_ms") or (max(l["end_ms"] for l in lines) + 3000))
+        if preview:
+            duration_ms = min(duration_ms, PREVIEW_SONG_MS)
         report(4)
         title_subs, extra_fonts = None, []
         if opening.active:
@@ -112,7 +115,7 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
         )
 
         report(95)
-        path = f"{project['user_id']}/{project['id']}/{job['id']}.mp4"
+        path = f"{project['user_id']}/{project['id']}/{job['id']}{'-preview' if preview else ''}.mp4"
         size_mb = out.stat().st_size / 1024 / 1024
         log.info("export job=%s uploading %.1f MB", job["id"], size_mb)
         try:

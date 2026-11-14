@@ -299,11 +299,15 @@ export class MockBackend {
     const exportsMatch = /^\/projects\/([^/]+)\/exports$/.exec(p)
     if (exportsMatch && method === 'POST') {
       const body = JSON.parse(req.postData() ?? '{}')
-      const job: Row = { id: 'e1', project_id: exportsMatch[1], format: 'mp4', options: { aspect: body.aspect, resolution: body.resolution, audio: body.audio, opening: body.opening ?? null },
+      const id = `e${this.exportJobs.length + 1}`
+      const job: Row = { id, project_id: exportsMatch[1], format: 'mp4',
+        options: { aspect: body.aspect, resolution: body.preview ? 480 : body.resolution, audio: body.audio, opening: body.opening ?? null,
+          ...(body.preview ? { preview: true } : {}) },
         status: 'queued', progress: 0, output_path: null, error_code: null, created_at: new Date().toISOString(), finished_at: null }
       this.exportJobs.unshift(job)
       setTimeout(() => Object.assign(job, { status: 'running', progress: 42 }), 1000)
-      setTimeout(() => Object.assign(job, { status: 'succeeded', progress: 100, output_path: `${UID}/${PID}/e1.mp4` }), 3000)
+      setTimeout(() => Object.assign(job, { status: 'succeeded', progress: 100,
+        output_path: `${UID}/${PID}/${id}${body.preview ? '-preview' : ''}.mp4` }), 3000)
       return this.json(route, job, 201)
     }
     if (p === '/lyrics-sources/normalize') {

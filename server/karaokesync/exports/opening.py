@@ -30,6 +30,9 @@ INTRO_MS = 8000
 TITLE_MS = 5000
 TRANSITION_MS = 1000
 CUT_MS = 34  # "no transition": a one-frame blend, i.e. a cut
+# A preview video: the opening + the start of the song, small and quick to make.
+PREVIEW_SONG_MS = 20_000
+PREVIEW_RESOLUTION = 480
 
 # Our name -> FFmpeg xfade transition (all exist since FFmpeg 5).
 TRANSITIONS: dict[str, str] = {
