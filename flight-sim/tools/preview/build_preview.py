@@ -41,7 +41,8 @@ screens = dict(strings=strings, aircraft=variants, presets=presets, candidates=c
                bases=[dict(id=b["id"], nameHe=b["nameHe"], icao=b["icao"], inDem=inDem(b)) for b in bases],
                mission=dict(nameHe=mission["nameHe"], briefingHe=mission["briefingHe"], objectives=[o["textHe"] for o in mission["objectives"]]),
                f16iNote=f16i["statusNote"] + " · נכסים: מודל זמני, קוקפיט זמני, צביעה חסרה")
-data = dict(frames=J(os.path.join(src, "frames.json")), radio=radio, meta=J(os.path.join(src, "meta.json")),
+livery = J(os.path.join(DATA, "Catalog", "liveries", "f16i_iaf_desert.json"))
+data = dict(livery=livery, frames=J(os.path.join(src, "frames.json")), radio=radio, meta=J(os.path.join(src, "meta.json")),
             terrain=base64.b64encode(open(os.path.join(src, "terrain.bin"), "rb").read()).decode(), audio=audio, screens=screens)
 tpl = open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "template.html"), encoding="utf-8").read()
 html = tpl.replace("/*__DATA__*/null", json.dumps(data, ensure_ascii=False, separators=(",", ":")))

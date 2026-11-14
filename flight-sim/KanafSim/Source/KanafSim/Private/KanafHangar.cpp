@@ -71,7 +71,7 @@ void AKanafHangarPawn::BuildScene(const UKanafGameSubsystem* Data)
 	const kanaf::AircraftVariant* V = C.variant(TCHAR_TO_UTF8(*Data->Selection.AircraftId));
 	if (V && V->assets.count("exteriorModel") && V->assets.at("exteriorModel").status != "missing")
 	{
-		KanafModel::BuildF16Placeholder(this, ModelRoot, C, Stations, Parts);
+		KanafModel::BuildF16Placeholder(this, ModelRoot, C, Stations, Parts, C.liveryFor(V->id));
 		KanafModel::Animate(Parts, 0, 0, 0, 0, 0, 1, 0.0, 0);
 	}
 }

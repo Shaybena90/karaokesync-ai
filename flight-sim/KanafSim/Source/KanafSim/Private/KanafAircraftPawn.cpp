@@ -73,7 +73,7 @@ bool AKanafAircraftPawn::InitFlight(UKanafGameSubsystem* Sub, FString& OutError)
 	Rad.init(&Sub->Phrasebook(), Ctx, Sess.mission->type == "takeoff_landing" || Sess.mission->type == "free_flight");
 	Rad.setAutoTune(Set->bRadioAutoTune);
 
-	KanafModel::BuildF16Placeholder(this, ModelRoot, Sub->Catalog(), Sess.stations, Parts);
+	KanafModel::BuildF16Placeholder(this, ModelRoot, Sub->Catalog(), Sess.stations, Parts, Sub->Catalog().liveryFor(Sess.variant->id));
 	CockpitCam->SetRelativeLocation(BodyToLocal(Sess.fm.profile().eyePoint));
 	// Simple cockpit frame (game representation, not a reconstruction of the F-16I panel)
 	const FLinearColor Panel(0.04f, 0.045f, 0.05f);

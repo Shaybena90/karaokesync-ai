@@ -71,6 +71,20 @@ TEST(catalog_loads_and_validates) {
     for (auto& b : c.bases) CHECK(!b.runways.empty());
 }
 
+TEST(livery_markings_loaded) {
+    const LiveryDef* L = catalog().liveryFor("f16i");
+    CHECK(L != nullptr);
+    if (!L) return;
+    CHECK(L->roundels.size() == 6);                 // top/bottom of each wing + both fuselage sides
+    CHECK(!L->tailNumber.empty());
+    CHECK(L->squadronBadgeStatus == "missing");     // not reproduced on purpose
+    CHECK(L->color("sand") && L->color("sand")->fs == "FS 33531");
+    CHECK(L->color("tan") && L->color("tan")->fs == "FS 30219");
+    CHECK(L->color("sky") && L->color("sky")->fs == "FS 34424");
+    for (auto& p : L->wingPatches) for (auto& uv : p.uv) CHECK(uv.first >= 0 && uv.first <= 1 && uv.second >= 0 && uv.second <= 1);
+    CHECK(catalog().variant("f16i")->assets.at("livery").status == "placeholder");
+}
+
 TEST(loadout_blocks_unsupported) {
     Catalog& c = catalog();
     LoadoutValidator lv(c);

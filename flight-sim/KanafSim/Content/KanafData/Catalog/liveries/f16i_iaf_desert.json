@@ -1,0 +1,53 @@
+{
+  "schemaVersion": 1,
+  "id": "f16i_iaf_desert",
+  "variant": "f16i",
+  "nameHe": "צבע מדבר תלת־גוני — חיל האוויר",
+  "status": "placeholder",
+  "checkedDate": "2026-11-14",
+  "notes": "Colours, insignia design and tail-number style follow public sources (see 'sources'). The camouflage PATTERN layout and the exact insignia positions on the F-16I are a game approximation: the per-airframe pattern drawings (e.g. Isradecal IAF-88 booklet) were not available in this session. Squadron insignia are intentionally NOT reproduced.",
+  "sources": ["src_largescaleplanes_f16i", "src_isradecal_88", "src_cybermodeler_iaf_colors", "src_crwflags_iaf_roundel", "src_airhistory_f16i"],
+  "colors": {
+    "sand":  {"fs": "FS 33531", "srgb": "#C9B38B", "s": "fs_to_srgb_approx", "role": "upper surfaces, base"},
+    "tan":   {"fs": "FS 30219", "srgb": "#A27A55", "s": "fs_to_srgb_approx", "role": "upper surfaces, patches"},
+    "sky":   {"fs": "FS 34424", "srgb": "#A3AE97", "s": "fs_to_srgb_approx", "role": "upper surfaces, patches (described as 'Sky' or 'green' in sources)"},
+    "under": {"fs": "", "srgb": "#B7BBBC", "s": "game_estimate", "role": "under surfaces (light grey) - NOT verified"},
+    "roundelBlue":  {"srgb": "#0038B8", "s": "game_estimate", "role": "Star of David (flag-blue approximation)"},
+    "roundelWhite": {"srgb": "#F4F4F2", "s": "reference", "role": "roundel disc"},
+    "tailNumber":   {"srgb": "#141414", "s": "game_estimate", "role": "serial digits"}
+  },
+  "fuselage": {"main": "sand", "spine": "tan", "cft": "sky", "nose": "sky", "intake": "under", "fin": "sand"},
+  "wingPatches": [
+    {"tone": "tan", "uv": [[0.00, 0.05], [0.42, 0.00], [0.55, 0.45], [0.20, 0.62], [0.00, 0.55]]},
+    {"tone": "sky", "uv": [[0.35, 0.55], [0.70, 0.35], [0.95, 0.60], [0.80, 1.00], [0.40, 1.00]]},
+    {"tone": "tan", "uv": [[0.72, 0.00], [1.00, 0.00], [1.00, 0.40], [0.82, 0.30]]}
+  ],
+  "stabPatches": [
+    {"tone": "sky", "uv": [[0.00, 0.40], [0.55, 0.20], [1.00, 0.55], [0.60, 1.00], [0.00, 1.00]]}
+  ],
+  "finPatches": [
+    {"tone": "tan", "uv": [[0.00, 0.00], [0.60, 0.00], [0.45, 0.45], [0.00, 0.60]]},
+    {"tone": "sky", "uv": [[0.40, 0.55], [1.00, 0.35], [1.00, 1.00], [0.55, 1.00]]}
+  ],
+  "roundel": {
+    "design": "blue Star of David on a white disc; the star does not reach the disc edge",
+    "starToDisc": 0.82,
+    "placementSource": "IAF practice per sources: six positions (top and bottom of each wing, both fuselage sides). Exact F-16I positions/diameters are approximate.",
+    "positions": [
+      {"id": "left_wing_top",     "surface": "wing_top",    "side": -1, "u": 0.62, "v": 0.45, "diameterM": 0.95},
+      {"id": "right_wing_top",    "surface": "wing_top",    "side":  1, "u": 0.62, "v": 0.45, "diameterM": 0.95},
+      {"id": "left_wing_bottom",  "surface": "wing_bottom", "side": -1, "u": 0.62, "v": 0.45, "diameterM": 0.95},
+      {"id": "right_wing_bottom", "surface": "wing_bottom", "side":  1, "u": 0.62, "v": 0.45, "diameterM": 0.95},
+      {"id": "fuselage_left",     "surface": "fuselage",    "side": -1, "bodyM": [-3.2, 0.0, 0.05], "diameterM": 0.75},
+      {"id": "fuselage_right",    "surface": "fuselage",    "side":  1, "bodyM": [-3.2, 0.0, 0.05], "diameterM": 0.75}
+    ]
+  },
+  "tailNumber": {
+    "text": "403",
+    "note": "Serial seen on an F-16I in a public photo listing (airhistory.net). The squadron of this airframe is not verified; the number is configurable.",
+    "heightM": 0.5,
+    "finU": 0.55, "finV": 0.62,
+    "bothSides": true
+  },
+  "squadronBadge": {"status": "missing", "note": "Squadron insignia are not reproduced: designs were not verified in public sources reviewed and may be protected artwork. Slot kept for a licensed asset."}
+}

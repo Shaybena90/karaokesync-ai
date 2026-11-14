@@ -40,6 +40,13 @@ void UKanafGameSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 		std::string S;
 		if (LoadBytes(FString(TEXT("Catalog/flight_profiles/")) + P, S)) Files["flight_profiles/" + ToStd(P)] = S;
 	}
+	TArray<FString> Liveries;
+	IFileManager::Get().FindFiles(Liveries, *FPaths::Combine(DataDir(), TEXT("Catalog/liveries/*.json")), true, false);
+	for (const FString& Lv : Liveries)
+	{
+		std::string S;
+		if (LoadBytes(FString(TEXT("Catalog/liveries/")) + Lv, S)) Files["liveries/" + ToStd(Lv)] = S;
+	}
 	bCatalogOk = Cat.loadFromStrings(Files);
 	for (const std::string& E : Cat.errors()) Errors.Add(ToF(E));
 	for (const std::string& W : Cat.warnings()) UE_LOG(LogKanaf, Warning, TEXT("Catalog: %s"), *ToF(W));

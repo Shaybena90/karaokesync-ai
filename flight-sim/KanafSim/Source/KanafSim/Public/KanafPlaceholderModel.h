@@ -24,7 +24,8 @@ struct FKanafAircraftParts
 namespace KanafModel
 {
 	// Builds the model under Parent. Station positions come from compatibility.json.
-	void BuildF16Placeholder(AActor* Owner, USceneComponent* Parent, const kanaf::Catalog& Cat, const std::map<std::string, std::string>& Stations, FKanafAircraftParts& Out);
+	// Livery (may be null): colours, camouflage patches, national insignia and tail number.
+	void BuildF16Placeholder(AActor* Owner, USceneComponent* Parent, const kanaf::Catalog& Cat, const std::map<std::string, std::string>& Stations, FKanafAircraftParts& Out, const kanaf::LiveryDef* Livery = nullptr);
 	// Animate control surfaces/gear/canopy. Angles in radians, gear 0 (up) .. 1 (down).
 	void Animate(FKanafAircraftParts& P, double Elevator, double Aileron, double Rudder, double Flaps, double Speedbrake, double Gear, double Canopy, double AbLevel);
 	UStaticMeshComponent* AddShape(AActor* Owner, USceneComponent* Parent, const TCHAR* Shape, const FVector& LocCm, const FRotator& Rot, const FVector& Scale, const FLinearColor& Color);

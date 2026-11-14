@@ -68,6 +68,26 @@ struct MissionDef {
 };
 struct CallsignDef { std::string id, he, pron; };
 
+// Livery (markings & camouflage). Colours are sRGB hex; positions in body frame or in
+// normalised surface coordinates (u = root->tip / bottom->top, v = leading->trailing edge).
+struct LiveryColor { std::string fs, srgb, status; float r = 0, g = 0, b = 0; };
+struct LiveryPatch { std::string tone; std::vector<std::pair<double, double>> uv; };
+struct RoundelPos { std::string id, surface; int side = 1; double u = 0, v = 0, diameterM = 0.9; Vec3 bodyM; };
+struct LiveryDef {
+    std::string id, variantId, nameHe, status;
+    std::vector<std::string> sources;
+    std::map<std::string, LiveryColor> colors;
+    std::map<std::string, std::string> fuselage;  // part -> tone
+    std::vector<LiveryPatch> wingPatches, stabPatches, finPatches;
+    double starToDisc = 0.82;
+    std::vector<RoundelPos> roundels;
+    std::string tailNumber;
+    double tailHeightM = 0.5, finU = 0.55, finV = 0.6;
+    bool tailBothSides = true;
+    std::string squadronBadgeStatus;
+    const LiveryColor* color(const std::string& tone) const { auto it = colors.find(tone); return it == colors.end() ? nullptr : &it->second; }
+};
+
 struct SourceDef { std::string id, title, publisher, url, accessed, accessMethod, reliability; };
 
 class Catalog {
@@ -91,6 +111,8 @@ public:
     std::vector<CallsignDef> callsigns;
     std::vector<SourceDef> sources;
     std::map<std::string, JsonValue> flightProfiles;  // id -> raw JSON
+    std::map<std::string, LiveryDef> liveries;         // id -> livery
+    const LiveryDef* liveryFor(const std::string& variantId) const;
 
     const AircraftVariant* variant(const std::string& id) const;
     const WeaponDef* weapon(const std::string& id) const;
@@ -111,6 +133,7 @@ private:
     void parseBases(const JsonValue& j);
     void parseMissions(const JsonValue& j);
     void parseSources(const JsonValue& j);
+    void parseLivery(const JsonValue& j);
     void crossValidate();
     std::vector<std::string> errors_, warnings_;
 };

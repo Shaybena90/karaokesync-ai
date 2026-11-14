@@ -86,7 +86,7 @@ button.b:hover { border-color: #3a4a56; }
 <div class="wrap">
   <header>
     <h1>כנף <span>F-16I סופה</span> · רמון</h1>
-    <div class="note">תצוגה מקדימה בדפדפן (Three.js), לא רינדור Unreal. הטיסה, השטח, המסלולים והקשר מגיעים כמות שהם מליבת הסימולציה האמיתית; המודל והקוקפיט זמניים, כמו במשחק.</div>
+    <div class="note">תצוגה מקדימה בדפדפן (Three.js), לא רינדור Unreal. הטיסה, השטח, המסלולים והקשר מגיעים כמות שהם מליבת הסימולציה האמיתית; המודל והקוקפיט זמניים, כמו במשחק. סימני חיל האוויר, הצבע ומספר הזנב לפי מקורות פומביים; פריסת ההסוואה ומיקומי הסמלים משוערים.</div>
   </header>
 
   <div class="tabs" role="tablist">
@@ -113,6 +113,7 @@ button.b:hover { border-color: #3a4a56; }
       <div class="group"><label>מצלמה</label>
         <button class="b" data-cam="chase" aria-pressed="true">חיצונית</button>
         <button class="b" data-cam="cockpit" aria-pressed="false">קוקפיט</button>
+        <button class="b" data-cam="close" aria-pressed="false">תקריב סימונים</button>
       </div>
       <div class="group"><label>שעה</label>
         <button class="b" data-tod="noon" aria-pressed="true">צהריים</button>
@@ -209,24 +210,24 @@ const DATA = /*__DATA__*/null;
   M.runways.forEach(rw => {
     const a = toV(rw.a[0], rw.a[1], rw.a[2] + 0.4), b = toV(rw.b[0], rw.b[1], rw.b[2] + 0.4);
     const len = a.distanceTo(b), w = rw.w || 45;
-    const cv = document.createElement("canvas"); cv.width = 64; cv.height = 1024;
+    // Repeating 50 m tile (30 m centreline dash) keeps the texture stable at grazing angles.
+    const cv = document.createElement("canvas"); cv.width = 128; cv.height = 128;
     const g = cv.getContext("2d");
-    g.fillStyle = "#1a1b1c"; g.fillRect(0, 0, 64, 1024);
-    g.fillStyle = "#d8d8d8";
-    const px = 1024 / len;
-    for (let s = 120; s < len - 120; s += 50) g.fillRect(30.5, s * px, 3, 30 * px);
-    [6, len - 36].forEach(s0 => { for (let l = 4; l < 60; l += 5) g.fillRect(l, s0 * px, 2.5, 30 * px); });
+    g.fillStyle = "#1c1d1e"; g.fillRect(0, 0, 128, 128);
+    g.fillStyle = "#cfcfcf"; g.fillRect(62, 0, 4, 77);
     const tex = new THREE.CanvasTexture(cv);
-    tex.anisotropy = 8;
-    const geo = new THREE.PlaneGeometry(w, len);
-    const mesh = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex }));
-    mesh.rotation.x = -Math.PI / 2;            // plane length axis -> world z
-    const mid = a.clone().add(b).multiplyScalar(0.5), dir = b.clone().sub(a);
-    const grp = new THREE.Group();
-    grp.position.copy(mid);
-    grp.rotation.y = Math.atan2(dir.x, dir.z); // align length axis with the runway
-    grp.add(mesh);
-    scene.add(grp);
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(1, len / 50);
+    tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
+    // Build the strip from its real end points so it follows the runway slope (25L/07R drops ~20 m).
+    const dir = b.clone().sub(a), side = new THREE.Vector3(-dir.z, 0, dir.x).normalize().multiplyScalar(w / 2);
+    const corners = [a.clone().sub(side), a.clone().add(side), b.clone().add(side), b.clone().sub(side)];
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute("position", new THREE.Float32BufferAttribute(corners.flatMap(v => [v.x, v.y, v.z]), 3));
+    geo.setAttribute("uv", new THREE.Float32BufferAttribute([0, 0, 1, 0, 1, 1, 0, 1], 2));
+    geo.setIndex([0, 2, 1, 0, 3, 2]);
+    geo.computeVertexNormals();
+    if (geo.getAttribute("normal").getY(0) < 0) geo.setIndex([0, 1, 2, 0, 2, 3]), geo.computeVertexNormals();
+    scene.add(new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ map: tex, side: THREE.DoubleSide })));
     // edge light positions
     const right = new THREE.Vector3().crossVectors(dir.clone().normalize(), new THREE.Vector3(0, 1, 0));
     for (let s = 0; s <= len; s += 150) for (const side of [-1, 1]) {
@@ -241,41 +242,67 @@ const DATA = /*__DATA__*/null;
 
   // placeholder F-16I (same primitive breakdown as KanafPlaceholderModel.cpp), nose = -z
   function buildAircraft(withStores) {
+    const LV = DATA.livery, C = k => (LV.colors[k] ? LV.colors[k].srgb : "#8a8370"), PART = k => C(LV.fuselage[k]);
     const root = new THREE.Group();
-    const camo = new THREE.MeshStandardMaterial({ color: 0x8a8370, roughness: 0.6, metalness: 0.25 });
+    const mat = (hex, rough = 0.62) => new THREE.MeshStandardMaterial({ color: new THREE.Color(hex), roughness: rough, metalness: 0.15 });
+    const camo = mat(PART("main")), spine = mat(PART("spine")), cft = mat(PART("cft")), nose = mat(PART("nose")), intake = mat(PART("intake")), under = mat(C("under")), finMat = mat(PART("fin"));
     const dark = new THREE.MeshStandardMaterial({ color: 0x151517, roughness: 0.5, metalness: 0.6 });
     const glass = new THREE.MeshStandardMaterial({ color: 0x1b2a38, roughness: 0.1, metalness: 0.2, transparent: true, opacity: 0.75 });
     const store = new THREE.MeshStandardMaterial({ color: 0xb8bab0, roughness: 0.5, metalness: 0.3 });
     const B = (x, y, z) => new THREE.Vector3(y, -z, -x);  // body (x fwd, y right, z down) -> local
-    const add = (geo, mat, p, rot) => { const m = new THREE.Mesh(geo, mat); m.position.copy(p); if (rot) m.rotation.set(rot[0], rot[1], rot[2]); root.add(m); return m; };
+    const add = (geo, m, p, rot, parent = root) => { const o = new THREE.Mesh(geo, m); o.position.copy(p); if (rot) o.rotation.set(rot[0], rot[1], rot[2]); parent.add(o); return o; };
     const alongX = [Math.PI / 2, 0, 0];
-    add(new THREE.CylinderGeometry(0.62, 0.62, 12.2, 18), camo, B(-0.4, 0, 0), alongX);
-    add(new THREE.ConeGeometry(0.6, 2.4, 18), camo, B(7.2, 0, 0), [-Math.PI / 2, 0, 0]);
-    add(new THREE.BoxGeometry(1.0, 0.75, 3.8), camo, B(1.8, 0, 0.75));
-    add(new THREE.BoxGeometry(0.7, 0.45, 7.5), camo, B(-0.8, 0, -0.7));
-    add(new THREE.BoxGeometry(0.45, 0.5, 6.2), camo, B(-0.6, -0.78, -0.3));
-    add(new THREE.BoxGeometry(0.45, 0.5, 6.2), camo, B(-0.6, 0.78, -0.3));
-    // swept wings as extruded trapezoids
-    const wing = (side) => {
-      const s = new THREE.Shape();
-      s.moveTo(0, 2.6); s.lineTo(0, -2.4); s.lineTo(side * 4.35, -2.9); s.lineTo(side * 4.35, -1.9); s.lineTo(0, 2.6);
-      const g = new THREE.ExtrudeGeometry(s, { depth: 0.12, bevelEnabled: false });
-      const m = new THREE.Mesh(g, camo);
-      m.rotation.x = -Math.PI / 2; m.position.copy(B(-1.0, side * 0.6, 0.05));
-      root.add(m);
+    // fuselage: upper half camouflage, lower half light grey (open cylinders)
+    add(new THREE.CylinderGeometry(0.62, 0.62, 12.2, 24, 1, true, Math.PI / 2, Math.PI), camo, B(-0.4, 0, 0), alongX);
+    add(new THREE.CylinderGeometry(0.62, 0.62, 12.2, 24, 1, true, -Math.PI / 2, Math.PI), under, B(-0.4, 0, 0), alongX);
+    add(new THREE.ConeGeometry(0.6, 2.4, 24), nose, B(7.2, 0, 0), [-Math.PI / 2, 0, 0]);
+    add(new THREE.BoxGeometry(1.0, 0.75, 3.8), intake, B(1.8, 0, 0.75));
+    add(new THREE.BoxGeometry(0.7, 0.45, 7.5), spine, B(-0.8, 0, -0.7));
+    add(new THREE.BoxGeometry(0.45, 0.5, 6.2), cft, B(-0.6, -0.78, -0.3));
+    add(new THREE.BoxGeometry(0.45, 0.5, 6.2), cft, B(-0.6, 0.78, -0.3));
+    // planform helpers: shape coords (x lateral, y forward), mapped from livery (u root->tip, v LE->TE)
+    const planform = (rootLE, rootTE, tipX, tipLE, tipTE) => (u, v) => { const le = rootLE + (tipLE - rootLE) * u, te = rootTE + (tipTE - rootTE) * u; return [tipX * u, le + (te - le) * v]; };
+    const shapeOf = pts => { const sh = new THREE.Shape(); pts.forEach(([x, y], i) => (i ? sh.lineTo(x, y) : sh.moveTo(x, y))); sh.closePath(); return sh; };
+    const surface = (map, side, pos, depth, baseMat, patches, roundels) => {
+      const outline = [map(0, 0), map(0, 1), map(1, 1), map(1, 0)];
+      const body = new THREE.Mesh(new THREE.ExtrudeGeometry(shapeOf(outline), { depth, bevelEnabled: false }), under);
+      body.rotation.x = -Math.PI / 2; body.position.copy(pos); root.add(body);
+      const top = new THREE.Group(); top.rotation.x = -Math.PI / 2; top.position.copy(pos).add(new THREE.Vector3(0, depth + 0.004, 0)); root.add(top);
+      add(new THREE.ShapeGeometry(shapeOf(outline)), baseMat, new THREE.Vector3(0, 0, 0), null, top);
+      patches.forEach((pt, i) => { const m = mat(C(pt.tone)); m.polygonOffset = true; m.polygonOffsetFactor = -1 - i; add(new THREE.ShapeGeometry(shapeOf(pt.uv.map(([u, v]) => map(u, v)))), m, new THREE.Vector3(0, 0, 0.002 * (i + 1)), null, top); });
+      (roundels || []).forEach(r => {
+        const [x, y] = map(r.u, r.v), d = r.diameterM;
+        if (r.surface === "wing_top") add(new THREE.CircleGeometry(d / 2, 40), roundelMat, new THREE.Vector3(x, y, 0.012), null, top);
+        else { const o = add(new THREE.CircleGeometry(d / 2, 40), roundelMat, new THREE.Vector3(pos.x + x, pos.y - 0.004, pos.z - y)); o.rotation.x = Math.PI / 2; }
+      });
     };
-    wing(1); wing(-1);
-    const stab = (side) => {
-      const s = new THREE.Shape();
-      s.moveTo(0, 0.6); s.lineTo(0, -1.3); s.lineTo(side * 2.6, -1.6); s.lineTo(side * 2.6, -0.9); s.lineTo(0, 0.6);
-      const m = new THREE.Mesh(new THREE.ExtrudeGeometry(s, { depth: 0.08, bevelEnabled: false }), camo);
-      m.rotation.x = -Math.PI / 2; m.position.copy(B(-5.6, side * 0.5, 0.05)); root.add(m);
-    };
-    stab(1); stab(-1);
-    const fin = new THREE.Shape();
-    fin.moveTo(0, 0); fin.lineTo(-3.4, 0); fin.lineTo(-4.4, 3.2); fin.lineTo(-3.2, 3.2); fin.lineTo(0, 0);
-    const finM = new THREE.Mesh(new THREE.ExtrudeGeometry(fin, { depth: 0.12, bevelEnabled: false }), camo);
+    const roundelMat = new THREE.MeshStandardMaterial({ map: roundelTexture(), roughness: 0.55, metalness: 0.1, transparent: true });
+    for (const side of [1, -1]) {
+      const wingMap = planform(2.6, -2.4, side * 4.35, -1.9, -2.9);
+      const wr = LV.roundel.positions.filter(r => r.surface.startsWith("wing") && r.side === side);
+      surface(wingMap, side, B(-1.0, side * 0.6, 0.05), 0.12, camo, LV.wingPatches, wr);
+      const stabMap = planform(0.6, -1.3, side * 2.6, -0.9, -1.6);
+      surface(stabMap, side, B(-5.6, side * 0.5, 0.05), 0.08, mat(C("sky")), LV.stabPatches, []);
+    }
+    // vertical fin with patches + tail number on both sides
+    const finMap = (u, v) => { const le = [-3.2 * u, 3.2 * u], te = [-3.4 - 1.0 * u, 3.2 * u]; return [le[0] + (te[0] - le[0]) * v, le[1]]; };
+    const finOutline = [finMap(0, 0), finMap(1, 0), finMap(1, 1), finMap(0, 1)];
+    const finM = new THREE.Mesh(new THREE.ExtrudeGeometry(shapeOf(finOutline), { depth: 0.12, bevelEnabled: false }), finMat);
     finM.rotation.y = Math.PI / 2; finM.position.copy(B(-3.4, -0.06, -0.55)); root.add(finM);
+    for (const side of [1, -1]) {
+      const g = new THREE.Group(); g.rotation.y = Math.PI / 2; g.position.copy(B(-3.4, side * 0.065, -0.55)); root.add(g);
+      LV.finPatches.forEach((pt, i) => { const m = mat(C(pt.tone)); m.side = THREE.DoubleSide; m.polygonOffset = true; m.polygonOffsetFactor = -1 - i; add(new THREE.ShapeGeometry(shapeOf(pt.uv.map(([u, v]) => finMap(u, v)))), m, new THREE.Vector3(0, 0, 0), null, g); });
+      const [fx, fy] = finMap(LV.tailNumber.finU, LV.tailNumber.finV);
+      const num = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 0.7), new THREE.MeshStandardMaterial({ map: textTexture(LV.tailNumber.text, C("tailNumber")), transparent: true, roughness: 0.6, polygonOffset: true, polygonOffsetFactor: -8 }));
+      num.position.copy(B(-3.4 + fx, side * 0.075, -0.55 - fy));
+      num.rotation.y = side * Math.PI / 2;
+      root.add(num);
+    }
+    // fuselage insignia
+    LV.roundel.positions.filter(r => r.surface === "fuselage").forEach(r => {
+      const o = add(new THREE.CircleGeometry(r.diameterM / 2, 40), roundelMat, B(r.bodyM[0], r.side * 0.645, r.bodyM[2]));
+      o.rotation.y = r.side * Math.PI / 2;
+    });
     const canopy = add(new THREE.SphereGeometry(1, 20, 14), glass, B(4.4, 0, -0.75));
     canopy.scale.set(0.42, 0.37, 1.7);
     add(new THREE.CylinderGeometry(0.5, 0.42, 0.9, 16), dark, B(-7.0, 0, 0), alongX);
@@ -285,12 +312,24 @@ const DATA = /*__DATA__*/null;
       const wh = new THREE.Mesh(new THREE.CylinderGeometry(wd / 2, wd / 2, 0.22, 16), dark); wh.position.copy(B(x, y, 1.95 - wd / 2)); wh.rotation.z = Math.PI / 2; gear.add(wh);
     });
     root.add(gear);
-    if (withStores) [[-0.9, -4.95, 0.13], [-0.9, 4.95, 0.13]].forEach(([x, y, z]) => {   // 2x Python-5 (stations 1 & 9)
-      add(new THREE.CylinderGeometry(0.08, 0.08, 3.1, 10), store, B(x, y, z), alongX);
-    });
+    if (withStores) [[-0.9, -4.95, 0.13], [-0.9, 4.95, 0.13]].forEach(([x, y, z]) => add(new THREE.CylinderGeometry(0.08, 0.08, 3.1, 10), store, B(x, y, z), alongX));
     const plume = new THREE.Mesh(new THREE.ConeGeometry(0.42, 4, 16, 1, true), new THREE.MeshBasicMaterial({ color: 0xff9a3c, transparent: true, opacity: 0.0, depthWrite: false }));
     plume.position.copy(B(-9.4, 0, 0)); plume.rotation.set(Math.PI / 2, 0, 0); root.add(plume);
     return { root, gear, plume, canopy };
+  }
+  function roundelTexture() {   // blue Star of David (filled hexagram) on a white disc; star inside the edge
+    const cv = document.createElement("canvas"); cv.width = cv.height = 256;
+    const g = cv.getContext("2d"), r = 126, rs = r * DATA.livery.roundel.starToDisc;
+    g.fillStyle = DATA.livery.colors.roundelWhite.srgb; g.beginPath(); g.arc(128, 128, r, 0, Math.PI * 2); g.fill();
+    g.fillStyle = DATA.livery.colors.roundelBlue.srgb;
+    for (let k = 0; k < 2; k++) { g.beginPath(); for (let i = 0; i < 3; i++) { const a = -Math.PI / 2 + k * Math.PI + i * 2 * Math.PI / 3; const x = 128 + rs * Math.cos(a), y = 128 + rs * Math.sin(a); i ? g.lineTo(x, y) : g.moveTo(x, y); } g.closePath(); g.fill(); }
+    const t = new THREE.CanvasTexture(cv); t.anisotropy = 8; return t;
+  }
+  function textTexture(text, color) {
+    const cv = document.createElement("canvas"); cv.width = 256; cv.height = 128;
+    const g = cv.getContext("2d"); g.fillStyle = color; g.font = "700 104px 'IBM Plex Mono', monospace"; g.textAlign = "center"; g.textBaseline = "middle"; g.direction = "ltr";
+    g.fillText(text, 128, 70);
+    const t = new THREE.CanvasTexture(cv); t.anisotropy = 8; return t;
   }
   const ac = buildAircraft(true);
   ac.root.rotation.order = "YXZ";
@@ -441,7 +480,7 @@ const DATA = /*__DATA__*/null;
   view.addEventListener("pointermove", e => {
     if (!drag) return;
     const dx = e.clientX - drag.x, dy = e.clientY - drag.y; drag = { x: e.clientX, y: e.clientY };
-    if (cam === "chase") { orbitYaw += dx * 0.3; orbitPitch = Math.max(-75, Math.min(30, orbitPitch - dy * 0.25)); }
+    if (cam !== "cockpit") { orbitYaw += dx * 0.3; orbitPitch = Math.max(-75, Math.min(30, orbitPitch - dy * 0.25)); }
     else { headYaw = Math.max(-150, Math.min(150, headYaw - dx * 0.2)); headPitch = Math.max(-60, Math.min(80, headPitch - dy * 0.2)); }
   });
   view.addEventListener("pointerup", () => (drag = null));
@@ -454,7 +493,7 @@ const DATA = /*__DATA__*/null;
     document.querySelectorAll(`[${attr}]`).forEach(x => x.setAttribute("aria-pressed", String(x === b))); fn(b.getAttribute(attr));
   }));
   group("data-speed", v => { speed = +v; if (speed !== 1) audios.forEach(a => a.pause()); });
-  group("data-cam", v => { cam = v; camera.fov = v === "cockpit" ? 70 : 60; camera.updateProjectionMatrix(); document.getElementById("viewHint").textContent = v === "cockpit" ? "גרירה: הזזת הראש (מבט חופשי)" : "גרירה: סיבוב · גלגלת: מרחק"; });
+  group("data-cam", v => { cam = v; if (v === "close") { orbitYaw = 115; orbitPitch = -24; } camera.fov = v === "cockpit" ? 70 : 60; camera.updateProjectionMatrix(); document.getElementById("viewHint").textContent = v === "cockpit" ? "גרירה: הזזת הראש (מבט חופשי)" : v === "close" ? "גרירה: סיבוב סביב המטוס" : "גרירה: סיבוב · גלגלת: מרחק"; });
   group("data-tod", v => { tod = v; applyTod(); });
   const soundBtn = document.getElementById("sound");
   soundBtn.addEventListener("click", () => { soundOn = !soundOn; soundBtn.setAttribute("aria-pressed", String(soundOn)); soundBtn.textContent = soundOn ? "השתק קשר" : "הפעל קול קשר"; if (!soundOn) audios.forEach(a => a.pause()); });
@@ -492,9 +531,9 @@ const DATA = /*__DATA__*/null;
     ac.gear.visible = s[I.gear] > 0.3; ac.gear.scale.y = Math.max(0.3, s[I.gear]);
     ac.plume.material.opacity = s[I.ab] * 0.75;
     ac.root.visible = cam !== "cockpit";
-    if (cam === "chase") {
+    if (cam === "chase" || cam === "close") {
       const yaw = (-s[I.hdg] + orbitYaw) * D2R, pit = orbitPitch * D2R;
-      const want = p.clone().add(new THREE.Vector3(Math.sin(yaw) * Math.cos(pit), Math.sin(pit), Math.cos(yaw) * Math.cos(pit)).multiplyScalar(-chaseDist));
+      const want = p.clone().add(new THREE.Vector3(Math.sin(yaw) * Math.cos(pit), Math.sin(pit), Math.cos(yaw) * Math.cos(pit)).multiplyScalar(-(cam === "close" ? 19 : chaseDist)));
       camPos = camPos ? camPos.lerp(want, 1 - Math.exp(-dt * 8)) : want;
       if (camPos.distanceTo(want) > 400) camPos.copy(want);
       camera.position.copy(camPos); camera.up.set(0, 1, 0); camera.lookAt(p);

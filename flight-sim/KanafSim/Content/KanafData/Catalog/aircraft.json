@@ -45,7 +45,7 @@
           "assets": {
             "exteriorModel": {"status": "placeholder", "path": "procedural:f16_placeholder", "note": "Built from engine primitives at public F-16 overall dimensions; replace with a licensed F-16I model incl. CFTs and dorsal spine."},
             "cockpit": {"status": "placeholder", "path": "procedural:generic_fighter_cockpit", "note": "Game representation, NOT a reconstruction of the F-16I cockpit. Needs modelling from public photos of the F-16I front cockpit."},
-            "livery": {"status": "missing", "path": "", "note": "Needs research on current F-16I camouflage from public photos."},
+            "livery": {"status": "placeholder", "path": "liveries/f16i_iaf_desert.json", "note": "IAF three-tone desert colours + national insignia + tail number per public sources; camouflage pattern layout and insignia positions approximated; squadron badge not reproduced."},
             "sound": {"status": "placeholder", "path": "procedural:jet_engine_synth", "note": "Synthesised engine tone; replace with licensed recordings."},
             "flightProfile": {"status": "placeholder", "path": "flight_profiles/f16i.json", "note": "Game model with generic F-16 reference values; see per-field dataStatus."}
           }

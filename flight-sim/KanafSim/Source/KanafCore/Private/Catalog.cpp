@@ -29,6 +29,12 @@ bool Catalog::loadFromDirectory(const std::string& dir) {
     if (air.ok) {
         for (auto& m : air.value["models"].items())
             for (auto& v : m["variants"].items()) {
+                std::string lv = v["assets"]["livery"]["path"].str();
+                if (!lv.empty()) {
+                    std::string ls;
+                    if (readTextFile(dir + "/" + lv, ls)) files[lv] = ls;
+                    else errors_.push_back("missing livery file: " + lv);
+                }
                 std::string fp = v["flightProfileId"].str();
                 if (fp.empty()) continue;
                 std::string s;
@@ -63,8 +69,67 @@ bool Catalog::loadFromStrings(const std::map<std::string, std::string>& files) {
             flightProfiles[r.value["id"].str()] = r.value;
         }
     }
+    for (auto& kv : files) {
+        const std::string pre = "liveries/";
+        if (kv.first.compare(0, pre.size(), pre) == 0) {
+            auto r = parseJson(kv.second);
+            if (!r.ok) { errors_.push_back(kv.first + ": " + r.error); continue; }
+            parseLivery(r.value);
+        }
+    }
     crossValidate();
     return errors_.empty();
+}
+
+static bool parseHex(const std::string& h, float& r, float& g, float& b) {
+    if (h.size() != 7 || h[0] != '#') return false;
+    auto hx = [](char c) { return c >= '0' && c <= '9' ? c - '0' : (c >= 'a' && c <= 'f' ? c - 'a' + 10 : (c >= 'A' && c <= 'F' ? c - 'A' + 10 : -1)); };
+    int v[6];
+    for (int i = 0; i < 6; ++i) { v[i] = hx(h[size_t(i + 1)]); if (v[i] < 0) return false; }
+    r = (v[0] * 16 + v[1]) / 255.f; g = (v[2] * 16 + v[3]) / 255.f; b = (v[4] * 16 + v[5]) / 255.f;
+    return true;
+}
+
+void Catalog::parseLivery(const JsonValue& j) {
+    LiveryDef L;
+    L.id = j["id"].str(); L.variantId = j["variant"].str(); L.nameHe = j["nameHe"].str(); L.status = j["status"].str();
+    L.sources = j["sources"].strings();
+    for (auto& c : j["colors"].members()) {
+        LiveryColor lc;
+        lc.fs = c.second["fs"].str(); lc.srgb = c.second["srgb"].str(); lc.status = c.second["s"].str();
+        if (!parseHex(lc.srgb, lc.r, lc.g, lc.b)) errors_.push_back("livery " + L.id + ": bad colour " + c.first);
+        L.colors[c.first] = lc;
+    }
+    for (auto& f : j["fuselage"].members()) L.fuselage[f.first] = f.second.str();
+    auto patches = [](const JsonValue& a, std::vector<LiveryPatch>& out) {
+        for (auto& p : a.items()) {
+            LiveryPatch lp;
+            lp.tone = p["tone"].str();
+            for (auto& pt : p["uv"].items()) lp.uv.emplace_back(pt[0].num(), pt[1].num());
+            out.push_back(lp);
+        }
+    };
+    patches(j["wingPatches"], L.wingPatches);
+    patches(j["stabPatches"], L.stabPatches);
+    patches(j["finPatches"], L.finPatches);
+    L.starToDisc = j["roundel"]["starToDisc"].num(0.82);
+    for (auto& r : j["roundel"]["positions"].items()) {
+        RoundelPos rp;
+        rp.id = r["id"].str(); rp.surface = r["surface"].str(); rp.side = int(r["side"].num(1));
+        rp.u = r["u"].num(); rp.v = r["v"].num(); rp.diameterM = r["diameterM"].num(0.9);
+        rp.bodyM = vec3Of(r["bodyM"]);
+        L.roundels.push_back(rp);
+    }
+    const auto& t = j["tailNumber"];
+    L.tailNumber = t["text"].str(); L.tailHeightM = t["heightM"].num(0.5); L.finU = t["finU"].num(0.55); L.finV = t["finV"].num(0.6);
+    L.tailBothSides = t["bothSides"].boolean(true);
+    L.squadronBadgeStatus = j["squadronBadge"]["status"].str();
+    liveries[L.id] = L;
+}
+
+const LiveryDef* Catalog::liveryFor(const std::string& variantId) const {
+    for (auto& kv : liveries) if (kv.second.variantId == variantId) return &kv.second;
+    return nullptr;
 }
 
 void Catalog::parseSources(const JsonValue& j) {
@@ -225,6 +290,16 @@ void Catalog::crossValidate() {
         if (!m.callsignId.empty() && !callsign(m.callsignId)) errors_.push_back("mission " + m.id + ": unknown callsign");
     }
     for (auto& b : bases) if (b.runways.empty()) warnings_.push_back("base " + b.id + " has no runways");
+    for (auto& kv : liveries) {
+        const LiveryDef& L = kv.second;
+        if (!variant(L.variantId)) errors_.push_back("livery " + L.id + ": unknown variant");
+        checkSrc(L.sources, "livery " + L.id);
+        auto tone = [&](const std::string& t, const std::string& ctx) { if (!L.color(t)) errors_.push_back("livery " + L.id + ": unknown tone '" + t + "' in " + ctx); };
+        for (auto& f : L.fuselage) tone(f.second, "fuselage." + f.first);
+        for (auto* v : {&L.wingPatches, &L.stabPatches, &L.finPatches})
+            for (auto& p : *v) { tone(p.tone, "patch"); if (p.uv.size() < 3) errors_.push_back("livery " + L.id + ": patch needs >= 3 points"); }
+        for (const char* req : {"under", "roundelBlue", "roundelWhite", "tailNumber"}) tone(req, "required colours");
+    }
 }
 
 const AircraftVariant* Catalog::variant(const std::string& id) const { for (auto& v : variants) if (v.id == id) return &v; return nullptr; }
