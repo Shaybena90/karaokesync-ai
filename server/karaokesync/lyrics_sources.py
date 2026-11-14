@@ -25,6 +25,8 @@ from urllib.parse import quote, unquote, urljoin, urlsplit
 
 import httpx
 
+from . import lyrics_youtube
+
 USER_AGENT = "Mozilla/5.0 (compatible; KaraokeSync-AI/1.0; lyrics lookup for personal karaoke)"
 MAX_SOURCES = 8
 MAX_PAGE_BYTES = 2 * 1024 * 1024
@@ -45,6 +47,8 @@ def normalize_template(raw: str) -> str:
     address where the user searched the word "test" or "בדיקה" (replaced by
     {q}), or just the site's address (WordPress-style search /?s={q})."""
     url = raw.strip()
+    if lyrics_youtube.is_youtube(url):
+        return lyrics_youtube.SEARCH_URL  # searched through YouTube's official API, not by reading its pages
     if re.match(r"^[a-z][a-z0-9+.-]*:(?!\d)", url, re.IGNORECASE) and not re.match(r"^https?://", url, re.IGNORECASE):
         raise SourceError("invalid_source")  # ftp:, javascript:, file: ...
     if not re.match(r"^https?://", url, re.IGNORECASE):
@@ -267,7 +271,7 @@ class SourceReport:
     results: list[dict] = field(default_factory=list)
 
 
-def search_source(template: str, query: str) -> SourceReport:
+def search_source(template: str, query: str, youtube_key: str = "") -> SourceReport:
     try:
         template = normalize_template(template)
     except SourceError as exc:
@@ -275,6 +279,14 @@ def search_source(template: str, query: str) -> SourceReport:
     search_url = template.replace("{q}", quote(query.strip()))
     host = (urlsplit(search_url).hostname or "").removeprefix("www.")
     report = SourceReport(template, host, search_url, "no_results")
+    if template == lyrics_youtube.SEARCH_URL:
+        try:
+            report.results = lyrics_youtube.search_youtube(query.strip(), youtube_key)
+        except lyrics_youtube.YouTubeError as exc:
+            report.status = exc.code
+            return report
+        report.status = "ok" if report.results else "no_results"
+        return report
     try:
         final_url, html = fetch_page(search_url)
     except SourceError as exc:
@@ -295,9 +307,9 @@ def search_source(template: str, query: str) -> SourceReport:
     return report
 
 
-def search_sources(templates: list[str], query: str) -> list[dict]:
+def search_sources(templates: list[str], query: str, youtube_key: str = "") -> list[dict]:
     templates = list(dict.fromkeys(t for t in templates if t.strip()))[:MAX_SOURCES]
     if not templates or not query.strip():
         return []
     with ThreadPoolExecutor(max_workers=min(4, len(templates))) as pool:
-        return [asdict(r) for r in pool.map(lambda t: search_source(t, query), templates)]
+        return [asdict(r) for r in pool.map(lambda t: search_source(t, query, youtube_key), templates)]

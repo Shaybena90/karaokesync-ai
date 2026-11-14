@@ -34,6 +34,9 @@ class Settings(BaseSettings):
     admin_emails: str = ""
     # Online lyrics search (LRCLIB: a free, open lyrics database; no key needed).
     lyrics_search_url: str = "https://lrclib.net"
+    # YouTube as a lyrics source (official video descriptions), through the official
+    # YouTube Data API v3. Free key from Google Cloud; empty = YouTube is not searched.
+    youtube_api_key: str = ""
 
     # Upload limits (also returned to the browser through GET /limits)
     max_upload_mb: int = 50

@@ -105,6 +105,19 @@
 2. Supabase ← Authentication ← Providers ← Google ← הדביקו Client ID ו-Secret ← הפעילו.
 3. Vercel: ‏`VITE_ENABLE_GOOGLE_AUTH=true` ← Redeploy.
 
+## שלב 5ב (רשות) — חיפוש מילים ביוטיוב
+
+יוטיוב נמצא אוטומטית ברשימת "אתרי המילים" של כל משתמש, בשם **יוטיוב**. האפליקציה מחפשת את השיר ביוטיוב ולוקחת את המילים מתיאור הסרטון הרשמי. זה עובד רק דרך ה-API הרשמי של יוטיוב (YouTube Data API v3), ולכן צריך מפתח חינמי פעם אחת:
+
+1. נכנסים ל-https://console.cloud.google.com עם חשבון Google.
+2. למעלה: **Select a project ← New Project**, נותנים שם (למשל karaokesync) ← **Create**.
+3. בתפריט: **APIs & Services ← Library**, מחפשים **YouTube Data API v3** ← **Enable**.
+4. **APIs & Services ← Credentials ← Create credentials ← API key**. מעתיקים את המפתח.
+5. מומלץ: לוחצים על המפתח ← **API restrictions ← Restrict key** ← בוחרים רק **YouTube Data API v3** ← Save.
+6. ב-Render: השירות של ה-API ← **Environment ← Add Environment Variable**: שם `YOUTUBE_API_KEY`, ערך: המפתח ← Save. השרת מתעדכן לבד.
+
+המכסה החינמית היא כ-100 חיפושים ביום. היא לא עולה כסף כל עוד לא מוסיפים לפרויקט אמצעי תשלום. המפתח נשמר רק בשרת: הוא לא מגיע לדפדפן ולא נרשם בלוגים. בלי מפתח, החיפוש ביוטיוב מציג הודעה וקישור לחיפוש ביוטיוב עצמו.
+
 ## שלב 6 — בדיקה אוטומטית אחרי הפריסה ✅
 
 הסקריפט בודק את הפריסה מבחוץ: שהאתר וה-API עונים, ש-CORS מוגדר נכון, ש**מפתח הסודי לא דלף** לקוד של האתר, שמשתמש אנונימי לא רואה נתונים (RLS), שהאחסון פרטי, שפונקציות התור לא נגישות מהדפדפן, ושאישור אימייל מופעל.

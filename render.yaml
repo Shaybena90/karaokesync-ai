@@ -30,6 +30,8 @@ services:
         sync: false
       - key: ADMIN_EMAILS        # your email: who may see and pause the processing server
         sync: false
+      - key: YOUTUBE_API_KEY     # optional: free YouTube Data API v3 key, to find lyrics on YouTube
+        sync: false
       - key: MAX_UPLOAD_MB
         value: "50"
       - key: MAX_AUDIO_DURATION_SECONDS

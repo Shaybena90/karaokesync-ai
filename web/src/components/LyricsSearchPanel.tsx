@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { errorKey, useI18n } from '../i18n/I18nProvider'
+import type { MessageKey } from '../i18n/he'
 import { ApiError, api, type LyricsSourceReport } from '../lib/api'
 import { formatDuration } from '../lib/format'
-import { MAX_LYRICS_SOURCES, sourceHost, useLyricsSources } from '../lib/lyricsSources'
+import { MAX_LYRICS_SOURCES, YOUTUBE_SOURCE, sourceHost, useLyricsSources } from '../lib/lyricsSources'
 import { LyricsTextarea } from './PastedLyricsPanel'
 import { Button, Spinner } from './ui'
 
@@ -16,6 +17,14 @@ interface Props {
   mode: 'sync' | 'fill'
   onUse: (text: string) => void
   startOpen?: boolean
+}
+
+const MISSED: Partial<Record<LyricsSourceReport['status'], MessageKey>> = {
+  blocked_source: 'lyrics.sources.blocked',
+  no_results: 'lyrics.sources.notFound',
+  needs_key: 'lyrics.sources.needsKey',
+  quota: 'lyrics.sources.quota',
+  bad_key: 'lyrics.sources.badKey',
 }
 
 /** One song found, from the open database (LRCLIB) or from one of the user's own websites. */
@@ -70,7 +79,8 @@ export function LyricsSearchPanel({ initialQuery, durationMs, busy = false, mode
         : []
     const siteReports = mine.status === 'fulfilled' ? mine.value.sources : []
     const fromSites: Found[] = siteReports.flatMap((rep) =>
-      rep.results.map((r) => ({ key: `site:${r.url}`, title: r.title, artist: '', source: r.source, url: r.url,
+      rep.results.map((r) => ({ key: `site:${r.url}`, title: r.title, artist: r.artist ?? '',
+        source: sources.find((s) => s.url === rep.template)?.name || r.source, url: r.url,
         duration_ms: null, matches_length: false, lyrics: r.lyrics })),
     )
     // Same-length songs from the database first, then the user's sites, then the rest.
@@ -179,9 +189,9 @@ export function LyricsSearchPanel({ initialQuery, durationMs, busy = false, mode
         <ul className="space-y-1 text-xs text-white/55" data-testid="sources-missed">
           {missed.map((r) => (
             <li key={r.template}>
-              {t(r.status === 'blocked_source' ? 'lyrics.sources.blocked' : r.status === 'no_results' ? 'lyrics.sources.notFound' : 'lyrics.sources.failed').replace(
+              {t(MISSED[r.status] ?? 'lyrics.sources.failed').replace(
                 '{site}',
-                r.host || sourceHost(r.template),
+                sources.find((s) => s.url === r.template)?.name || r.host || sourceHost(r.template),
               )}{' '}
               {r.search_url && (
                 <a href={r.search_url} target="_blank" rel="noopener noreferrer" className="text-violet-300 underline">
@@ -297,6 +307,11 @@ export function SourcesManager({
                 </li>
               ))}
             </ul>
+          )}
+          {sources.length < MAX_LYRICS_SOURCES && !sources.some((s) => s.url === YOUTUBE_SOURCE.url) && (
+            <Button variant="ghost" onClick={() => void add(YOUTUBE_SOURCE.name, YOUTUBE_SOURCE.url)}>
+              ➕ {t('lyrics.sources.addYoutube')}
+            </Button>
           )}
           {sources.length < MAX_LYRICS_SOURCES ? (
             <form

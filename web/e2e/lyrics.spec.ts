@@ -1,6 +1,8 @@
 import { expect, PID, test } from './fixtures'
 import { makeWav } from './fixtures'
 
+const YT = { name: 'יוטיוב', url: 'https://www.youtube.com/results?search_query={q}' }
+
 test('lyrics pasted at upload are sent with the song', async ({ page, backend }) => {
   await page.goto('/upload')
   await page.getByRole('button', { name: /יש לך את המילים\? הדבק אותן/ }).click()
@@ -105,26 +107,26 @@ test('my own lyrics websites: add, search them on the new-song screen, remove', 
   await sites.getByRole('textbox', { name: 'כתובת החיפוש באתר' }).fill('https://shirim.example/search?q=test')
   await sites.getByRole('button', { name: 'הוסף אתר' }).click()
   await expect(sites.getByText('נוסף. החיפוש ישתמש בכתובת: https://shirim.example/search?q={q}')).toBeVisible()
-  await expect.poll(() => backend.userMetadata.lyrics_sources).toEqual([{ name: 'שירים בעברית', url: 'https://shirim.example/search?q={q}' }])
+  await expect.poll(() => backend.userMetadata.lyrics_sources).toEqual([YT, { name: 'שירים בעברית', url: 'https://shirim.example/search?q={q}' }])
   await sites.getByRole('textbox', { name: 'כתובת החיפוש באתר' }).fill('https://blocked.example/?s=test')
   await sites.getByRole('button', { name: 'הוסף אתר' }).click()
-  await expect(panel.getByText('מחפש במאגר הפתוח ובעוד 2 אתרים שהגדרת.')).toBeVisible()
+  await expect(panel.getByText('מחפש במאגר הפתוח ובעוד 3 אתרים שהגדרת.')).toBeVisible()
 
   await panel.getByRole('textbox', { name: 'שם השיר והזמר' }).fill('ירושלים של זהב')
   await panel.getByRole('button', { name: 'חפש', exact: true }).click()
-  await expect.poll(() => backend.sourceSearches.at(-1)?.sources.length).toBe(2)
+  await expect.poll(() => backend.sourceSearches.at(-1)?.sources.length).toBe(3)
   const hit = panel.getByRole('radio', { name: /ירושלים של זהב - מילים/ })
-  await expect(hit).toContainText('shirim.example')
+  await expect(hit).toContainText('שירים בעברית') // the name the user gave the site
   await hit.click()
   await expect(panel.locator('textarea')).toHaveValue('שורה מהאתר שלי\nועוד שורה')
   await expect(panel.getByRole('link', { name: /פתח את הדף באתר/ })).toHaveAttribute('href', 'https://shirim.example/song/1')
   // a site that blocks automatic searches offers its own search page instead
   const missed = page.getByTestId('sources-missed')
   await expect(missed).toContainText('blocked.example חוסם חיפוש אוטומטי.')
-  await expect(missed.getByRole('link')).toHaveAttribute('href', /blocked\.example\/\?s=/)
+  await expect(missed.getByRole('listitem').filter({ hasText: 'blocked.example' }).getByRole('link')).toHaveAttribute('href', /blocked\.example\/\?s=/)
 
   await sites.getByRole('button', { name: 'הסר את blocked.example' }).click()
-  await expect.poll(() => (backend.userMetadata.lyrics_sources as unknown[]).length).toBe(1)
+  await expect.poll(() => (backend.userMetadata.lyrics_sources as unknown[]).length).toBe(2)
 })
 
 test('the lyrics websites have their own page in the menu', async ({ page, backend }) => {
@@ -134,6 +136,38 @@ test('the lyrics websites have their own page in the menu', async ({ page, backe
   const sites = page.getByTestId('lyrics-sources')
   await sites.getByRole('textbox', { name: 'כתובת החיפוש באתר' }).fill('https://shirim.example/search?q=test')
   await sites.getByRole('button', { name: 'הוסף אתר' }).click()
-  await expect.poll(() => backend.userMetadata.lyrics_sources).toEqual([{ name: 'shirim.example', url: 'https://shirim.example/search?q={q}' }])
+  await expect.poll(() => backend.userMetadata.lyrics_sources).toEqual([YT, { name: 'shirim.example', url: 'https://shirim.example/search?q={q}' }])
   await expect(sites.getByText('https://shirim.example/search?q={q}').first()).toBeVisible()
+})
+
+test('YouTube is in the lyrics websites, named יוטיוב, and finds official video lyrics', async ({ page, backend }) => {
+  await page.goto('/lyrics-sources')
+  const sites = page.getByTestId('lyrics-sources')
+  await expect(sites.getByText('יוטיוב', { exact: true })).toBeVisible()
+  await expect.poll(() => backend.userMetadata.lyrics_sources).toEqual([YT])
+
+  // without a key on the server, the search says what is missing and links to YouTube's own search
+  await page.goto('/upload')
+  const panel = page.getByTestId('lyrics-search')
+  await panel.getByRole('textbox', { name: 'שם השיר והזמר' }).fill('ירושלים של זהב')
+  await panel.getByRole('button', { name: 'חפש', exact: true }).click()
+  const missed = page.getByTestId('sources-missed')
+  await expect(missed).toContainText('כדי לחפש ביוטיוב צריך להגדיר בשרת מפתח YouTube')
+  await expect(missed.getByRole('link')).toHaveAttribute('href', /youtube\.com\/results\?search_query=/)
+
+  backend.youtubeKey = true
+  await panel.getByRole('button', { name: 'חפש', exact: true }).click()
+  const hit = panel.getByRole('radio', { name: /הקליפ הרשמי/ })
+  await expect(hit).toContainText('יוטיוב')
+  await hit.click()
+  await expect(panel.locator('textarea')).toHaveValue('מילים מתיאור הקליפ\nשורה שנייה')
+
+  // removed, it stays removed, and can be added back with one button
+  await panel.getByRole('button', { name: /אתרי המילים שלי/ }).click()
+  await page.getByRole('button', { name: 'הסר את יוטיוב' }).click()
+  await expect.poll(() => (backend.userMetadata.lyrics_sources as unknown[]).length).toBe(0)
+  await page.reload()
+  await page.getByTestId('lyrics-search').getByRole('button', { name: /אתרי המילים שלי/ }).click()
+  await page.getByRole('button', { name: /הוסף את יוטיוב/ }).click()
+  await expect.poll(() => backend.userMetadata.lyrics_sources).toEqual([YT])
 })

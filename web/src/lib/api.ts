@@ -38,8 +38,9 @@ export interface LyricsSourceReport {
   host: string
   /** The site's own search page for this song (to open it when nothing was found). */
   search_url: string
-  status: 'ok' | 'no_results' | 'blocked_source' | 'unreachable' | 'invalid_source' | 'not_html'
-  results: { title: string; url: string; lyrics: string; source: string }[]
+  /** YouTube: needs_key (no YOUTUBE_API_KEY on the server), quota (daily limit reached), bad_key. */
+  status: 'ok' | 'no_results' | 'blocked_source' | 'unreachable' | 'invalid_source' | 'not_html' | 'needs_key' | 'quota' | 'bad_key'
+  results: { title: string; url: string; lyrics: string; source: string; artist?: string }[]
 }
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {

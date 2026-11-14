@@ -14,6 +14,9 @@ export interface LyricsSource {
 
 export const MAX_LYRICS_SOURCES = 8
 
+/** YouTube: searched through YouTube's official API (official video descriptions). */
+export const YOUTUBE_SOURCE: LyricsSource = { name: 'יוטיוב', url: 'https://www.youtube.com/results?search_query={q}' }
+
 function valid(raw: unknown): LyricsSource[] {
   if (!Array.isArray(raw)) return []
   return raw
@@ -36,9 +39,17 @@ export function useLyricsSources() {
 
   useEffect(() => {
     let alive = true
-    void supabase?.auth.getUser().then(({ data }) => {
+    void supabase?.auth.getUser().then(async ({ data }) => {
       if (!alive) return
-      setSources(valid(data.user?.user_metadata?.lyrics_sources))
+      const meta = data.user?.user_metadata ?? {}
+      let list = valid(meta.lyrics_sources)
+      // YouTube is in everyone's list once; after that the user may remove it.
+      if (!meta.lyrics_sources_youtube_added && supabase) {
+        list = [YOUTUBE_SOURCE, ...list.filter((s) => s.url !== YOUTUBE_SOURCE.url)].slice(0, MAX_LYRICS_SOURCES)
+        await supabase.auth.updateUser({ data: { lyrics_sources: list, lyrics_sources_youtube_added: true } }).catch(() => undefined)
+      }
+      if (!alive) return
+      setSources(list)
       setLoaded(true)
     })
     return () => {

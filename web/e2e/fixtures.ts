@@ -98,6 +98,8 @@ export class MockBackend {
   lyricsQueries: { q: string; duration_ms: string | null }[] = []
   /** The signed-in user's metadata (the lyrics websites list lives here). */
   userMetadata: Row = {}
+  /** Whether the mock API server has a YouTube key (YOUTUBE_API_KEY). */
+  youtubeKey = false
   /** Bodies of POST /lyrics-sources/search. */
   sourceSearches: { q: string; sources: string[] }[] = []
   /** Error code the mock API gives when verifying a background (null = accepted). */
@@ -317,6 +319,11 @@ export class MockBackend {
           const host = new URL(template.replace('{q}', 'x')).hostname
           const search_url = template.replace('{q}', encodeURIComponent(body.q))
           if (host.includes('blocked')) return { template, host, search_url, status: 'blocked_source', results: [] }
+          if (host.includes('youtube')) {
+            if (!this.youtubeKey) return { template, host: 'youtube.com', search_url, status: 'needs_key', results: [] }
+            return { template, host: 'youtube.com', search_url, status: 'ok', results: [{ title: `${body.q} (הקליפ הרשמי)`,
+              artist: 'הזמרת', url: 'https://www.youtube.com/watch?v=abc123def45', lyrics: 'מילים מתיאור הקליפ\nשורה שנייה', source: 'youtube.com' }] }
+          }
           return { template, host, search_url, status: 'ok',
             results: [{ title: `${body.q} - מילים`, url: `https://${host}/song/1`, lyrics: 'שורה מהאתר שלי\nועוד שורה', source: host }] }
         }),

@@ -39,11 +39,15 @@ def lyrics_search_router() -> APIRouter:
         return {"results": results}
 
     @router.post("/lyrics-sources/search")
-    def search_my_sources(body: SourcesSearchRequest, user: AuthUser = Depends(rate_limited_user)) -> dict:
+    def search_my_sources(
+        body: SourcesSearchRequest,
+        user: AuthUser = Depends(rate_limited_user),
+        settings: Settings = Depends(settings_dep),
+    ) -> dict:
         """Search the user's own lyrics websites (their list is kept in their account, in the browser)."""
         if any(len(s) > 500 for s in body.sources):
             raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail="invalid_source")
-        return {"sources": search_sources(body.sources, body.q)}
+        return {"sources": search_sources(body.sources, body.q, settings.youtube_api_key)}
 
     @router.post("/lyrics-sources/normalize")
     def normalize_source(body: SourceRequest, user: AuthUser = Depends(rate_limited_user)) -> dict:
