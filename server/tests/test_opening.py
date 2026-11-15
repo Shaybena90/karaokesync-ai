@@ -146,7 +146,7 @@ def test_the_api_keeps_the_choice(client, ready_project):  # noqa: F811
     body = {"aspect": "16:9", "opening": {"intro": True, "transition": "pixelize", "title": {"song": "שיר", "artist": "זמר"}}}
     job = client.post(f"/projects/{pid}/exports", json=body, headers=AUTH).json()
     assert job["options"]["opening"] == {"intro": True, "transition": "pixelize", "title": {"song": "שיר", "artist": "זמר"},
-                                         "title_theme": "brand"}
+                                         "title_theme": "brand", "intro_media_id": None}
     bad = {"opening": {"intro": True, "transition": "spin"}}
     assert client.post(f"/projects/{pid}/exports", json=bad, headers=AUTH).status_code == 422
 
@@ -313,3 +313,72 @@ def test_the_chosen_title_design_reaches_the_renderer(fake_sb, ready_project, tm
     from karaokesync.exports.ass import tag_color
 
     assert tag_color(stage.glow[0]) in seen["title_subs"]   # drawn with the stage design's colours
+
+
+def test_own_intro_lengths():
+    assert op.custom_intro_length("image", None) == op.CUSTOM_INTRO_STILL_MS
+    assert op.custom_intro_length("video", 12_000) == 12_000
+    assert op.custom_intro_length("video", 90_000) == op.CUSTOM_INTRO_MAX_MS     # long clips are cut
+    assert op.custom_intro_length("video", 1_000) == op.CUSTOM_INTRO_MIN_MS      # very short ones hold their last frame
+    plan = op.plan_opening(op.OpeningOptions(intro=True, intro_media_id="0b4f8f5e-3c1d-4b8a-9e2f-000000000009"), 12_000)
+    assert plan.segments == [("intro", 12_000)]
+    with pytest.raises(ValidationError):
+        op.OpeningOptions(intro_media_id="../x")
+
+
+@needs_ffmpeg
+def test_a_video_with_my_own_intro(tmp_path, monkeypatch):
+    clips = tmp_path / "intro"
+    _fake_clips(clips)
+    monkeypatch.setattr(op, "INTRO_DIR", clips)
+    own = tmp_path / "own.mp4"   # the user's clip: yellow, 5 s, with a 700 Hz sound, in 4:3
+    subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-y", "-f", "lavfi", "-i", "color=c=yellow:s=320x240:r=30:d=5",
+                    "-f", "lavfi", "-i", "sine=f=700:d=5", "-shortest", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac",
+                    str(own)], check=True)
+    song = tmp_path / "song.wav"
+    subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-y", "-f", "lavfi", "-i", "sine=f=1000:d=4", str(song)], check=True)
+    canvas = Canvas(640, 360)
+    m = measurer_for(str(SYSTEM_FONT))
+    lines = [{"start_ms": 500, "end_ms": 3000, "words": [{"text": "שלום", "start_ms": 500, "end_ms": 3000}]}]
+    style = SubtitleStyle(background_color="#00ff00", background_color2="#00ff00")
+    options = op.OpeningOptions(intro=True, intro_media_id="0b4f8f5e-3c1d-4b8a-9e2f-000000000009", transition="fade")
+    intro = op.CustomIntro(own, op.custom_intro_length("video", 5000), still=False, has_audio=True)
+    work = tmp_path / "w"
+    work.mkdir()
+    out = video.render_mp4(work, song, build_ass(lines, style, "he", canvas, m), SYSTEM_FONT, style, canvas, 4000,
+                           opening=options, aspect="16:9", custom_intro=intro, workers=1)
+    start = op.plan_opening(options, intro.ms).karaoke_start_ms / 1000   # 5 - 1.8 = 3.2 s
+    duration = float(subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(out)],
+                                    capture_output=True, text=True).stdout)
+    assert abs(duration - (start + 4)) < 0.15
+
+    def pixel(t, x):
+        return tuple(subprocess.run(["ffmpeg", "-nostdin", "-loglevel", "error", "-ss", str(t), "-i", str(out), "-frames:v", "1",
+                                     "-vf", f"crop=4:4:{x}:178,scale=1:1", "-f", "rawvideo", "-pix_fmt", "rgb24", "-"],
+                                    capture_output=True, check=True).stdout)
+
+    r, g, b = pixel(1.0, 320)
+    assert r > 150 and g > 150 and b < 90, "my own clip first (yellow)"
+    assert max(pixel(1.0, 10)) < 40, "kept in proportion: black at the sides"
+    assert pixel(start + 2, 320)[1] > 150, "then the karaoke"
+
+    def level(t0, t1, freq):
+        res = subprocess.run(["ffmpeg", "-nostdin", "-ss", str(t0), "-t", str(t1 - t0), "-i", str(out), "-af",
+                              f"bandpass=f={freq}:w=60,volumedetect", "-f", "null", "-"], capture_output=True, text=True)
+        return float(re.search(r"mean_volume: (-?[\d.]+) dB", res.stderr).group(1))
+
+    assert level(0.5, 2.5, 700) > -30, "my clip's own sound"
+    assert level(intro.ms / 1000 + 0.2, start + 3.8, 700) < -40, "its sound stops when it ends"
+
+
+def test_the_api_checks_my_intro_is_mine(client, fake_sb, ready_project):  # noqa: F811
+    pid = ready_project["id"]
+    mine, theirs = "0b4f8f5e-3c1d-4b8a-9e2f-00000000000a", "0b4f8f5e-3c1d-4b8a-9e2f-00000000000b"
+    fake_sb.tables["background_media"] += [
+        {"id": mine, "user_id": ready_project["user_id"], "project_id": pid, "status": "verified"},
+        {"id": theirs, "user_id": "someone-else", "project_id": "other", "status": "verified"},
+    ]
+    r = client.post(f"/projects/{pid}/exports", json={"opening": {"intro": True, "intro_media_id": theirs}}, headers=AUTH)
+    assert r.status_code == 422 and r.json()["detail"] == "intro_missing"
+    r = client.post(f"/projects/{pid}/exports", json={"opening": {"intro": True, "intro_media_id": mine}}, headers=AUTH)
+    assert r.status_code == 201 and r.json()["options"]["opening"]["intro_media_id"] == mine

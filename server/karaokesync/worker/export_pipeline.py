@@ -15,7 +15,9 @@ from ..animated_backgrounds import clip_for
 from ..config import Settings
 from ..exports.ass import build_ass
 from ..exports.measure import measurer_for
-from ..exports.opening import PREVIEW_RESOLUTION, PREVIEW_SONG_MS, OpeningOptions, opening_files, title_ass
+from ..exports.opening import (
+    PREVIEW_RESOLUTION, PREVIEW_SONG_MS, CustomIntro, OpeningOptions, custom_intro_length, opening_files, title_ass,
+)
 from ..exports.video import ASPECTS, RESOLUTIONS, BackgroundLayer, canvas_for, render_mp4
 from ..fonts import ensure_font
 from ..lyrics_data import load_lyrics
@@ -87,9 +89,11 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
         if preview:
             duration_ms = min(duration_ms, PREVIEW_SONG_MS)
         report(4)
-        title_subs, extra_fonts = None, []
+        title_subs, extra_fonts, custom_intro = None, [], None
         if opening.active:
             opening_files(opening, aspect)
+            if opening.intro and opening.intro_media_id:
+                custom_intro = _download_custom_intro(sb, settings, project, opening.intro_media_id, workdir)
             if opening.title:
                 try:
                     title_font, artist_font = ensure_font(opening.theme.name_font), ensure_font(opening.theme.song_font)
@@ -112,6 +116,7 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
             aspect=aspect,
             title_subs=title_subs,
             extra_fonts=extra_fonts,
+            custom_intro=custom_intro,
         )
 
         report(95)
@@ -133,6 +138,28 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
         return path
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
+
+
+def _download_custom_intro(sb: SupabaseClient, settings: Settings, project: dict, media_id: str, workdir: Path) -> CustomIntro:
+    """The user's own opening clip: only a verified file of the same user."""
+    rows = sb.select("background_media", {
+        "id": f"eq.{media_id}", "user_id": f"eq.{project['user_id']}", "status": "eq.verified",
+        "select": "storage_path,format,kind,duration_ms",
+    })
+    if not rows:
+        raise PipelineError("intro_missing", retryable=False)
+    row = rows[0]
+    local = workdir / f"intro-own.{row['format']}"
+    try:
+        url = sb.create_signed_url(settings.backgrounds_bucket, row["storage_path"], 300)
+        sb.download_to(url, str(local), settings.max_background_mb * 1024 * 1024)
+    except SupabaseError as exc:
+        raise PipelineError("download_failed", retryable=exc.status_code >= 500) from exc
+    probe = subprocess.run(["ffprobe", "-v", "error", "-select_streams", "a", "-show_entries", "stream=index", "-of", "csv=p=0",
+                            str(local)], capture_output=True, text=True, timeout=60, check=False)
+    kind = row.get("kind") or "video"
+    return CustomIntro(local, custom_intro_length(kind, row.get("duration_ms")), kind == "image",
+                       has_audio=bool(probe.stdout.strip()) and row["format"] != "gif")
 
 
 def _download_backgrounds(

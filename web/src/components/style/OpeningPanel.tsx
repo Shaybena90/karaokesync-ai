@@ -1,5 +1,8 @@
-import { useState } from 'react'
-import { useI18n } from '../../i18n/I18nProvider'
+import { useRef, useState } from 'react'
+import { errorKey, useI18n } from '../../i18n/I18nProvider'
+import { ApiError } from '../../lib/api'
+import { OWN_INTRO_ACCEPT, type useOwnIntro } from '../../lib/ownIntro'
+import { ProgressBar } from '../ui'
 import type { MessageKey } from '../../i18n/he'
 import { TITLE_THEMES, TRANSITIONS, openingProblem, titleSample, type OpeningChoice, type Transition } from '../../lib/opening'
 import type { VideoAspect } from '../player/KaraokePlayer'
@@ -14,12 +17,53 @@ const ICONS: Record<Transition, string> = {
  * Before a video is made: the KaraokeSync opening clip, a luxurious 3D title
  * with the song and the singer, and the transition into the karaoke.
  */
-export function OpeningPanel({ choice, onChange, aspect }: { choice: OpeningChoice; onChange: (c: OpeningChoice) => void; aspect: VideoAspect }) {
+interface Props {
+  choice: OpeningChoice
+  onChange: (c: OpeningChoice) => void
+  aspect: VideoAspect
+  projectId: string
+  /** The user's own opening clip (kept in their account). */
+  own: ReturnType<typeof useOwnIntro>
+}
+
+export function OpeningPanel({ choice, onChange, aspect, projectId, own }: Props) {
   const { t, locale } = useI18n()
   const [preview, setPreview] = useState(false)
+  const [ownUrl, setOwnUrl] = useState<string | null>(null)
+  const [ownMissing, setOwnMissing] = useState(false)
+  const [progress, setProgress] = useState<number | null>(null)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+  const fileInput = useRef<HTMLInputElement>(null)
+  const useOwn = choice.introSource === 'own'
+
+  const togglePreview = async () => {
+    if (preview) return setPreview(false)
+    if (useOwn) {
+      const url = await own.watchUrl()
+      setOwnMissing(!url)
+      setOwnUrl(url)
+      if (!url) return
+    }
+    setPreview(true)
+  }
+
+  const uploadOwn = async (file: File) => {
+    setUploadError(null)
+    setOwnMissing(false)
+    setPreview(false)
+    setProgress(0)
+    try {
+      await own.upload(projectId, file, setProgress)
+    } catch (err) {
+      setUploadError(err instanceof ApiError ? err.code : 'generic')
+    } finally {
+      setProgress(null)
+      if (fileInput.current) fileInput.current.value = ''
+    }
+  }
   const set = <K extends keyof OpeningChoice>(k: K, v: OpeningChoice[K]) => onChange({ ...choice, [k]: v })
   const introSrc = aspect === '9:16' ? '/intro/intro-9x16.mp4' : aspect === '1:1' ? '/intro/intro-1x1.mp4' : '/intro/intro.mp4'
-  const problem = openingProblem(choice)
+  const problem = openingProblem(choice, Boolean(own.intro))
   const input = 'min-h-11 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-base focus:border-violet-400 focus:outline-none'
 
   return (
@@ -70,12 +114,75 @@ export function OpeningPanel({ choice, onChange, aspect }: { choice: OpeningChoi
           <input type="checkbox" checked={choice.intro} onChange={(e) => set('intro', e.target.checked)} className="size-5 accent-violet-500" />
           🎞 {t('export.opening.intro')}
         </label>
-        <button type="button" onClick={() => setPreview(!preview)} className="min-h-9 rounded-lg bg-white/5 px-3 text-xs hover:bg-white/10">
-          {preview ? t('export.opening.hidePreview') : `▶ ${t('export.opening.preview')}`}
-        </button>
+        {(!useOwn || own.intro) && (
+          <button type="button" onClick={() => void togglePreview()} className="min-h-9 rounded-lg bg-white/5 px-3 text-xs hover:bg-white/10">
+            {preview ? t('export.opening.hidePreview') : `▶ ${t('export.opening.preview')}`}
+          </button>
+        )}
       </div>
+      {choice.intro && (
+        <div role="radiogroup" aria-label={t('export.opening.introSource')} className="grid grid-cols-2 gap-1 rounded-xl bg-white/5 p-1">
+          {(['builtin', 'own'] as const).map((src) => (
+            <button
+              key={src}
+              type="button"
+              role="radio"
+              aria-checked={choice.introSource === src}
+              onClick={() => {
+                setPreview(false)
+                set('introSource', src)
+              }}
+              className={`min-h-10 rounded-lg px-2 text-xs font-semibold transition ${
+                choice.introSource === src ? 'bg-gradient-to-br from-violet-600 to-blue-600 text-white' : 'text-white/70 hover:bg-white/10'
+              }`}
+            >
+              {t(src === 'builtin' ? 'export.opening.introBuiltin' : 'export.opening.introOwn')}
+            </button>
+          ))}
+        </div>
+      )}
+      {choice.intro && useOwn && (
+        <div className="space-y-2 rounded-xl bg-white/5 p-3 text-sm" data-testid="own-intro">
+          {own.intro ? (
+            <p className="truncate" dir="auto">
+              🎞 {own.intro.name || t('export.opening.introOwn')}
+              {own.intro.kind === 'image' && <span className="text-xs text-white/50"> · {t('export.opening.ownStill')}</span>}
+            </p>
+          ) : (
+            <p className="text-xs text-white/60">{t('export.opening.ownNone')}</p>
+          )}
+          {ownMissing && <p className="text-xs text-amber-200">{t('error.intro_missing')}</p>}
+          <div className="flex flex-wrap gap-2">
+            <label className="inline-flex min-h-10 cursor-pointer items-center rounded-lg bg-violet-500/25 px-3 text-xs font-semibold hover:bg-violet-500/35">
+              ⬆ {t(own.intro ? 'export.opening.ownReplace' : 'export.opening.ownUpload')}
+              <input
+                ref={fileInput}
+                type="file"
+                accept={OWN_INTRO_ACCEPT}
+                className="sr-only"
+                aria-label={t(own.intro ? 'export.opening.ownReplace' : 'export.opening.ownUpload')}
+                disabled={progress !== null}
+                onChange={(e) => {
+                  const f = e.target.files?.[0]
+                  if (f) void uploadOwn(f)
+                }}
+              />
+            </label>
+            {own.intro && (
+              <button type="button" onClick={() => void own.remove().then(() => setPreview(false))}
+                className="min-h-10 rounded-lg px-3 text-xs text-red-300 hover:bg-red-500/10">
+                {t('export.opening.ownRemove')}
+              </button>
+            )}
+          </div>
+          {progress !== null && <ProgressBar value={progress} />}
+          {uploadError && <p className="text-xs text-red-200">{t(errorKey(uploadError))}</p>}
+          <p className="text-xs text-white/45">{t('export.opening.ownHint')}</p>
+        </div>
+      )}
       {preview && (
-        <video key={introSrc} src={introSrc} controls autoPlay playsInline className="mx-auto max-h-64 rounded-xl" data-testid="intro-preview" />
+        <video key={useOwn ? ownUrl ?? '' : introSrc} src={useOwn ? ownUrl ?? '' : introSrc} controls autoPlay playsInline
+          className="mx-auto max-h-64 rounded-xl" data-testid="intro-preview" />
       )}
 
       {(choice.intro || choice.titleCard) && (

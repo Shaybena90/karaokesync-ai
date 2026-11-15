@@ -56,6 +56,7 @@ class ExportRequest(BaseModel):
 # what they report in the `workers` table; see worker.runner.WORKER_VERSION).
 MIN_OPENING_WORKER = "2026-11-14.2"   # the intro, transitions, previews
 MIN_TITLE_WORKER = "2026-11-15.1"     # the title card designs (an older worker draws the old title)
+MIN_OWN_INTRO_WORKER = "2026-11-15.2"  # the user's own opening clip
 
 
 def _worker_too_old(sb: SupabaseClient, needed: str) -> bool:
@@ -151,7 +152,16 @@ def exports_router() -> APIRouter:
                 raise HTTPException(status.HTTP_409_CONFLICT, detail="instrumental_not_ready")
 
         if body.preview or (body.opening and body.opening.active):
-            needed = MIN_TITLE_WORKER if body.opening and body.opening.title else MIN_OPENING_WORKER
+            needed = max(
+                MIN_OPENING_WORKER,
+                MIN_TITLE_WORKER if body.opening and body.opening.title else "",
+                MIN_OWN_INTRO_WORKER if body.opening and body.opening.intro and body.opening.intro_media_id else "",
+            )
+            if body.opening and body.opening.intro and body.opening.intro_media_id:
+                own = sb.select("background_media", {"id": f"eq.{body.opening.intro_media_id}", "user_id": f"eq.{user.id}",
+                                                     "status": "eq.verified", "select": "id"})
+                if not own:
+                    raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail="intro_missing")
             if _worker_too_old(sb, needed):
                 raise HTTPException(status.HTTP_409_CONFLICT, detail="worker_outdated")
         existing = sb.select("export_jobs", {"project_id": f"eq.{project_id}", "status": f"in.{ACTIVE}", "select": "*"})

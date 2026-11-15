@@ -18,6 +18,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Literal
 
+import re
+
 from pydantic import BaseModel, Field, field_validator
 
 from ..worker.errors import PipelineError
@@ -120,6 +122,16 @@ class OpeningOptions(BaseModel):
     title: TitleCard | None = None
     transition: Transition = "fade"
     title_theme: TitleThemeId = "brand"
+    # The user's own opening clip (an uploaded, verified background file of theirs)
+    # instead of the KaraokeSync intro.
+    intro_media_id: str | None = None
+
+    @field_validator("intro_media_id")
+    @classmethod
+    def _uuid(cls, v: str | None) -> str | None:
+        if v is not None and not re.fullmatch(r"[0-9a-fA-F-]{36}", v):
+            raise ValueError("expected a uuid")
+        return v.lower() if v else None
 
     @property
     def theme(self) -> TitleTheme:
@@ -142,8 +154,30 @@ class OpeningPlan:
         return self.blend_ms
 
 
-def plan_opening(options: OpeningOptions) -> OpeningPlan:
-    segments = ([("intro", INTRO_MS)] if options.intro else []) + ([("title", TITLE_MS)] if options.title else [])
+# The user's own opening: at most this long (longer clips are cut), stills show this long.
+CUSTOM_INTRO_MAX_MS = 30_000
+CUSTOM_INTRO_STILL_MS = 5_000
+CUSTOM_INTRO_MIN_MS = 2 * TRANSITION_MS + 500
+
+
+@dataclass
+class CustomIntro:
+    """The user's own opening clip, downloaded for this render."""
+
+    path: Path
+    ms: int            # how long it plays
+    still: bool        # a picture (shown for CUSTOM_INTRO_STILL_MS)
+    has_audio: bool    # its own sound plays before the song
+
+
+def custom_intro_length(kind: str, duration_ms: int | None) -> int:
+    if kind == "image" or not duration_ms:
+        return CUSTOM_INTRO_STILL_MS
+    return max(CUSTOM_INTRO_MIN_MS, min(duration_ms, CUSTOM_INTRO_MAX_MS))
+
+
+def plan_opening(options: OpeningOptions, intro_ms: int = INTRO_MS) -> OpeningPlan:
+    segments = ([("intro", intro_ms)] if options.intro else []) + ([("title", TITLE_MS)] if options.title else [])
     blend = CUT_MS if options.transition == "none" else TRANSITION_MS
     length = sum(ms for _, ms in segments) - blend * (len(segments) - 1)
     return OpeningPlan(segments, blend, length - blend)
@@ -154,7 +188,8 @@ def intro_file(aspect: str) -> Path:
 
 
 def opening_files(options: OpeningOptions, aspect: str) -> list[Path]:
-    files = ([intro_file(aspect)] if options.intro else []) + ([INTRO_DIR / options.theme.backdrop] if options.title else [])
+    builtin_intro = options.intro and not options.intro_media_id   # the user's own clip is downloaded instead
+    files = ([intro_file(aspect)] if builtin_intro else []) + ([INTRO_DIR / options.theme.backdrop] if options.title else [])
     missing = [f for f in files if not f.is_file()]
     if missing:
         # An older copy of the project on this computer: the clips come with the update.
@@ -253,6 +288,7 @@ def render_opening(
     encoder: list[str],
     threads: int,
     timeout: float,
+    custom_intro: CustomIntro | None = None,
 ) -> str:
     """Encode the opening (intro, title, transitions and the karaoke's first
     moment) into one silent clip with the same settings as the karaoke parts."""
@@ -263,7 +299,15 @@ def render_opening(
     fit = f"scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1,fps=30,format=yuv420p"
     index = 0
     for kind, ms in plan.segments:
-        if kind == "intro":
+        if kind == "intro" and custom_intro:
+            still = ["-loop", "1", "-framerate", "30"] if custom_intro.still else []
+            inputs += [*still, "-i", str(custom_intro.path.resolve())]
+            # the user's clip keeps its proportions: fitted inside the frame on a black background
+            fit_in = (f"scale={W}:{H}:force_original_aspect_ratio=decrease,pad={W}:{H}:(ow-iw)/2:(oh-ih)/2:color=black,"
+                      f"setsar=1,fps=30,format=yuv420p")
+            chains.append(f"[{index}:v]{fit_in},trim=duration={ms / 1000:.3f},setpts=PTS-STARTPTS,"
+                          f"tpad=stop_mode=clone:stop_duration={ms / 1000:.3f},trim=duration={ms / 1000:.3f}[s{index}]")
+        elif kind == "intro":
             inputs += ["-i", str(intro_file(aspect).resolve())]
             chains.append(f"[{index}:v]{fit},trim=duration={ms / 1000:.3f},setpts=PTS-STARTPTS[s{index}]")
         else:

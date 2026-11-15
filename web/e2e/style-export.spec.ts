@@ -247,3 +247,22 @@ test('choose the title card design', async ({ page, backend }) => {
   await page.getByTestId('opening').getByRole('checkbox', { name: /כותרת/ }).uncheck()
   await expect(themes).toHaveCount(0)
 })
+
+test('my own opening clip instead of the KaraokeSync one', async ({ page, backend }) => {
+  const box = page.getByTestId('opening')
+  await box.getByRole('radio', { name: 'הפתיח שלי' }).click()
+  const create = page.getByRole('button', { name: /יצירת סרטון/ })
+  await expect(create).toBeDisabled() // nothing uploaded yet
+  await expect(box.getByText(/העלו את הפתיח שלכם/)).toBeVisible()
+  await box.getByTestId('own-intro').locator('input[type=file]').setInputFiles({ name: 'הפתיח-שלי.gif', mimeType: 'image/gif', buffer: GIF })
+  await expect(box.getByText('הפתיח-שלי.gif')).toBeVisible()
+  const id = backend.backgroundMedia[0].id
+  // kept in the account, for every song
+  await expect.poll(() => (backend.userMetadata.own_intro as { id?: string } | undefined)?.id).toBe(id)
+  await create.click()
+  await expect.poll(() => (backend.exportJobs[0]?.options as { opening?: { intro_media_id?: string } })?.opening?.intro_media_id).toBe(id)
+  // back to the KaraokeSync opening: no own clip in the request
+  await box.getByRole('radio', { name: 'פתיח KaraokeSync' }).click()
+  await page.reload()
+  await expect(page.getByTestId('opening').getByRole('radio', { name: 'פתיח KaraokeSync' })).toHaveAttribute('aria-checked', 'true')
+})

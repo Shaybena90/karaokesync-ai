@@ -9,6 +9,7 @@ import type { VideoAspect } from '../player/KaraokePlayer'
 import { Alert, Button, ProgressBar, Spinner } from '../ui'
 import { openingProblem, openingRequest, useOpeningChoice } from '../../lib/opening'
 import { OpeningPanel } from './OpeningPanel'
+import { useOwnIntro } from '../../lib/ownIntro'
 import { Segmented } from './StyleControls'
 
 interface Props {
@@ -31,6 +32,8 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
   const [resolution, setResolution] = useState<'720' | '1080'>('1080')
   const [noVocals, setNoVocals] = useState(false)
   const [opening, setOpening] = useOpeningChoice(projectId, title)
+  const ownIntro = useOwnIntro()
+  const openingBlocked = openingProblem(opening, Boolean(ownIntro.intro)) !== null
   const [jobs, setJobs] = useState<ExportJob[]>([])
   const [busy, setBusy] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -104,7 +107,7 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
     run(preview ? 'preview' : 'mp4', async () => {
       await beforeExport()
       const job = await api.createVideoExport(projectId, aspect, Number(resolution), noVocals && instrumental.ready ? 'instrumental' : 'original',
-        openingRequest(opening), preview)
+        openingRequest(opening, ownIntro.intro?.id ?? null), preview)
       if (preview) {
         setWatching(null)
         setWaitingFor(job.id)
@@ -168,17 +171,17 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
           🎵 {t('export.noVocals')}
         </label>
         {!instrumental.ready && canRenderVideo && <p className="-mt-2 text-xs text-white/40">{t('export.noVocalsHint')}</p>}
-        <OpeningPanel choice={opening} onChange={setOpening} aspect={aspect} />
+        <OpeningPanel choice={opening} onChange={setOpening} aspect={aspect} projectId={projectId} own={ownIntro} />
         <div className="grid gap-2 sm:grid-cols-2">
           <Button
             variant="ghost"
-            disabled={!canRenderVideo || busy !== null || active || openingProblem(opening) !== null}
+            disabled={!canRenderVideo || busy !== null || active || openingBlocked}
             onClick={() => makeVideo(true)}
           >
             {busy === 'preview' ? <Spinner className="size-4" /> : '👁'} {t('export.preview')}
           </Button>
           <Button
-            disabled={!canRenderVideo || busy !== null || active || openingProblem(opening) !== null}
+            disabled={!canRenderVideo || busy !== null || active || openingBlocked}
             onClick={() => makeVideo(false)}
           >
             {busy === 'mp4' ? <Spinner className="size-4" /> : '🎬'} {t('export.createVideo')}

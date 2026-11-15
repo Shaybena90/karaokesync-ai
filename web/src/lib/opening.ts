@@ -28,20 +28,28 @@ export interface OpeningChoice {
   artist: string
   transition: Transition
   titleTheme: TitleThemeId
+  /** Which opening clip: the KaraokeSync intro or the user's own. */
+  introSource: 'builtin' | 'own'
 }
 
 /** What the API gets (null = no opening at all). */
-export function openingRequest(c: OpeningChoice) {
+export function openingRequest(c: OpeningChoice, ownIntroId: string | null = null) {
   if (!c.intro && !c.titleCard) return null
   return {
     intro: c.intro,
     transition: c.transition,
     title: c.titleCard ? { song: c.song.trim(), artist: c.artist.trim() } : null,
     title_theme: c.titleTheme,
+    intro_media_id: c.intro && c.introSource === 'own' && ownIntroId ? ownIntroId : null,
   }
 }
 
-export const openingProblem = (c: OpeningChoice) => (c.titleCard && !c.song.trim() ? 'export.opening.needSong' : null)
+export const openingProblem = (c: OpeningChoice, hasOwnIntro = true) =>
+  c.titleCard && !c.song.trim()
+    ? 'export.opening.needSong'
+    : c.intro && c.introSource === 'own' && !hasOwnIntro
+      ? 'export.opening.needOwnIntro'
+      : null
 
 const KEY = (projectId: string) => `ks-opening:${projectId}`
 const LAST_ARTIST = 'ks-opening:artist'
@@ -49,7 +57,7 @@ const LAST_ARTIST = 'ks-opening:artist'
 /** The choice for this song, remembered in this browser (the song's name starts as the project's title). */
 export function useOpeningChoice(projectId: string, projectTitle: string) {
   const [choice, setChoice] = useState<OpeningChoice>(() => {
-    const base: OpeningChoice = { intro: true, titleCard: true, song: projectTitle, artist: '', transition: 'fade', titleTheme: 'brand' }
+    const base: OpeningChoice = { intro: true, titleCard: true, song: projectTitle, artist: '', transition: 'fade', titleTheme: 'brand', introSource: 'builtin' }
     try {
       const saved = JSON.parse(localStorage.getItem(KEY(projectId)) ?? 'null')
       const artist = localStorage.getItem(LAST_ARTIST) ?? ''
@@ -61,6 +69,7 @@ export function useOpeningChoice(projectId: string, projectTitle: string) {
           artist: typeof saved.artist === 'string' ? saved.artist.slice(0, 120) : artist,
           transition: (TRANSITIONS as readonly string[]).includes(saved.transition) ? saved.transition : base.transition,
           titleTheme: THEME_IDS.includes(saved.titleTheme) ? saved.titleTheme : base.titleTheme,
+          introSource: saved.introSource === 'own' ? 'own' : 'builtin',
         }
       }
       return { ...base, artist }

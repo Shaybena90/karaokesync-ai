@@ -14,7 +14,7 @@ from pathlib import Path
 from ..styles import SubtitleStyle
 from ..worker.errors import PipelineError
 from .ass import Canvas
-from .opening import OpeningOptions, intro_file, plan_opening, render_opening
+from .opening import INTRO_MS, CustomIntro, OpeningOptions, intro_file, plan_opening, render_opening
 
 ASPECTS = {"16:9": (16, 9), "9:16": (9, 16), "1:1": (1, 1)}
 RESOLUTIONS = (720, 1080)
@@ -142,6 +142,7 @@ def render_mp4(
     aspect: str = "16:9",
     title_subs: str | None = None,
     extra_fonts: list[Path] | None = None,
+    custom_intro: CustomIntro | None = None,
 ) -> Path:
     """Render the video in parts at the same time (one FFmpeg per part), join
     them without re-encoding and add the song once.
@@ -156,7 +157,7 @@ def render_mp4(
     for f in [font_file, *(extra_fonts or [])]:
         shutil.copy(f, fonts / f.name)
     (workdir / "subs.ass").write_text(ass_text, encoding="utf-8")
-    plan = plan_opening(opening) if opening and opening.active else None
+    plan = plan_opening(opening, custom_intro.ms if custom_intro else INTRO_MS) if opening and opening.active else None
     lead_ms = plan.karaoke_start_ms if plan else 0   # the opening comes before the song
     if plan and title_subs:
         (workdir / "title.ass").write_text(title_subs, encoding="utf-8")
@@ -245,12 +246,19 @@ def render_mp4(
         names[0] = render_opening(
             ffmpeg, workdir, canvas, opening, aspect, plan, "part0.mp4", "title.ass" if title_subs else None,
             encoder_args(encoder, video_cap), max(1, os.cpu_count() or 1), max(60.0, deadline - time.monotonic()),
+            custom_intro=custom_intro,
         )
         # The song starts where the karaoke starts; the intro's own sound plays before it.
         delay = f"adelay=delays={lead_ms}:all=1"
+        intro_sound = None
         if opening.intro:
-            extra_audio = ["-i", str(intro_file(aspect).resolve())]
-            graph = f"[1:a:0]{delay}[song];[2:a:0]apad[intro];[song][intro]amix=inputs=2:duration=first:normalize=0[a]"
+            intro_sound = (custom_intro.path if custom_intro.has_audio else None) if custom_intro else intro_file(aspect)
+        if intro_sound:
+            extra_audio = ["-i", str(intro_sound.resolve())]
+            # the intro's sound stops (with a short fade) when the intro does
+            ims = (custom_intro.ms if custom_intro else INTRO_MS) / 1000
+            graph = (f"[1:a:0]{delay}[song];[2:a:0]atrim=duration={ims:.3f},afade=t=out:st={max(0.0, ims - 0.6):.3f}:d=0.6,"
+                     f"apad[intro];[song][intro]amix=inputs=2:duration=first:normalize=0[a]")
         else:
             graph = f"[1:a:0]{delay}[a]"
         sound = ["-filter_complex", graph, "-map", "[a]"]
