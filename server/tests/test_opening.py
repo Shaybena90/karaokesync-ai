@@ -66,6 +66,24 @@ def test_a_very_long_title_is_made_smaller():
     assert m.width(("מילה " * 20).strip(), size) <= 1280 * 0.87
 
 
+def test_the_user_chooses_the_letter_sizes():
+    m = measurer_for(str(SYSTEM_FONT))
+    sizes = lambda card: {k: float(v) for k, v in re.findall(r"Style: ([NS]),[^,]+,([\d.]+)", op.title_ass(card, Canvas(1920, 1080), m, m, "he"))}
+    normal = sizes(op.TitleCard(song="שיר", artist="זמר"))
+    big_song = sizes(op.TitleCard(song="שיר", artist="זמר", artist_size=70, song_size=150))
+    assert big_song["N"] == pytest.approx(normal["N"] * 0.7, rel=0.01)
+    assert big_song["S"] == pytest.approx(normal["S"] * 1.5, rel=0.01)   # the song does not follow the singer
+    # without a singer the song is the big line, at its own size
+    alone = sizes(op.TitleCard(song="שיר", song_size=60))
+    assert alone["N"] == pytest.approx(sizes(op.TitleCard(song="שיר"))["N"] * 0.6, rel=0.01)
+    # a long name still never grows past the screen
+    long = "מילה " * 8
+    huge = sizes(op.TitleCard(song="שיר", artist=long, artist_size=160))
+    assert m.width(long.strip(), huge["N"]) <= 1920 * 0.87
+    with pytest.raises(ValidationError):
+        op.TitleCard(song="שיר", artist_size=300)
+
+
 def test_missing_clips_are_reported(monkeypatch, tmp_path):
     from karaokesync.worker.errors import PipelineError
 
@@ -145,7 +163,7 @@ def test_the_api_keeps_the_choice(client, ready_project):  # noqa: F811
     pid = ready_project["id"]
     body = {"aspect": "16:9", "opening": {"intro": True, "transition": "pixelize", "title": {"song": "שיר", "artist": "זמר"}}}
     job = client.post(f"/projects/{pid}/exports", json=body, headers=AUTH).json()
-    assert job["options"]["opening"] == {"intro": True, "transition": "pixelize", "title": {"song": "שיר", "artist": "זמר"},
+    assert job["options"]["opening"] == {"intro": True, "transition": "pixelize", "title": {"song": "שיר", "artist": "זמר", "artist_size": 100, "song_size": 100},
                                          "title_theme": "brand", "intro_media_id": None}
     bad = {"opening": {"intro": True, "transition": "spin"}}
     assert client.post(f"/projects/{pid}/exports", json=bad, headers=AUTH).status_code == 422

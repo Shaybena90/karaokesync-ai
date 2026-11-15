@@ -4,7 +4,7 @@ import { ApiError } from '../../lib/api'
 import { OWN_INTRO_ACCEPT, type useOwnIntro } from '../../lib/ownIntro'
 import { ProgressBar } from '../ui'
 import type { MessageKey } from '../../i18n/he'
-import { TITLE_THEMES, TRANSITIONS, openingProblem, titleSample, type OpeningChoice, type Transition } from '../../lib/opening'
+import { TITLE_SIZE, TITLE_THEMES, TRANSITIONS, openingProblem, titleSample, type OpeningChoice, type Transition } from '../../lib/opening'
 import type { VideoAspect } from '../player/KaraokePlayer'
 
 const ICONS: Record<Transition, string> = {
@@ -86,6 +86,33 @@ export function OpeningPanel({ choice, onChange, aspect, projectId, own }: Props
         ✨ {t('export.opening.titleCard')}
       </label>
       {problem && <p className="-mt-2 text-xs text-amber-200">{t(problem as MessageKey)}</p>}
+      {choice.titleCard && (
+        <div className="grid gap-2 sm:grid-cols-2" data-testid="title-sizes">
+          {(
+            [
+              ['artistSize', 'export.opening.artistSize'],
+              ['songSize', 'export.opening.songSize'],
+            ] as const
+          ).map(([k, label]) => (
+            <label key={k} className="block space-y-1">
+              <span className="flex justify-between text-xs text-white/60">
+                <span>{t(label)}</span>
+                <span dir="ltr">{choice[k]}%</span>
+              </span>
+              <input
+                type="range"
+                min={TITLE_SIZE.min}
+                max={TITLE_SIZE.max}
+                step={TITLE_SIZE.step}
+                value={choice[k]}
+                onChange={(e) => set(k, Number(e.target.value))}
+                className="w-full accent-violet-500"
+              />
+            </label>
+          ))}
+          <p className="text-xs text-white/50 sm:col-span-2">{t('export.opening.sizeHint')}</p>
+        </div>
+      )}
       {choice.titleCard && (
         <div className="space-y-1.5">
           <span className="text-xs text-white/60">{t('export.opening.theme')}</span>

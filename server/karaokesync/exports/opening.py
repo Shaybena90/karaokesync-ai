@@ -108,6 +108,9 @@ TITLE_DELAY_MS = 900     # the words come in once the transition has mostly show
 class TitleCard(BaseModel):
     song: str = Field(min_length=1, max_length=120)
     artist: str = Field(default="", max_length=120)
+    # How big the letters are, in percent of the design's own size (the user's choice).
+    artist_size: int = Field(default=100, ge=50, le=160)
+    song_size: int = Field(default=100, ge=50, le=160)
 
     @field_validator("song", "artist")
     @classmethod
@@ -214,8 +217,10 @@ def title_ass(card: TitleCard, canvas: Canvas, name_font: TextMeasurer, song_fon
     unit = min(W, H) / 720
     artist, song = escape_text(card.artist), escape_text(card.song)
     big, small = (artist, song) if artist else (song, "")
-    fs = _fit(name_font, big, min(W, H) * 0.19, W * 0.86)
-    sfs = _fit(song_font, small, fs * 0.5, W * 0.84) if small else 0
+    base = _fit(name_font, big, min(W, H) * 0.19, W * 0.86)     # the design's size, fitted to the width
+    big_scale = (card.artist_size if artist else card.song_size) / 100
+    fs = _fit(name_font, big, min(W, H) * 0.19 * big_scale, W * 0.86)  # bigger only while it still fits
+    sfs = _fit(song_font, small, base * 0.5 * card.song_size / 100, W * 0.84) if small else 0
     gap = fs * 0.14                                   # a little space between the two lines
     block = fs + (gap + sfs if small else 0)
     cy = H * 0.5 - block / 2 + fs / 2                 # the two lines together are centred

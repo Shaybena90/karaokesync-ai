@@ -60,6 +60,7 @@ class ExportRequest(BaseModel):
 MIN_OPENING_WORKER = "2026-11-14.2"   # the intro, transitions, previews
 MIN_TITLE_WORKER = "2026-11-15.1"     # the title card designs (an older worker draws the old title)
 MIN_OWN_INTRO_WORKER = "2026-11-15.2"  # the user's own opening clip
+MIN_TITLE_SIZE_WORKER = "2026-11-15.3"  # the user's own letter sizes on the title card
 
 
 def _worker_too_old(sb: SupabaseClient, needed: str) -> bool:
@@ -159,6 +160,8 @@ def exports_router() -> APIRouter:
                 MIN_OPENING_WORKER,
                 MIN_TITLE_WORKER if body.opening and body.opening.title else "",
                 MIN_OWN_INTRO_WORKER if body.opening and body.opening.intro and body.opening.intro_media_id else "",
+                MIN_TITLE_SIZE_WORKER if body.opening and body.opening.title
+                and (body.opening.title.artist_size, body.opening.title.song_size) != (100, 100) else "",
             )
             if body.opening and body.opening.intro and body.opening.intro_media_id:
                 own = sb.select("background_media", {"id": f"eq.{body.opening.intro_media_id}", "user_id": f"eq.{user.id}",

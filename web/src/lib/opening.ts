@@ -28,6 +28,9 @@ export interface OpeningChoice {
   artist: string
   transition: Transition
   titleTheme: TitleThemeId
+  /** Letter sizes on the title card, in percent of the design's size. */
+  artistSize: number
+  songSize: number
   /** Which opening clip: the KaraokeSync intro or the user's own. */
   introSource: 'builtin' | 'own'
 }
@@ -38,7 +41,7 @@ export function openingRequest(c: OpeningChoice, ownIntroId: string | null = nul
   return {
     intro: c.intro,
     transition: c.transition,
-    title: c.titleCard ? { song: c.song.trim(), artist: c.artist.trim() } : null,
+    title: c.titleCard ? { song: c.song.trim(), artist: c.artist.trim(), artist_size: c.artistSize, song_size: c.songSize } : null,
     title_theme: c.titleTheme,
     intro_media_id: c.intro && c.introSource === 'own' && ownIntroId ? ownIntroId : null,
   }
@@ -51,13 +54,17 @@ export const openingProblem = (c: OpeningChoice, hasOwnIntro = true) =>
       ? 'export.opening.needOwnIntro'
       : null
 
+export const TITLE_SIZE = { min: 50, max: 160, step: 10 } as const
+const titleSize = (v: unknown) =>
+  typeof v === 'number' && Number.isFinite(v) ? Math.min(TITLE_SIZE.max, Math.max(TITLE_SIZE.min, Math.round(v / 10) * 10)) : 100
+
 const KEY = (projectId: string) => `ks-opening:${projectId}`
 const LAST_ARTIST = 'ks-opening:artist'
 
 /** The choice for this song, remembered in this browser (the song's name starts as the project's title). */
 export function useOpeningChoice(projectId: string, projectTitle: string) {
   const [choice, setChoice] = useState<OpeningChoice>(() => {
-    const base: OpeningChoice = { intro: true, titleCard: true, song: projectTitle, artist: '', transition: 'fade', titleTheme: 'brand', introSource: 'builtin' }
+    const base: OpeningChoice = { intro: true, titleCard: true, song: projectTitle, artist: '', transition: 'fade', titleTheme: 'brand', introSource: 'builtin', artistSize: 100, songSize: 100 }
     try {
       const saved = JSON.parse(localStorage.getItem(KEY(projectId)) ?? 'null')
       const artist = localStorage.getItem(LAST_ARTIST) ?? ''
@@ -70,6 +77,8 @@ export function useOpeningChoice(projectId: string, projectTitle: string) {
           transition: (TRANSITIONS as readonly string[]).includes(saved.transition) ? saved.transition : base.transition,
           titleTheme: THEME_IDS.includes(saved.titleTheme) ? saved.titleTheme : base.titleTheme,
           introSource: saved.introSource === 'own' ? 'own' : 'builtin',
+          artistSize: titleSize(saved.artistSize),
+          songSize: titleSize(saved.songSize),
         }
       }
       return { ...base, artist }
