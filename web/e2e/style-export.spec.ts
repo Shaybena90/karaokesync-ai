@@ -261,6 +261,8 @@ test('my own opening clip instead of the KaraokeSync one', async ({ page, backen
   await expect.poll(() => (backend.userMetadata.own_intro as { id?: string } | undefined)?.id).toBe(id)
   await create.click()
   await expect.poll(() => (backend.exportJobs[0]?.options as { opening?: { intro_media_id?: string } })?.opening?.intro_media_id).toBe(id)
+  // the list says what was asked for, to compare with the video
+  await expect(page.getByTestId('job-opening').first()).toContainText('הפתיח שלי')
   // back to the KaraokeSync opening: no own clip in the request
   await box.getByRole('radio', { name: 'פתיח KaraokeSync' }).click()
   await page.reload()

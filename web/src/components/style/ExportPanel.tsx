@@ -7,7 +7,7 @@ import type { InstrumentalState } from '../../lib/useInstrumental'
 import type { ExportJob } from '../../lib/types'
 import type { VideoAspect } from '../player/KaraokePlayer'
 import { Alert, Button, ProgressBar, Spinner } from '../ui'
-import { openingProblem, openingRequest, useOpeningChoice } from '../../lib/opening'
+import { TITLE_THEMES, openingProblem, openingRequest, useOpeningChoice } from '../../lib/opening'
 import { OpeningPanel } from './OpeningPanel'
 import { useOwnIntro } from '../../lib/ownIntro'
 import { Segmented } from './StyleControls'
@@ -224,6 +224,19 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
                 </span>
                 <span className="text-xs text-white/50">{new Date(job.created_at).toLocaleString(locale)}</span>
               </div>
+              {job.options.opening && (
+                <p className="mt-1 text-xs text-white/50" data-testid="job-opening">
+                  {job.options.opening.intro
+                    ? `🎞 ${t(job.options.opening.intro_media_id ? 'export.opening.introOwn' : 'export.opening.introBuiltin')}`
+                    : `🎞 ${t('export.opening.noIntro')}`}
+                  {job.options.opening.title && (
+                    <> · ✨ {(() => {
+                      const th = TITLE_THEMES.find((x) => x.id === (job.options.opening?.title_theme ?? 'brand'))
+                      return th ? (locale === 'he' ? th.he : th.en) : ''
+                    })()}</>
+                  )}
+                </p>
+              )}
               {(job.status === 'queued' || job.status === 'running') && (
                 <div className="mt-2 space-y-1">
                   <ProgressBar value={job.progress / 100} />

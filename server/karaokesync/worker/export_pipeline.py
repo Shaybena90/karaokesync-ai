@@ -94,6 +94,9 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
             opening_files(opening, aspect)
             if opening.intro and opening.intro_media_id:
                 custom_intro = _download_custom_intro(sb, settings, project, opening.intro_media_id, workdir)
+            log.info("export job=%s opening: intro=%s title=%s transition=%s", job["id"],
+                     ("own" if custom_intro else "karaokesync") if opening.intro else "none",
+                     opening.title_theme if opening.title else "none", opening.transition)
             if opening.title:
                 try:
                     title_font, artist_font = ensure_font(opening.theme.name_font), ensure_font(opening.theme.song_font)

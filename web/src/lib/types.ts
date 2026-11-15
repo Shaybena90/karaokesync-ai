@@ -61,7 +61,13 @@ export interface ExportJob {
   id: string
   project_id: string
   format: 'srt' | 'lrc' | 'ass' | 'mp4'
-  options: { aspect?: '16:9' | '9:16' | '1:1'; resolution?: number; audio?: 'original' | 'instrumental'; preview?: boolean }
+  options: {
+    aspect?: '16:9' | '9:16' | '1:1'
+    resolution?: number
+    audio?: 'original' | 'instrumental'
+    preview?: boolean
+    opening?: { intro?: boolean; intro_media_id?: string | null; title?: { song: string } | null; title_theme?: string } | null
+  }
   status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
   progress: number
   output_path: string | null
