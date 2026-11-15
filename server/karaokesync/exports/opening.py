@@ -207,20 +207,18 @@ def _fit(measurer: TextMeasurer, text: str, size: float, max_width: float) -> fl
 
 def title_ass(card: TitleCard, canvas: Canvas, name_font: TextMeasurer, song_font: TextMeasurer,
               language: str | None, theme: TitleTheme | None = None) -> str:
-    """The title card's subtitles, in the intro's colours: the singer big, in
+    """The title card's subtitles, in the intro's colours: the song big, in
     white 3D letters with a purple depth and a soft purple glow, and just under
-    it the song, smaller, in light blue. A light sweeps across the singer's name.
-    Without a singer, the song takes the big place. Times are 0..TITLE_MS.
+    it the singer, smaller, in light blue. A light sweeps across the song's name. Times are 0..TITLE_MS.
     `theme` changes the colours, the depth and the glow (default: the intro's)."""
     t = theme or THEMES["brand"]
     W, H = canvas.width, canvas.height
     unit = min(W, H) / 720
     artist, song = escape_text(card.artist), escape_text(card.song)
-    big, small = (artist, song) if artist else (song, "")
+    big, small = song, artist                         # the song on top, the singer under it
     base = _fit(name_font, big, min(W, H) * 0.19, W * 0.86)     # the design's size, fitted to the width
-    big_scale = (card.artist_size if artist else card.song_size) / 100
-    fs = _fit(name_font, big, min(W, H) * 0.19 * big_scale, W * 0.86)  # bigger only while it still fits
-    sfs = _fit(song_font, small, base * 0.5 * card.song_size / 100, W * 0.84) if small else 0
+    fs = _fit(name_font, big, min(W, H) * 0.19 * card.song_size / 100, W * 0.86)  # bigger only while it still fits
+    sfs = _fit(song_font, small, base * 0.5 * card.artist_size / 100, W * 0.84) if small else 0
     gap = fs * 0.14                                   # a little space between the two lines
     block = fs + (gap + sfs if small else 0)
     cy = H * 0.5 - block / 2 + fs / 2                 # the two lines together are centred

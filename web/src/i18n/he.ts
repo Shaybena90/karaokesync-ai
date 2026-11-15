@@ -337,7 +337,7 @@ export const he = {
   'export.opening.artistSize': 'גודל שם הזמר',
   'export.opening.songSize': 'גודל שם השיר',
   'export.opening.sizeHint': '100% הוא הגודל הרגיל של העיצוב. שם ארוך לא יגדל מעבר לרוחב המסך.',
-  'export.opening.sizesLabel': 'זמר {artist}% · שיר {song}%',
+  'export.opening.sizesLabel': 'שיר {song}% · זמר {artist}%',
   'export.opening.song': 'שם השיר',
   'export.opening.artist': 'שם הזמר',
   'export.opening.titleCard': 'כותרת יוקרתית בתלת מימד עם שם השיר והזמר',

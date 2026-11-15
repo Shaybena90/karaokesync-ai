@@ -43,12 +43,12 @@ def test_title_card_subtitles():
     ass = op.title_ass(op.TitleCard(song="ירושלים {של} זהב", artist="נעמי שמר"), Canvas(1920, 1080), m, m, "he")
     assert "ירושלים ｛של｝ זהב" in ass and "{של}" not in ass   # typed text never becomes ASS codes
     events = [l for l in ass.splitlines() if l.startswith("Dialogue:")]
-    name_lines = [l for l in events if "נעמי שמר" in l]
-    song_lines = [l for l in events if "ירושלים" in l]
+    # the song is the big line on top, the singer under it
+    name_lines = [l for l in events if "ירושלים" in l]
+    song_lines = [l for l in events if "נעמי שמר" in l]
     assert len(name_lines) == 1 + 1 + 16 + 1 + 1 + 1   # glow, shadow + depth, face, light half, light sweep
     assert len(song_lines) == 1
     assert "\u200f" in ass   # right-to-left mark for Hebrew
-    # the singer is the big line, the song is under it and smaller
     size = {k: float(v) for k, v in re.findall(r"Style: ([NS]),[^,]+,([\d.]+)", ass)}
     assert size["S"] < size["N"] * 0.6
     y = lambda line: float(re.search(r"\\pos\([\d.]+,([\d.]+)\)", line).group(1))
@@ -56,7 +56,7 @@ def test_title_card_subtitles():
     # no gold any more: the colours of the intro
     assert op.THEMES["brand"].face_top == "#ffffff" and op.THEMES["brand"].depth.startswith("#8b5c")
     no_artist = op.title_ass(op.TitleCard(song="Song"), Canvas(1280, 720), m, m, "en")
-    assert sum(l.startswith("Dialogue:") for l in no_artist.splitlines()) == len(name_lines)   # the song takes the big place
+    assert sum(l.startswith("Dialogue:") for l in no_artist.splitlines()) == len(name_lines)   # no singer: one line
 
 
 def test_a_very_long_title_is_made_smaller():
@@ -70,15 +70,12 @@ def test_the_user_chooses_the_letter_sizes():
     m = measurer_for(str(SYSTEM_FONT))
     sizes = lambda card: {k: float(v) for k, v in re.findall(r"Style: ([NS]),[^,]+,([\d.]+)", op.title_ass(card, Canvas(1920, 1080), m, m, "he"))}
     normal = sizes(op.TitleCard(song="שיר", artist="זמר"))
-    big_song = sizes(op.TitleCard(song="שיר", artist="זמר", artist_size=70, song_size=150))
-    assert big_song["N"] == pytest.approx(normal["N"] * 0.7, rel=0.01)
-    assert big_song["S"] == pytest.approx(normal["S"] * 1.5, rel=0.01)   # the song does not follow the singer
-    # without a singer the song is the big line, at its own size
-    alone = sizes(op.TitleCard(song="שיר", song_size=60))
-    assert alone["N"] == pytest.approx(sizes(op.TitleCard(song="שיר"))["N"] * 0.6, rel=0.01)
+    chosen = sizes(op.TitleCard(song="שיר", artist="זמר", song_size=70, artist_size=150))
+    assert chosen["N"] == pytest.approx(normal["N"] * 0.7, rel=0.01)    # the song, on top
+    assert chosen["S"] == pytest.approx(normal["S"] * 1.5, rel=0.01)    # the singer does not follow the song
     # a long name still never grows past the screen
     long = "מילה " * 8
-    huge = sizes(op.TitleCard(song="שיר", artist=long, artist_size=160))
+    huge = sizes(op.TitleCard(song=long, artist="זמר", song_size=160))
     assert m.width(long.strip(), huge["N"]) <= 1920 * 0.87
     with pytest.raises(ValidationError):
         op.TitleCard(song="שיר", artist_size=300)

@@ -339,7 +339,7 @@ export const en: Record<MessageKey, string> = {
   'export.opening.artistSize': 'Singer size',
   'export.opening.songSize': 'Song name size',
   'export.opening.sizeHint': '100% is the design\'s normal size. A long name never grows past the screen width.',
-  'export.opening.sizesLabel': 'singer {artist}% · song {song}%',
+  'export.opening.sizesLabel': 'song {song}% · singer {artist}%',
   'export.opening.song': 'Song name',
   'export.opening.artist': 'Singer',
   'export.opening.titleCard': 'Luxurious 3D title with the song and singer',

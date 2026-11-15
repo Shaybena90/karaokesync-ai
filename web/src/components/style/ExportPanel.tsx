@@ -301,8 +301,8 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
                     <span data-testid="job-title-sizes">
                       {' · 🔠 '}
                       {t('export.opening.sizesLabel', {
-                        artist: job.options.opening.title.artist_size,
                         song: job.options.opening.title.song_size ?? 100,
+                        artist: job.options.opening.title.artist_size,
                       })}
                     </span>
                   )}

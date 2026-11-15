@@ -90,8 +90,8 @@ export function OpeningPanel({ choice, onChange, aspect, projectId, own }: Props
         <div className="grid gap-2 sm:grid-cols-2" data-testid="title-sizes">
           {(
             [
-              ['artistSize', 'export.opening.artistSize'],
               ['songSize', 'export.opening.songSize'],
+              ['artistSize', 'export.opening.artistSize'],
             ] as const
           ).map(([k, label]) => (
             <label key={k} className="block space-y-1">
