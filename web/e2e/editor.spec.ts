@@ -305,3 +305,17 @@ test('move a whole line up and down', async ({ page, backend }) => {
   await lines.first().getByRole('button', { name: /הזזת השורה למטה/ }).click()
   await expect.poll(() => words(0)).toEqual(first)
 })
+
+test('a very long line is flagged, and a sync that waits says why', async ({ page, backend }) => {
+  // the last word of the last line was recognised far away: the line spans ~30 s
+  backend.words[backend.words.length - 1].end_ms = 44000
+  backend.workerStatus = { available: true, online: false, paused: false, admin: false }
+  backend.syncHold = true
+  await page.reload()
+  await page.locator('.ks-chip').first().waitFor()
+  const line = page.locator('ol > li').last()
+  await expect(line.getByTestId('long-line')).toBeVisible()
+  await expect(page.locator('ol > li').first().getByTestId('long-line')).toHaveCount(0)
+  await line.getByRole('button', { name: /סנכרון אוטומטי|ריצת סנכרון|✨/ }).first().click()
+  await expect(line.getByText(/מחשב העיבוד לא מחובר/)).toBeVisible({ timeout: 25000 })
+})

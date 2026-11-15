@@ -7,6 +7,10 @@ import { Spinner } from '../ui'
 
 /** After this long in the queue, remind the user that the worker must be running. */
 const SLOW_QUEUE_MS = 15_000
+/** After this long being synced, explain what may be slow and what helps. */
+const SLOW_RUN_MS = 60_000
+/** A line sung over more than this is probably mis-timed: syncing it is slow and unsure. */
+const LONG_LINE_MS = 20_000
 
 interface Props {
   doc: LyricsDoc
@@ -30,6 +34,8 @@ interface Props {
   onDuplicateLine: (lineId: string) => void
   /** Move the whole line one place up (-1) or down (+1). */
   onMoveLine: (lineId: string, direction: -1 | 1) => void
+  /** Why no processing computer can take a sync now (null: one is online, or unknown). */
+  workerProblem?: 'offline' | 'paused' | null
 }
 
 /** All lines as editable word chips. Low-confidence words are underlined so they are easy to find. */
@@ -51,6 +57,7 @@ export const LinesList = memo(function LinesList({
   onMarkRange,
   onDuplicateLine,
   onMoveLine,
+  workerProblem = null,
 }: Props) {
   const { t } = useI18n()
   const [editing, setEditing] = useState<{ lineId: string; text: string } | null>(null)
@@ -68,6 +75,12 @@ export const LinesList = memo(function LinesList({
             <span dir="ltr" className="tabular-nums">
               {formatDuration(lineStart(line))}–{formatDuration(lineEnd(line))}
             </span>
+            {lineEnd(line) - lineStart(line) > LONG_LINE_MS && (
+              <button type="button" onClick={() => onMarkRange(line)} title={t('editor.longLineHint')}
+                className="rounded-md bg-amber-400/15 px-1.5 py-0.5 text-amber-200 hover:bg-amber-400/25" data-testid="long-line">
+                ⚠ {t('editor.longLine')}
+              </button>
+            )}
             <span className="ms-auto flex flex-wrap gap-1">
               <IconBtn label={t('editor.playLine')} onClick={() => onPlayLine(line)}>▶</IconBtn>
               <IconBtn label={t('editor.loopLine')} onClick={() => onLoopLine(line)}>⟲</IconBtn>
@@ -151,7 +164,8 @@ export const LinesList = memo(function LinesList({
               )
             })}
           </div>
-          <SyncStatus state={syncStates[line.id]} onDismiss={() => onDismissSync(line.id)} />
+          <SyncStatus state={syncStates[line.id]} onDismiss={() => onDismissSync(line.id)} workerProblem={workerProblem}
+            long={lineEnd(line) - lineStart(line) > LONG_LINE_MS} />
         </li>
       ))}
     </ol>
@@ -162,23 +176,33 @@ function isBusy(state: LineSyncState | undefined): boolean {
   return state?.kind === 'sending' || state?.kind === 'queued' || state?.kind === 'running'
 }
 
-function SyncStatus({ state, onDismiss }: { state: LineSyncState | undefined; onDismiss: () => void }) {
+function SyncStatus({ state, onDismiss, workerProblem, long }: {
+  state: LineSyncState | undefined
+  onDismiss: () => void
+  workerProblem: 'offline' | 'paused' | null
+  long: boolean
+}) {
   const { t } = useI18n()
-  const queuedSince = state?.kind === 'queued' ? state.since : null
+  const busySince = state?.kind === 'queued' || state?.kind === 'running' ? state.since : null
+  const limit = state?.kind === 'running' ? SLOW_RUN_MS : SLOW_QUEUE_MS
   const [slowSince, setSlowSince] = useState<number | null>(null)
   useEffect(() => {
-    if (queuedSince === null) return
-    const timer = setTimeout(() => setSlowSince(queuedSince), Math.max(0, queuedSince + SLOW_QUEUE_MS - Date.now()))
+    if (busySince === null) return
+    const timer = setTimeout(() => setSlowSince(busySince), Math.max(0, busySince + limit - Date.now()))
     return () => clearTimeout(timer)
-  }, [queuedSince])
-  const slow = queuedSince !== null && slowSince === queuedSince
+  }, [busySince, limit])
+  const slow = busySince !== null && slowSince === busySince
   if (!state) return null
   if (isBusy(state)) {
     return (
       <p className="mt-2 flex items-center gap-2 text-xs text-violet-200" role="status">
         <Spinner className="size-3.5" />
         {state.kind === 'running' ? t('editor.syncRunning') : t('editor.syncQueued')}
-        {slow && <span className="text-amber-200">· {t('editor.syncSlow')}</span>}
+        {workerProblem ? (
+          <span className="text-amber-200">· {t(workerProblem === 'paused' ? 'editor.syncWorkerPaused' : 'editor.syncWorkerOffline')}</span>
+        ) : (
+          slow && <span className="text-amber-200">· {t(state.kind === 'running' ? (long ? 'editor.syncSlowLong' : 'editor.syncSlowRun') : 'editor.syncSlow')}</span>
+        )}
       </p>
     )
   }

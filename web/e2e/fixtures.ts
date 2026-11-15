@@ -104,6 +104,8 @@ export class MockBackend {
   sourceSearches: { q: string; sources: string[] }[] = []
   /** Error code the mock API gives when verifying a background (null = accepted). */
   backgroundError: string | null = null
+  /** Keep sync jobs running forever (a busy or stuck worker). */
+  syncHold = false
   /** Error code the mock worker reports for sync jobs (null = success). */
   syncError: string | null = null
   lyricSaves: { p_expected_version: number; p_lines: { words: { text: string; start_ms: number; end_ms: number }[] }[] }[] = []
@@ -410,6 +412,7 @@ export class MockBackend {
       // The mock worker: words 400 ms apart, starting 300 ms into the window.
       setTimeout(() => Object.assign(job, { status: 'running' }), 500)
       setTimeout(() => {
+        if (this.syncHold) return
         if (this.syncError) return Object.assign(job, { status: 'failed', error_code: this.syncError })
         const result = (body.words as string[]).map((_, k) => ({
           start_ms: body.window_start_ms + 300 + k * 400, end_ms: body.window_start_ms + 650 + k * 400, confidence: 0.9 }))

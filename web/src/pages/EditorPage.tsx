@@ -38,6 +38,7 @@ import {
 } from '../lib/lyricsDoc'
 import { activeWordIndex } from '../lib/sync'
 import { useLyrics } from '../lib/useLyrics'
+import { useWorkerStatus } from '../lib/useWorkerStatus'
 import { useLineSync } from '../lib/useLineSync'
 import { useMediaQuery } from '../lib/useMediaQuery'
 import { useLyricsAutosave, type SaveStatus } from '../lib/useLyricsAutosave'
@@ -213,6 +214,12 @@ export function EditorPage() {
     [edit],
   )
   const lineSync = useLineSync(id, onSyncResult)
+  // While a line is being synced, know whether a processing computer can take it.
+  const syncing = Object.values(lineSync.states).some((st) => st.kind === 'queued' || st.kind === 'running')
+  const worker = useWorkerStatus(syncing)
+  const workerProblem = worker.status?.available
+    ? worker.status.paused ? ('paused' as const) : worker.status.online === false ? ('offline' as const) : null
+    : null
   const { start: startSync, fail: failSync } = lineSync
   /** Time a line of `d` (the document as it is now) to the singer. */
   const syncLine = useCallback(
@@ -597,6 +604,7 @@ export function EditorPage() {
               onMarkRange={onMarkRange}
               onDuplicateLine={onDuplicateLine}
               onMoveLine={onMoveLine}
+              workerProblem={workerProblem}
             />
           )}
         </div>
