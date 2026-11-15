@@ -65,7 +65,7 @@ def test_init_gives_a_private_upload(client, fake_sb, project):
 
 @pytest.mark.parametrize("body,status,code", [
     ({"file_name": "x.exe", "size_bytes": 10}, 415, "unsupported_background"),
-    ({"file_name": "x.gif", "size_bytes": 31 * 1024 * 1024}, 413, "background_too_large"),
+    ({"file_name": "x.gif", "size_bytes": 201 * 1024 * 1024}, 413, "background_too_large"),
 ])
 def test_init_rejects_bad_files(client, project, body, status, code):
     resp = client.post(f"/projects/{project['id']}/backgrounds", json=body, headers=AUTH)
@@ -363,3 +363,13 @@ def test_parallel_parts_match_a_single_render(tmp_path, monkeypatch):
         a, b = frame(outs[1], t), frame(outs[4], t)
         diff = sum(abs(x - y) for x, y in zip(a, b)) / len(a)
         assert diff < 6, f"frames differ at {t}s (mean difference {diff:.1f})"
+
+
+def test_bigger_files_up_to_200_mb(client, fake_sb, project):
+    from karaokesync.config import get_settings
+
+    assert get_settings().max_background_mb == 200
+    body = {"file_name": "intro.mp4", "size_bytes": 120 * 1024 * 1024}
+    assert client.post(f"/projects/{project['id']}/backgrounds", json=body, headers=AUTH).status_code == 201
+    sql = (Path(__file__).resolve().parents[2] / "supabase/migrations/20261116000001_bigger_uploads.sql").read_text()
+    assert "209715200" in sql and "'backgrounds'" in sql

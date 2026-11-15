@@ -47,7 +47,9 @@ class Settings(BaseSettings):
     max_syncs_per_day: int = 300
 
     # Video backgrounds (animated GIF / short video / image)
-    max_background_mb: int = 30
+    # Uploaded backgrounds and own opening clips. Supabase's upload limit must allow it
+    # (Pro plan: Storage settings; the backgrounds bucket: 20261116000001_bigger_uploads.sql).
+    max_background_mb: int = 200
     max_background_seconds: int = 60
     max_backgrounds_per_project: int = 10
     max_background_uploads_per_day: int = 30

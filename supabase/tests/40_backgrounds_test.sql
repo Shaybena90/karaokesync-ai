@@ -17,8 +17,8 @@ begin
   exception when check_violation then null;
   end;
 
-  assert (select public = false and file_size_limit = 31457280 from storage.buckets where id = 'backgrounds'),
-    'backgrounds bucket must be private with a 30 MB limit';
+  assert (select public = false and file_size_limit = 209715200 from storage.buckets where id = 'backgrounds'),
+    'backgrounds bucket must be private with a 200 MB limit';
 end $$;
 
 -- the migration can be run again without errors
