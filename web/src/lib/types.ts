@@ -67,7 +67,7 @@ export interface ExportJob {
     audio?: 'original' | 'instrumental'
     preview?: boolean
     quality?: 'standard' | 'high'
-    opening?: { intro?: boolean; intro_media_id?: string | null; title?: { song: string } | null; title_theme?: string } | null
+    opening?: { intro?: boolean; intro_media_id?: string | null; title?: { song: string; artist_size?: number; song_size?: number } | null; title_theme?: string } | null
   }
   status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
   progress: number

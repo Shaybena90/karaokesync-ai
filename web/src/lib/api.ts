@@ -135,7 +135,7 @@ export const api = {
     aspect: string,
     resolution: number,
     audio: 'original' | 'instrumental' = 'original',
-    opening: { intro: boolean; transition: string; title: { song: string; artist: string } | null; title_theme: string; intro_media_id: string | null } | null = null,
+    opening: { intro: boolean; transition: string; title: { song: string; artist: string; artist_size: number; song_size: number } | null; title_theme: string; intro_media_id: string | null } | null = null,
     preview = false,
     quality: 'standard' | 'high' = 'standard',
   ) =>

@@ -297,6 +297,15 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
                       return th ? (locale === 'he' ? th.he : th.en) : ''
                     })()}</>
                   )}
+                  {job.options.opening.title?.artist_size != null && (
+                    <span data-testid="job-title-sizes">
+                      {' · 🔠 '}
+                      {t('export.opening.sizesLabel', {
+                        artist: job.options.opening.title.artist_size,
+                        song: job.options.opening.title.song_size ?? 100,
+                      })}
+                    </span>
+                  )}
                 </p>
               )}
               {(job.status === 'queued' || job.status === 'running') && (
