@@ -223,7 +223,17 @@ def test_an_old_worker_is_reported_before_queueing(client, fake_sb, ready_projec
     from karaokesync.worker.runner import WORKER_VERSION
 
     fake_sb.tables["workers"].append({"id": "pc2", "version": WORKER_VERSION, "last_seen": now, "activity": "idle"})
+    # an old computer still online could take the job and draw the wrong thing: say so
+    assert client.post(f"/projects/{pid}/exports", json={"preview": True}, headers=AUTH).json()["detail"] == "worker_outdated"
+    fake_sb.tables["workers"][0]["activity"] = "stopped"
     assert client.post(f"/projects/{pid}/exports", json={"preview": True}, headers=AUTH).status_code == 201
+    fake_sb.tables["export_jobs"].clear()
+    # a worker that knows previews but not the title designs: only a title needs the newer one
+    fake_sb.tables["workers"][1]["version"] = "2026-11-14.2 (opening + preview)"
+    assert client.post(f"/projects/{pid}/exports", json={"preview": True, "opening": {"intro": True}}, headers=AUTH).status_code == 201
+    fake_sb.tables["export_jobs"].clear()
+    with_title = {"preview": True, "opening": {"title": {"song": "שיר"}, "title_theme": "stage"}}
+    assert client.post(f"/projects/{pid}/exports", json=with_title, headers=AUTH).json()["detail"] == "worker_outdated"
 
 
 def test_every_worker_error_has_a_message():
@@ -264,3 +274,42 @@ def test_the_website_lists_the_same_title_themes():
     ts = (ROOT / "web/src/lib/opening.ts").read_text(encoding="utf-8")
     rows = re.findall(r"\{ id: '([a-z]+)', he: '([^']+)', en: '([^']+)' \}", ts)
     assert rows == [(t.id, t.name_he, t.name_en) for t in op.THEMES.values()]
+
+
+def test_the_chosen_title_design_reaches_the_renderer(fake_sb, ready_project, tmp_path, monkeypatch):  # noqa: F811
+    from karaokesync.config import get_settings
+    from karaokesync.worker import export_pipeline
+
+    from .conftest import make_audio
+
+    clips = tmp_path / "intro"
+    _fake_clips(clips)
+    import shutil
+
+    shutil.copy(clips / op.BACKDROP_FILE, clips / "title-stage.mp4")
+    monkeypatch.setattr(op, "INTRO_DIR", clips)
+    monkeypatch.setattr(export_pipeline, "ensure_font", lambda family: SYSTEM_FONT)
+    seen = {}
+
+    def fake_render(workdir, audio, ass, font, style, canvas, duration_ms, **kw):
+        seen.update(kw)
+        out = workdir / "out.mp4"
+        out.write_bytes(b"x")
+        return out
+
+    monkeypatch.setattr(export_pipeline, "render_mp4", fake_render)
+    settings = get_settings()
+    monkeypatch.setattr(settings, "worker_tmp_dir", str(tmp_path / "work"))
+    audio = fake_sb.tables["audio_files"][0]
+    audio["duration_ms"] = 3000
+    fake_sb.put_object("audio", audio["storage_path"], make_audio(tmp_path, "mp3", 3))
+    job = fake_sb.insert("export_jobs", {"project_id": ready_project["id"], "user_id": ready_project["user_id"], "format": "mp4",
+                                         "options": {"aspect": "16:9", "resolution": 480, "preview": True, "opening": {
+                                             "intro": False, "transition": "fade", "title_theme": "stage",
+                                             "title": {"song": "שיר", "artist": "זמר"}}}})
+    export_pipeline.run_export(job, fake_sb, settings, lambda p: None)
+    assert seen["opening"].title_theme == "stage" and seen["opening"].theme.backdrop == "title-stage.mp4"
+    stage = op.THEMES["stage"]
+    from karaokesync.exports.ass import tag_color
+
+    assert tag_color(stage.glow[0]) in seen["title_subs"]   # drawn with the stage design's colours
