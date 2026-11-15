@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { MessageKey } from '../../i18n/he'
-import { TRANSITIONS, openingProblem, type OpeningChoice, type Transition } from '../../lib/opening'
+import { TITLE_THEMES, TRANSITIONS, openingProblem, titleSample, type OpeningChoice, type Transition } from '../../lib/opening'
 import type { VideoAspect } from '../player/KaraokePlayer'
 
 const ICONS: Record<Transition, string> = {
@@ -15,7 +15,7 @@ const ICONS: Record<Transition, string> = {
  * with the song and the singer, and the transition into the karaoke.
  */
 export function OpeningPanel({ choice, onChange, aspect }: { choice: OpeningChoice; onChange: (c: OpeningChoice) => void; aspect: VideoAspect }) {
-  const { t } = useI18n()
+  const { t, locale } = useI18n()
   const [preview, setPreview] = useState(false)
   const set = <K extends keyof OpeningChoice>(k: K, v: OpeningChoice[K]) => onChange({ ...choice, [k]: v })
   const introSrc = aspect === '9:16' ? '/intro/intro-9x16.mp4' : aspect === '1:1' ? '/intro/intro-1x1.mp4' : '/intro/intro.mp4'
@@ -42,6 +42,28 @@ export function OpeningPanel({ choice, onChange, aspect }: { choice: OpeningChoi
         ✨ {t('export.opening.titleCard')}
       </label>
       {problem && <p className="-mt-2 text-xs text-amber-200">{t(problem as MessageKey)}</p>}
+      {choice.titleCard && (
+        <div className="space-y-1.5">
+          <span className="text-xs text-white/60">{t('export.opening.theme')}</span>
+          <div role="radiogroup" aria-label={t('export.opening.theme')} className="grid grid-cols-2 gap-1.5 sm:grid-cols-3" data-testid="title-themes">
+            {TITLE_THEMES.map((th) => (
+              <button
+                key={th.id}
+                type="button"
+                role="radio"
+                aria-checked={choice.titleTheme === th.id}
+                onClick={() => set('titleTheme', th.id)}
+                className={`overflow-hidden rounded-xl text-start text-xs transition ${
+                  choice.titleTheme === th.id ? 'bg-violet-500/30 font-semibold ring-2 ring-violet-300' : 'bg-white/5 hover:bg-white/10'
+                }`}
+              >
+                <img src={titleSample(th.id)} alt="" loading="lazy" className="aspect-video w-full object-cover" />
+                <span className="block truncate px-1.5 py-1">{locale === 'he' ? th.he : th.en}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-wrap items-center gap-2">
         <label className="flex min-h-10 flex-1 items-center gap-2 text-sm">

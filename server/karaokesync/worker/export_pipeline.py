@@ -15,7 +15,7 @@ from ..animated_backgrounds import clip_for
 from ..config import Settings
 from ..exports.ass import build_ass
 from ..exports.measure import measurer_for
-from ..exports.opening import NAME_FONT, PREVIEW_RESOLUTION, PREVIEW_SONG_MS, SONG_FONT, OpeningOptions, opening_files, title_ass
+from ..exports.opening import PREVIEW_RESOLUTION, PREVIEW_SONG_MS, OpeningOptions, opening_files, title_ass
 from ..exports.video import ASPECTS, RESOLUTIONS, BackgroundLayer, canvas_for, render_mp4
 from ..fonts import ensure_font
 from ..lyrics_data import load_lyrics
@@ -92,12 +92,12 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
             opening_files(opening, aspect)
             if opening.title:
                 try:
-                    title_font, artist_font = ensure_font(NAME_FONT), ensure_font(SONG_FONT)
+                    title_font, artist_font = ensure_font(opening.theme.name_font), ensure_font(opening.theme.song_font)
                 except RuntimeError as exc:
                     raise PipelineError("font_unavailable", retryable=True) from exc
                 extra_fonts = [title_font, artist_font]
                 title_subs = title_ass(opening.title, canvas, measurer_for(str(title_font)), measurer_for(str(artist_font)),
-                                       project.get("language"))
+                                       project.get("language"), opening.theme)
         layers = _animated_layer(settings, style, duration_ms) + _download_backgrounds(
             sb, settings, project, style, duration_ms, workdir
         )

@@ -192,7 +192,7 @@ test('opening clip, 3D title with the song and singer, and a transition', async 
   await song.fill('ירושלים של זהב')
   await create.click()
   await expect.poll(() => backend.exportJobs[0]?.options).toMatchObject({
-    opening: { intro: true, transition: 'circleopen', title: { song: 'ירושלים של זהב', artist: 'הזמרת' } },
+    opening: { intro: true, transition: 'circleopen', title: { song: 'ירושלים של זהב', artist: 'הזמרת' }, title_theme: 'brand' },
   })
   // remembered for next time
   await page.reload()
@@ -233,4 +233,17 @@ test('a video waiting in the queue says when the processing computer is off', as
     status: 'queued', progress: 0, output_path: null, error_code: null, created_at: new Date().toISOString(), finished_at: null })
   await page.reload()
   await expect(page.getByTestId('export-waiting')).toContainText('ה-Worker לא מחובר')
+})
+
+
+test('choose the title card design', async ({ page, backend }) => {
+  const themes = page.getByTestId('opening').getByRole('radiogroup', { name: 'עיצוב הכותרת והרקע' })
+  expect(await themes.getByRole('radio').count()).toBeGreaterThanOrEqual(6)
+  await expect(themes.locator('img').first()).toHaveAttribute('src', '/intro/title-brand-sample.jpg')
+  await themes.getByRole('radio', { name: 'ניאון' }).click()
+  await page.getByRole('button', { name: /יצירת סרטון/ }).click()
+  await expect.poll(() => (backend.exportJobs[0]?.options as { opening?: { title_theme?: string } })?.opening?.title_theme).toBe('neon')
+  // hidden when there is no title
+  await page.getByTestId('opening').getByRole('checkbox', { name: /כותרת/ }).uncheck()
+  await expect(themes).toHaveCount(0)
 })

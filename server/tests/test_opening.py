@@ -54,7 +54,7 @@ def test_title_card_subtitles():
     y = lambda line: float(re.search(r"\\pos\([\d.]+,([\d.]+)\)", line).group(1))
     assert y(song_lines[0]) > y(name_lines[-1])
     # no gold any more: the colours of the intro
-    assert op.FACE_TOP == "#ffffff" and op.DEPTH.startswith("#8b5c")
+    assert op.THEMES["brand"].face_top == "#ffffff" and op.THEMES["brand"].depth.startswith("#8b5c")
     no_artist = op.title_ass(op.TitleCard(song="Song"), Canvas(1280, 720), m, m, "en")
     assert sum(l.startswith("Dialogue:") for l in no_artist.splitlines()) == len(name_lines)   # the song takes the big place
 
@@ -145,7 +145,8 @@ def test_the_api_keeps_the_choice(client, ready_project):  # noqa: F811
     pid = ready_project["id"]
     body = {"aspect": "16:9", "opening": {"intro": True, "transition": "pixelize", "title": {"song": "שיר", "artist": "זמר"}}}
     job = client.post(f"/projects/{pid}/exports", json=body, headers=AUTH).json()
-    assert job["options"]["opening"] == {"intro": True, "transition": "pixelize", "title": {"song": "שיר", "artist": "זמר"}}
+    assert job["options"]["opening"] == {"intro": True, "transition": "pixelize", "title": {"song": "שיר", "artist": "זמר"},
+                                         "title_theme": "brand"}
     bad = {"opening": {"intro": True, "transition": "spin"}}
     assert client.post(f"/projects/{pid}/exports", json=bad, headers=AUTH).status_code == 422
 
@@ -234,3 +235,32 @@ def test_every_worker_error_has_a_message():
     he = (ROOT / "web" / "src" / "i18n" / "he.ts").read_text(encoding="utf-8")
     missing = sorted(c for c in codes if f"'error.{c}'" not in he)
     assert not missing, f"no Hebrew message for: {missing}"
+
+
+
+def test_title_themes():
+    from typing import get_args
+
+    assert set(get_args(op.TitleThemeId)) == set(op.THEMES) and len(op.THEMES) >= 6
+    m = measurer_for(str(SYSTEM_FONT))
+    card = op.TitleCard(song="שיר", artist="זמר")
+    looks = {tid: op.title_ass(card, Canvas(1280, 720), m, m, "he", theme) for tid, theme in op.THEMES.items()}
+    assert len(set(looks.values())) == len(looks), "every design draws differently"
+    assert op.THEMES["neon"].depth is None and "\\blur" in looks["neon"]
+    flat = [l for l in looks["minimal"].splitlines() if l.startswith("Dialogue:")]
+    assert len(flat) < 8   # no 3D depth and no light sweep
+    assert op.OpeningOptions(title=card, title_theme="gold").theme.backdrop == "title-gold.mp4"
+    with pytest.raises(ValidationError):
+        op.OpeningOptions(title_theme="pink")
+
+
+def test_every_theme_has_its_backdrop_and_picture():
+    for theme in op.THEMES.values():
+        assert (op.INTRO_DIR / theme.backdrop).is_file(), theme.backdrop
+        assert (op.INTRO_DIR / f"title-{theme.id}-sample.jpg").is_file(), theme.id
+
+
+def test_the_website_lists_the_same_title_themes():
+    ts = (ROOT / "web/src/lib/opening.ts").read_text(encoding="utf-8")
+    rows = re.findall(r"\{ id: '([a-z]+)', he: '([^']+)', en: '([^']+)' \}", ts)
+    assert rows == [(t.id, t.name_he, t.name_en) for t in op.THEMES.values()]

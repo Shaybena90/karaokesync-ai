@@ -364,6 +364,7 @@ export const en: Record<MessageKey, string> = {
   'error.unsupported_export': 'This kind of export is not supported by the processing computer. Update the worker and try again.',
   'export.queuedOffline': 'Waiting for the processing computer: the worker is not connected. Start it (5-start-worker.bat) and the video will start by itself.',
   'export.queuedPaused': 'Waiting: the processing computer is paused. Resume it on the "processing computer" page.',
+  'export.opening.theme': 'Title and backdrop design',
   'style.background': 'Video background',
   'style.bgColor1': 'Color 1',
   'style.bgColor2': 'Color 2',

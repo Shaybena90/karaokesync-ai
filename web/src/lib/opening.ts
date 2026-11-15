@@ -7,12 +7,27 @@ export const TRANSITIONS = [
 ] as const
 export type Transition = (typeof TRANSITIONS)[number]
 
+/** Title card designs — same ids as THEMES in server/karaokesync/exports/opening.py. */
+export const TITLE_THEMES = [
+  { id: 'brand', he: 'סגול KaraokeSync', en: 'KaraokeSync purple' },
+  { id: 'gold', he: 'זהב יוקרתי', en: 'Luxury gold' },
+  { id: 'neon', he: 'ניאון', en: 'Neon' },
+  { id: 'stage', he: 'במה', en: 'Stage' },
+  { id: 'space', he: 'חלל', en: 'Space' },
+  { id: 'sunset', he: 'שקיעה', en: 'Sunset' },
+  { id: 'minimal', he: 'מינימליסטי', en: 'Minimal' },
+] as const
+export type TitleThemeId = (typeof TITLE_THEMES)[number]['id']
+const THEME_IDS: readonly string[] = TITLE_THEMES.map((t) => t.id)
+export const titleSample = (id: string) => `/intro/title-${id}-sample.jpg`
+
 export interface OpeningChoice {
   intro: boolean
   titleCard: boolean
   song: string
   artist: string
   transition: Transition
+  titleTheme: TitleThemeId
 }
 
 /** What the API gets (null = no opening at all). */
@@ -22,6 +37,7 @@ export function openingRequest(c: OpeningChoice) {
     intro: c.intro,
     transition: c.transition,
     title: c.titleCard ? { song: c.song.trim(), artist: c.artist.trim() } : null,
+    title_theme: c.titleTheme,
   }
 }
 
@@ -33,7 +49,7 @@ const LAST_ARTIST = 'ks-opening:artist'
 /** The choice for this song, remembered in this browser (the song's name starts as the project's title). */
 export function useOpeningChoice(projectId: string, projectTitle: string) {
   const [choice, setChoice] = useState<OpeningChoice>(() => {
-    const base: OpeningChoice = { intro: true, titleCard: true, song: projectTitle, artist: '', transition: 'fade' }
+    const base: OpeningChoice = { intro: true, titleCard: true, song: projectTitle, artist: '', transition: 'fade', titleTheme: 'brand' }
     try {
       const saved = JSON.parse(localStorage.getItem(KEY(projectId)) ?? 'null')
       const artist = localStorage.getItem(LAST_ARTIST) ?? ''
@@ -44,6 +60,7 @@ export function useOpeningChoice(projectId: string, projectTitle: string) {
           song: typeof saved.song === 'string' ? saved.song.slice(0, 120) : base.song,
           artist: typeof saved.artist === 'string' ? saved.artist.slice(0, 120) : artist,
           transition: (TRANSITIONS as readonly string[]).includes(saved.transition) ? saved.transition : base.transition,
+          titleTheme: THEME_IDS.includes(saved.titleTheme) ? saved.titleTheme : base.titleTheme,
         }
       }
       return { ...base, artist }

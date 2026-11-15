@@ -362,6 +362,7 @@ export const he = {
   'error.unsupported_export': 'סוג הייצוא הזה לא נתמך במחשב העיבוד. עדכנו את ה-Worker ונסו שוב.',
   'export.queuedOffline': 'ממתין למחשב העיבוד: ה-Worker לא מחובר כרגע. הפעילו אותו (5-start-worker.bat) והסרטון יתחיל להיווצר מעצמו.',
   'export.queuedPaused': 'ממתין: מחשב העיבוד מושהה. אפשר להמשיך אותו בעמוד "מחשב העיבוד".',
+  'export.opening.theme': 'עיצוב הכותרת והרקע',
   'style.background': 'רקע הסרטון',
   'style.bgColor1': 'צבע 1',
   'style.bgColor2': 'צבע 2',
