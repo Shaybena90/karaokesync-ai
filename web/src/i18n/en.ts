@@ -391,6 +391,7 @@ export const en: Record<MessageKey, string> = {
   'export.quality.high': 'High quality',
   'export.quality.highHint': 'Sharp even for a long song (a file up to about {mb} MB). It is stored in a few parts and joined into one file when you download it.',
   'export.joining': 'Downloading and joining',
+  'error.storage_too_large': 'Supabase refused the file because it is over the size limit set there. To allow files up to 200 MB: run 20261116000001_bigger_uploads.sql in the SQL Editor, and in Storage → Settings raise the Upload file size limit to at least 200 MB.',
   'style.background': 'Video background',
   'style.bgColor1': 'Color 1',
   'style.bgColor2': 'Color 2',

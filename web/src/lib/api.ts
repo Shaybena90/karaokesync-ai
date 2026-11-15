@@ -224,7 +224,15 @@ export function uploadToSignedUrl(
         onProgress(1)
         resolve()
       } else {
-        reject(new ApiError(xhr.status === 413 ? 'file_too_large' : 'upload_failed', xhr.status))
+        // Supabase Storage may answer 400 with {"statusCode":"413"} when a file is over a size limit.
+        let body: { statusCode?: string; error?: string; message?: string } = {}
+        try {
+          body = JSON.parse(xhr.responseText || '{}')
+        } catch {
+          /* not JSON */
+        }
+        const tooBig = xhr.status === 413 || body.statusCode === '413' || /maximum allowed size|too large/i.test(`${body.error} ${body.message}`)
+        reject(new ApiError(tooBig ? 'storage_too_large' : 'upload_failed', xhr.status))
       }
     }
     xhr.onerror = () => reject(new ApiError(navigator.onLine ? 'upload_failed' : 'network'))

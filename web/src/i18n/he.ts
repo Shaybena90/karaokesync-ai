@@ -389,6 +389,7 @@ export const he = {
   'export.quality.high': 'איכות גבוהה',
   'export.quality.highHint': 'סרטון חד גם בשיר ארוך (קובץ עד כ-{mb}MB). הוא נשמר בכמה חלקים ומתחבר לקובץ אחד כשמורידים.',
   'export.joining': 'מוריד ומחבר',
+  'error.storage_too_large': 'Supabase דחה את הקובץ כי הוא גדול מהמגבלה שמוגדרת שם. כדי לאפשר קבצים עד 200MB: הריצו ב-SQL Editor את הקובץ 20261116000001_bigger_uploads.sql, ובהגדרות Storage ← Settings הגדילו את Upload file size limit ל-200MB לפחות.',
   'style.background': 'רקע הסרטון',
   'style.bgColor1': 'צבע 1',
   'style.bgColor2': 'צבע 2',
