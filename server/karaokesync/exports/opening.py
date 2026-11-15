@@ -105,12 +105,16 @@ TitleThemeId = Literal["brand", "gold", "neon", "stage", "space", "sunset", "min
 NAME_FONT, SONG_FONT = THEMES["brand"].name_font, THEMES["brand"].song_font
 TITLE_DELAY_MS = 900     # the words come in once the transition has mostly shown the card
 
+TITLE_LINE_SIZE = 0.15   # each line's height at 100%, of the screen's shorter side
+TITLE_SIZE_MAX = 200
+
+
 class TitleCard(BaseModel):
     song: str = Field(min_length=1, max_length=120)
     artist: str = Field(default="", max_length=120)
     # How big the letters are, in percent of the design's own size (the user's choice).
-    artist_size: int = Field(default=100, ge=50, le=160)
-    song_size: int = Field(default=100, ge=50, le=160)
+    artist_size: int = Field(default=100, ge=50, le=TITLE_SIZE_MAX)
+    song_size: int = Field(default=100, ge=50, le=TITLE_SIZE_MAX)
 
     @field_validator("song", "artist")
     @classmethod
@@ -209,17 +213,19 @@ def title_ass(card: TitleCard, canvas: Canvas, name_font: TextMeasurer, song_fon
               language: str | None, theme: TitleTheme | None = None) -> str:
     """The title card's subtitles, in the intro's colours: the song big, in
     white 3D letters with a purple depth and a soft purple glow, and just under
-    it the singer, smaller, in light blue. A light sweeps across the song's name. Times are 0..TITLE_MS.
+    it the singer, in light blue (the same size at 100%; the user sets the sizes). A light sweeps across the song's name. Times are 0..TITLE_MS.
     `theme` changes the colours, the depth and the glow (default: the intro's)."""
     t = theme or THEMES["brand"]
     W, H = canvas.width, canvas.height
     unit = min(W, H) / 720
     artist, song = escape_text(card.artist), escape_text(card.song)
     big, small = song, artist                         # the song on top, the singer under it
-    base = _fit(name_font, big, min(W, H) * 0.19, W * 0.86)     # the design's size, fitted to the width
-    fs = _fit(name_font, big, min(W, H) * 0.19 * card.song_size / 100, W * 0.86)  # bigger only while it still fits
-    sfs = _fit(song_font, small, base * 0.5 * card.artist_size / 100, W * 0.84) if small else 0
-    gap = fs * 0.14                                   # a little space between the two lines
+    # At 100% both lines are the same size; the user's percentages make one bigger than the other.
+    # A line grows only while it still fits the width of the screen.
+    base = min(W, H) * TITLE_LINE_SIZE
+    fs = _fit(name_font, big, base * card.song_size / 100, W * 0.86)
+    sfs = _fit(song_font, small, base * card.artist_size / 100, W * 0.86) if small else 0
+    gap = max(fs, sfs) * 0.14                         # a little space between the two lines
     block = fs + (gap + sfs if small else 0)
     cy = H * 0.5 - block / 2 + fs / 2                 # the two lines together are centred
     sy = cy + fs / 2 + gap + sfs / 2

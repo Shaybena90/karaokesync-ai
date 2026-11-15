@@ -54,7 +54,7 @@ export const openingProblem = (c: OpeningChoice, hasOwnIntro = true) =>
       ? 'export.opening.needOwnIntro'
       : null
 
-export const TITLE_SIZE = { min: 50, max: 160, step: 10 } as const
+export const TITLE_SIZE = { min: 50, max: 200, step: 10 } as const
 const titleSize = (v: unknown) =>
   typeof v === 'number' && Number.isFinite(v) ? Math.min(TITLE_SIZE.max, Math.max(TITLE_SIZE.min, Math.round(v / 10) * 10)) : 100
 

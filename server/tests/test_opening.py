@@ -50,7 +50,7 @@ def test_title_card_subtitles():
     assert len(song_lines) == 1
     assert "\u200f" in ass   # right-to-left mark for Hebrew
     size = {k: float(v) for k, v in re.findall(r"Style: ([NS]),[^,]+,([\d.]+)", ass)}
-    assert size["S"] < size["N"] * 0.6
+    assert size["S"] == size["N"]   # the same size until the user chooses otherwise
     y = lambda line: float(re.search(r"\\pos\([\d.]+,([\d.]+)\)", line).group(1))
     assert y(song_lines[0]) > y(name_lines[-1])
     # no gold any more: the colours of the intro
@@ -70,15 +70,17 @@ def test_the_user_chooses_the_letter_sizes():
     m = measurer_for(str(SYSTEM_FONT))
     sizes = lambda card: {k: float(v) for k, v in re.findall(r"Style: ([NS]),[^,]+,([\d.]+)", op.title_ass(card, Canvas(1920, 1080), m, m, "he"))}
     normal = sizes(op.TitleCard(song="שיר", artist="זמר"))
-    chosen = sizes(op.TitleCard(song="שיר", artist="זמר", song_size=70, artist_size=150))
+    assert normal["N"] == normal["S"] == pytest.approx(1080 * op.TITLE_LINE_SIZE)
+    chosen = sizes(op.TitleCard(song="שיר", artist="זמר", song_size=70, artist_size=200))
     assert chosen["N"] == pytest.approx(normal["N"] * 0.7, rel=0.01)    # the song, on top
-    assert chosen["S"] == pytest.approx(normal["S"] * 1.5, rel=0.01)    # the singer does not follow the song
+    assert chosen["S"] == pytest.approx(normal["S"] * 2, rel=0.01)      # the singer, now the bigger one
     # a long name still never grows past the screen
     long = "מילה " * 8
-    huge = sizes(op.TitleCard(song=long, artist="זמר", song_size=160))
-    assert m.width(long.strip(), huge["N"]) <= 1920 * 0.87
+    huge = sizes(op.TitleCard(song=long, artist=long, song_size=200, artist_size=200))
+    assert m.width(long.strip(), huge["N"]) <= 1920 * 0.87 and m.width(long.strip(), huge["S"]) <= 1920 * 0.87
+    assert op.TitleCard(song="שיר", artist_size=200).artist_size == 200
     with pytest.raises(ValidationError):
-        op.TitleCard(song="שיר", artist_size=300)
+        op.TitleCard(song="שיר", artist_size=201)
 
 
 def test_missing_clips_are_reported(monkeypatch, tmp_path):

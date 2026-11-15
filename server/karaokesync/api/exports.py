@@ -59,7 +59,7 @@ class ExportRequest(BaseModel):
 # what they report in the `workers` table; see worker.runner.WORKER_VERSION).
 MIN_OPENING_WORKER = "2026-11-14.2"   # the intro, transitions, previews
 MIN_OWN_INTRO_WORKER = "2026-11-15.2"  # the user's own opening clip
-MIN_TITLE_WORKER = "2026-11-15.4"     # the title card as it is now: song on top, singer under it, the user's sizes
+MIN_TITLE_WORKER = "2026-11-15.5"     # the title card as it is now: song on top, singer under it, the user's sizes
 
 
 def _worker_too_old(sb: SupabaseClient, needed: str) -> bool:
