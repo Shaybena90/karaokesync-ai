@@ -25,6 +25,7 @@ import {
   lineEnd,
   lineStart,
   mergeWithNext,
+  moveLine,
   setLineText,
   setWordText,
   setWordTiming,
@@ -250,6 +251,19 @@ export function EditorPage() {
       if (sync) syncLine(docRef.current, lineId)
     },
     [edit, syncLine],
+  )
+  const onMoveLine = useCallback(
+    (lineId: string, direction: -1 | 1) => {
+      const next = moveLine(docRef.current, lineId, direction)
+      if (!next) return
+      edit(() => next)
+      // Keep the moved line in view.
+      requestAnimationFrame(() => {
+        const first = next.find((l) => l.id === lineId)?.words[0]
+        if (first) chips.current.get(first.id)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      })
+    },
+    [edit],
   )
   const onDuplicateLine = useCallback(
     (lineId: string) => {
@@ -582,6 +596,7 @@ export function EditorPage() {
               onLineText={onLineText}
               onMarkRange={onMarkRange}
               onDuplicateLine={onDuplicateLine}
+              onMoveLine={onMoveLine}
             />
           )}
         </div>

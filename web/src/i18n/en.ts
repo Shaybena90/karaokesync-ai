@@ -175,6 +175,8 @@ export const en: Record<MessageKey, string> = {
   'editor.shiftEarlier': 'Move line 0.1s earlier',
   'editor.shiftLater': 'Move line 0.1s later',
   'editor.duplicateLine': 'Duplicate line (a copy right after it)',
+  'editor.moveUp': 'Move the line up (swaps with the line before)',
+  'editor.moveDown': 'Move the line down (swaps with the line after)',
   'editor.mergeNext': 'Merge with next line',
   'editor.speed': 'Playback speed',
   'editor.looping': 'Loop',

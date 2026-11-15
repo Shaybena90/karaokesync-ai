@@ -18,6 +18,7 @@ import {
   toSavePayload,
   type LyricsDoc,
   duplicateLine,
+  moveLine,
 } from './lyricsDoc'
 
 const doc: LyricsDoc = [
@@ -286,5 +287,21 @@ describe('duplicateLine', () => {
     expect(copy.words[0].start_ms).toBe(4000)
     expect(copy.words[1].end_ms).toBeLessThanOrEqual(5000)
     expect(duplicateLine(tight, 'nope')).toBeNull()
+  })
+})
+
+describe('moveLine', () => {
+  it('swaps a line with its neighbour; each takes the other one\'s time', () => {
+    const up = moveLine(doc, 'L2', -1)!
+    expect(texts(up)).toEqual(['זה שיר', 'שלום עולם'])
+    expect(up[0].words[0].start_ms).toBe(1000) // the moved line sings where the first one did
+    expect(up[0].words.at(-1)!.end_ms).toBe(2000)
+    expect(up[1].words[0].start_ms).toBe(3000)
+    expect(up[1].words.at(-1)!.end_ms).toBe(3800)
+    expect(up.flatMap((l) => l.words).every((w) => w.confidence === 0)).toBe(true)
+    expect(isValidDoc(up)).toBe(true)
+    expect(texts(moveLine(doc, 'L1', 1)!)).toEqual(texts(up)) // down is the same swap
+    expect(moveLine(doc, 'L1', -1)).toBeNull() // already the first
+    expect(moveLine(doc, 'L2', 1)).toBeNull() // already the last
   })
 })

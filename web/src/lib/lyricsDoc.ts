@@ -403,6 +403,39 @@ export function duplicateLine(doc: LyricsDoc, lineId: string, durationMs?: numbe
   return { doc: settleLine(next, i + 1, words), lineId: copy.id }
 }
 
+/** The words of a line moved into another time span, keeping their rhythm. */
+function retime(words: DocWord[], start: number, end: number): DocWord[] {
+  const s = words[0].start_ms
+  const e = Math.max(words[words.length - 1].end_ms, s + 1)
+  const span = Math.max(end - start, words.length * 50)
+  const k = span / (e - s)
+  return words.map((w) => ({
+    ...w,
+    start_ms: Math.round(start + (w.start_ms - s) * k),
+    end_ms: Math.round(start + (w.end_ms - s) * k),
+    confidence: 0, // a guess in the new place: unsure until synced
+  }))
+}
+
+/**
+ * Move a whole line one place up (-1) or down (+1): it swaps places with its
+ * neighbour, and each of the two takes the other's time in the song, so the
+ * song's order stays right. Their times are a guess until the lines are synced.
+ */
+export function moveLine(doc: LyricsDoc, lineId: string, direction: -1 | 1): LyricsDoc | null {
+  const i = doc.findIndex((l) => l.id === lineId)
+  const j = i + direction
+  if (i < 0 || j < 0 || j >= doc.length) return null
+  const [first, second] = i < j ? [i, j] : [j, i]
+  const a = doc[first]
+  const b = doc[second]
+  const movedB = { ...b, words: retime(b.words, lineStart(a), lineEnd(a)) }   // b goes up, into a's time
+  const movedA = { ...a, words: retime(a.words, lineStart(b), lineEnd(b)) }   // a goes down, into b's time
+  let next = doc.map((l, k) => (k === first ? movedB : k === second ? movedA : l))
+  next = settleLine(next, first, movedB.words)
+  return settleLine(next, second, next[second].words)
+}
+
 // ------------------------------------------------------------- persistence
 /** Shape expected by the `save_lyrics` database function. */
 export function toSavePayload(doc: LyricsDoc) {

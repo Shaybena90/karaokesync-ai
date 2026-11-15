@@ -28,6 +28,8 @@ interface Props {
   onMarkRange: (line: DocLine) => void
   /** Add a copy of the line right after it. */
   onDuplicateLine: (lineId: string) => void
+  /** Move the whole line one place up (-1) or down (+1). */
+  onMoveLine: (lineId: string, direction: -1 | 1) => void
 }
 
 /** All lines as editable word chips. Low-confidence words are underlined so they are easy to find. */
@@ -48,6 +50,7 @@ export const LinesList = memo(function LinesList({
   onLineText,
   onMarkRange,
   onDuplicateLine,
+  onMoveLine,
 }: Props) {
   const { t } = useI18n()
   const [editing, setEditing] = useState<{ lineId: string; text: string } | null>(null)
@@ -70,6 +73,12 @@ export const LinesList = memo(function LinesList({
               <IconBtn label={t('editor.loopLine')} onClick={() => onLoopLine(line)}>⟲</IconBtn>
               <IconBtn label={t('editor.line.edit')} onClick={() => setEditing({ lineId: line.id, text: line.words.map((w) => w.text).join(' ') })}>
                 ✏️
+              </IconBtn>
+              <IconBtn label={t('editor.moveUp')} onClick={() => onMoveLine(line.id, -1)} disabled={i === 0}>
+                ▲
+              </IconBtn>
+              <IconBtn label={t('editor.moveDown')} onClick={() => onMoveLine(line.id, 1)} disabled={i === doc.length - 1}>
+                ▼
               </IconBtn>
               <IconBtn label={t('editor.duplicateLine')} onClick={() => onDuplicateLine(line.id)}>
                 ⧉

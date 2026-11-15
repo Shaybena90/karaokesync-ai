@@ -288,3 +288,20 @@ test('duplicate a line', async ({ page, backend }) => {
   await page.keyboard.press('Control+z')
   await expect(lines).toHaveCount(before)
 })
+
+test('move a whole line up and down', async ({ page, backend }) => {
+  const lines = page.locator('ol > li')
+  const words = (i: number) => lines.nth(i).locator('.ks-chip').allTextContents()
+  const first = await words(0)
+  const second = await words(1)
+  await expect(lines.first().getByRole('button', { name: /הזזת השורה למעלה/ })).toBeDisabled()
+  await lines.nth(1).getByRole('button', { name: /הזזת השורה למעלה/ }).click()
+  await expect.poll(() => words(0)).toEqual(second)
+  expect(await words(1)).toEqual(first)
+  await waitForSave(backend, 1)
+  const saved = backend.lyricSaves.at(-1)!.p_lines
+  expect(saved[0].words.map((w) => w.text)).toEqual(second)
+  expect(saved[0].words[0].start_ms).toBeLessThan(saved[1].words[0].start_ms) // still in song order
+  await lines.first().getByRole('button', { name: /הזזת השורה למטה/ }).click()
+  await expect.poll(() => words(0)).toEqual(first)
+})

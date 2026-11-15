@@ -173,6 +173,8 @@ export const he = {
   'editor.shiftEarlier': 'הקדמת השורה ב-0.1 שניות',
   'editor.shiftLater': 'איחור השורה ב-0.1 שניות',
   'editor.duplicateLine': 'שכפול שורה (עותק מיד אחריה)',
+  'editor.moveUp': 'הזזת השורה למעלה (מתחלפת עם השורה שלפניה)',
+  'editor.moveDown': 'הזזת השורה למטה (מתחלפת עם השורה שאחריה)',
   'editor.mergeNext': 'איחוד עם השורה הבאה',
   'editor.speed': 'מהירות ניגון',
   'editor.looping': 'לולאה',
