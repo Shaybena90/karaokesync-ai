@@ -2,12 +2,13 @@ import { useCallback, useEffect, useState } from 'react'
 import { errorKey, useI18n } from '../../i18n/I18nProvider'
 import { ApiError, api, downloadTextExport, safeFileName, type TextExportFormat } from '../../lib/api'
 import { supabase } from '../../lib/supabase'
+import { useLimits } from '../../lib/useLimits'
 import { useWorkerStatus } from '../../lib/useWorkerStatus'
 import type { InstrumentalState } from '../../lib/useInstrumental'
 import type { ExportJob } from '../../lib/types'
 import type { VideoAspect } from '../player/KaraokePlayer'
 import { Alert, Button, ProgressBar, Spinner } from '../ui'
-import { TITLE_THEMES, openingProblem, openingRequest, starved1080p, useOpeningChoice } from '../../lib/opening'
+import { TITLE_THEMES, exportParts, openingProblem, openingRequest, starved1080p, useOpeningChoice } from '../../lib/opening'
 import { OpeningPanel } from './OpeningPanel'
 import { useOwnIntro } from '../../lib/ownIntro'
 import { Segmented } from './StyleControls'
@@ -32,9 +33,29 @@ const TEXT_FORMATS: TextExportFormat[] = ['srt', 'lrc', 'ass']
 export function ExportPanel({ projectId, title, aspect, onAspectChange, canRenderVideo, beforeExport, instrumental, songMs = 0 }: Props) {
   const { t, locale } = useI18n()
   const [resolution, setResolution] = useState<'720' | '1080'>('1080')
+  const [quality, setQualityState] = useState<'standard' | 'high'>(() => {
+    try {
+      return localStorage.getItem('ks-export-quality') === 'high' ? 'high' : 'standard'
+    } catch {
+      return 'standard'
+    }
+  })
+  const setQuality = (q: 'standard' | 'high') => {
+    setQualityState(q)
+    try {
+      localStorage.setItem('ks-export-quality', q)
+    } catch {
+      /* private window */
+    }
+  }
+  /** Joining a big video's parts: how far (0..1), or null. */
+  const [joining, setJoining] = useState<{ id: string; done: number } | null>(null)
   const [noVocals, setNoVocals] = useState(false)
   const [opening, setOpening] = useOpeningChoice(projectId, title)
   const ownIntro = useOwnIntro()
+  const limits = useLimits()
+  const exportMb = limits.max_export_mb ?? 48
+  const highMb = limits.high_quality_export_mb ?? 150
   const openingBlocked = openingProblem(opening, Boolean(ownIntro.intro)) !== null
   const [jobs, setJobs] = useState<ExportJob[]>([])
   const [busy, setBusy] = useState<string | null>(null)
@@ -109,7 +130,7 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
     run(preview ? 'preview' : 'mp4', async () => {
       await beforeExport()
       const job = await api.createVideoExport(projectId, aspect, Number(resolution), noVocals && instrumental.ready ? 'instrumental' : 'original',
-        openingRequest(opening, ownIntro.intro?.id ?? null), preview)
+        openingRequest(opening, ownIntro.intro?.id ?? null), preview, quality)
       if (preview) {
         setWatching(null)
         setWaitingFor(job.id)
@@ -119,13 +140,44 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
 
   const downloadVideo = async (job: ExportJob) => {
     if (!supabase || !job.output_path) return
-    const { data, error: signError } = await supabase.storage.from('exports').createSignedUrl(job.output_path, 600)
-    if (signError || !data?.signedUrl) return setError('generic')
-    // The file name is appended here instead of via the `download` option, which
-    // double-encodes non-ASCII (e.g. Hebrew) names in supabase-js.
-    const name = encodeURIComponent(`${safeFileName(title)}.mp4`)
-    window.location.assign(`${data.signedUrl}${data.signedUrl.includes('?') ? '&' : '?'}download=${name}`)
+    const fileName = `${safeFileName(title)}.mp4`
+    const parts = exportParts(job.output_path)
+    if (parts.length === 1) {
+      const { data, error: signError } = await supabase.storage.from('exports').createSignedUrl(job.output_path, 600)
+      if (signError || !data?.signedUrl) return setError('generic')
+      // The file name is appended here instead of via the `download` option, which
+      // double-encodes non-ASCII (e.g. Hebrew) names in supabase-js.
+      const name = encodeURIComponent(fileName)
+      window.location.assign(`${data.signedUrl}${data.signedUrl.includes('?') ? '&' : '?'}download=${name}`)
+      return
+    }
+    // A high quality video is stored in parts: download them and join them back into one file.
+    setJoining({ id: job.id, done: 0 })
+    try {
+      const pieces: ArrayBuffer[] = []
+      for (const [k, part] of parts.entries()) {
+        const { data, error: signError } = await supabase.storage.from('exports').createSignedUrl(part, 600)
+        if (signError || !data?.signedUrl) throw new Error('sign')
+        const resp = await fetch(data.signedUrl)
+        if (!resp.ok) throw new Error('download')
+        pieces.push(await resp.arrayBuffer())
+        setJoining({ id: job.id, done: (k + 1) / parts.length })
+      }
+      const url = URL.createObjectURL(new Blob(pieces, { type: 'video/mp4' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = fileName
+      document.body.appendChild(a)
+      a.click()
+      a.remove()
+      setTimeout(() => URL.revokeObjectURL(url), 60_000)
+    } catch {
+      setError('generic')
+    } finally {
+      setJoining(null)
+    }
   }
+
 
   return (
     <div className="space-y-5">
@@ -162,7 +214,11 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
           onChange={onAspectChange}
         />
         <Segmented value={resolution} options={[['720', '720p'], ['1080', '1080p']]} onChange={setResolution} />
-        {resolution === '1080' && starved1080p(songMs, opening) && (
+        <Segmented value={quality} options={[['standard', t('export.quality.standard')], ['high', t('export.quality.high')]]} onChange={setQuality} />
+        {quality === 'high' && (
+          <p className="-mt-1 text-xs text-white/50" data-testid="quality-high-note">{t('export.quality.highHint').replace('{mb}', String(highMb))}</p>
+        )}
+        {resolution === '1080' && starved1080p(songMs, opening, quality === 'high' ? highMb : exportMb) && (
           <p className="-mt-1 text-xs text-amber-200/90" data-testid="quality-note">{t('export.qualityNote')}</p>
         )}
         <label className={`flex min-h-10 items-center gap-2 text-sm ${instrumental.ready ? '' : 'opacity-50'}`}>
@@ -224,6 +280,7 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
               <div className="flex items-center justify-between gap-2 text-sm">
                 <span>
                   {job.options.preview ? `👁 ${t('export.previewLabel')} · ` : '🎬 '}
+                  {job.options.quality === 'high' && `✦ ${t('export.quality.high')} · `}
                   <span dir="ltr">{job.options.aspect} · {job.options.resolution}p</span>
                   {job.options.audio === 'instrumental' && ` · 🎵 ${t('vocals.off')}`}
                 </span>
@@ -263,8 +320,8 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
                   </Button>
                 )}
                 {job.status === 'succeeded' && job.output_path && !job.options.preview && (
-                  <Button className="min-h-10 flex-1 text-sm" onClick={() => downloadVideo(job)}>
-                    ⬇ {t('export.download')}
+                  <Button className="min-h-10 flex-1 text-sm" disabled={joining !== null} onClick={() => void downloadVideo(job)}>
+                    {joining?.id === job.id ? `⏳ ${t('export.joining')} ${Math.round(joining.done * 100)}%` : `⬇ ${t('export.download')}`}
                   </Button>
                 )}
                 {job.status === 'succeeded' && !job.output_path && (

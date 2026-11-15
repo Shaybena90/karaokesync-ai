@@ -98,6 +98,8 @@ export class MockBackend {
   lyricsQueries: { q: string; duration_ms: string | null }[] = []
   /** The signed-in user's metadata (the lyrics websites list lives here). */
   userMetadata: Row = {}
+  /** Export files the page asked a signed link for. */
+  signedExports: string[] = []
   /** Whether the mock API server has a YouTube key (YOUTUBE_API_KEY). */
   youtubeKey = false
   /** Bodies of POST /lyrics-sources/search. */
@@ -223,7 +225,10 @@ export class MockBackend {
     if (p.startsWith('/storage/v1/__bg')) {
       return route.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'image/png' }, body: RED_PNG })
     }
-    if (p.startsWith('/storage/v1/object/sign/exports/')) return this.json(route, { signedURL: '/__video?token=t' })
+    if (p.startsWith('/storage/v1/object/sign/exports/')) {
+      this.signedExports.push(decodeURIComponent(p.replace('/storage/v1/object/sign/exports/', '')))
+      return this.json(route, { signedURL: '/__video?token=t' })
+    }
     if (p.startsWith('/storage/v1/object/sign/')) {
       // The object path travels in the URL so tests can see which file is playing.
       const object = p.replace('/storage/v1/object/sign/audio/', '')
@@ -231,7 +236,7 @@ export class MockBackend {
     }
     if (p.startsWith('/storage/v1/__video')) {
       this.apiCalls.push(`VIDEO download=${url.searchParams.get('download')}`)
-      return route.fulfill({ status: 200, headers: { 'content-type': 'video/mp4' }, body: 'x' })
+      return route.fulfill({ status: 200, headers: { ...CORS, 'content-type': 'video/mp4' }, body: 'x' })
     }
     if (p.startsWith('/storage/v1/__audio')) return this.serveAudio(route)
     return route.fulfill({ status: 404, headers: CORS, body: '' })
@@ -304,12 +309,12 @@ export class MockBackend {
       const id = `e${this.exportJobs.length + 1}`
       const job: Row = { id, project_id: exportsMatch[1], format: 'mp4',
         options: { aspect: body.aspect, resolution: body.preview ? 480 : body.resolution, audio: body.audio, opening: body.opening ?? null,
-          ...(body.preview ? { preview: true } : {}) },
+          ...(body.preview ? { preview: true } : {}), ...(body.quality === 'high' && !body.preview ? { quality: 'high' } : {}) },
         status: 'queued', progress: 0, output_path: null, error_code: null, created_at: new Date().toISOString(), finished_at: null }
       this.exportJobs.unshift(job)
       setTimeout(() => Object.assign(job, { status: 'running', progress: 42 }), 1000)
       setTimeout(() => Object.assign(job, { status: 'succeeded', progress: 100,
-        output_path: `${UID}/${PID}/${id}${body.preview ? '-preview' : ''}.mp4` }), 3000)
+        output_path: `${UID}/${PID}/${id}${body.preview ? '-preview' : ''}.mp4${body.quality === 'high' && !body.preview ? '.parts2' : ''}` }), 3000)
       return this.json(route, job, 201)
     }
     if (p === '/lyrics-sources/normalize') {

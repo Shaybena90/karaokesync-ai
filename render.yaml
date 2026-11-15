@@ -32,6 +32,10 @@ services:
         sync: false
       - key: YOUTUBE_API_KEY     # optional: free YouTube Data API v3 key, to find lyrics on YouTube
         sync: false
+      - key: MAX_EXPORT_MB        # video size limit (standard quality); 48 fits Supabase's free 50 MB per file
+        value: "48"
+      - key: HIGH_QUALITY_EXPORT_MB  # video size limit (high quality, stored in 45 MB parts)
+        value: "150"
       - key: MAX_UPLOAD_MB
         value: "50"
       - key: MAX_AUDIO_DURATION_SECONDS

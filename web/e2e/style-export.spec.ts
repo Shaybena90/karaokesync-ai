@@ -277,3 +277,18 @@ test('a long song warns that 1080p will be made in 720p to stay sharp', async ({
   await page.getByRole('radio', { name: '720p' }).click()
   await expect(page.getByTestId('quality-note')).toHaveCount(0)
 })
+
+test('high quality: a bigger video, stored in parts, joined into one file on download', async ({ page, backend }) => {
+  await page.getByRole('radio', { name: 'איכות גבוהה' }).click()
+  await expect(page.getByTestId('quality-high-note')).toContainText('150MB')
+  await page.getByRole('button', { name: /יצירת סרטון/ }).click()
+  await expect.poll(() => (backend.exportJobs[0]?.options as { quality?: string })?.quality).toBe('high')
+  await expect(page.getByText(/✦ איכות גבוהה/).first()).toBeVisible()
+  const download = page.waitForEvent('download')
+  await page.getByRole('button', { name: /הורדת הסרטון/ }).click({ timeout: 15000 })
+  expect((await download).suggestedFilename()).toBe('שיר בדיקה.mp4')
+  expect(backend.signedExports.filter((p) => /\.part[01]$/.test(p))).toHaveLength(2)
+  // remembered for next time
+  await page.reload()
+  await expect(page.getByRole('radio', { name: 'איכות גבוהה' })).toHaveAttribute('aria-checked', 'true')
+})

@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from ..config import Settings
 from ..exports.ass import build_ass
 from ..exports.measure import measurer_for
+from ..export_parts import part_paths
 from ..exports.opening import PREVIEW_RESOLUTION, OpeningOptions
 from ..exports.text_formats import to_lrc, to_srt
 from ..exports.video import RESOLUTIONS, canvas_for
@@ -50,6 +51,8 @@ class ExportRequest(BaseModel):
     opening: OpeningOptions | None = None
     # A quick look before the real export: the opening and the song's first seconds, in 480p.
     preview: bool = False
+    # "high": a bigger file (stored in parts) so 1080p stays sharp even for long songs
+    quality: Literal["standard", "high"] = "standard"
 
 
 # Workers older than this cannot make a video opening or a preview (their version is
@@ -182,6 +185,7 @@ def exports_router() -> APIRouter:
             "audio": body.audio,
             "opening": body.opening.model_dump() if body.opening and body.opening.active else None,
             **({"preview": True, "resolution": PREVIEW_RESOLUTION} if body.preview else {}),
+            **({"quality": "high"} if body.quality == "high" and not body.preview else {}),
             # Snapshot: later style edits do not change a render that is already queued.
             "style": parse_style(project.get("style")).model_dump(),
         }
@@ -212,7 +216,7 @@ def exports_router() -> APIRouter:
         if not rows:
             raise HTTPException(status.HTTP_404_NOT_FOUND, detail="export_not_found")
         if rows[0].get("output_path"):
-            sb.remove_objects(settings.exports_bucket, [rows[0]["output_path"]])
+            sb.remove_objects(settings.exports_bucket, part_paths(rows[0]["output_path"]))
         sb.delete("export_jobs", {"id": f"eq.{export_id}", "user_id": f"eq.{user.id}"})
 
     return router

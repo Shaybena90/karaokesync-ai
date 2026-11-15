@@ -105,3 +105,10 @@ export function starved1080p(songMs: number, c: OpeningChoice | null, maxMb = 48
   const audio = perSecond >= 2000 ? 192 : perSecond >= 600 ? 128 : 96
   return (budget - audio * seconds) / (seconds + 2) < 2800
 }
+
+/** A big export is stored in parts ("<path>.parts3" -> "<path>.part0".."part2"); see server/karaokesync/export_parts.py. */
+export function exportParts(outputPath: string): string[] {
+  const m = /^(.*)\.parts(\d+)$/.exec(outputPath)
+  if (!m) return [outputPath]
+  return Array.from({ length: Number(m[2]) }, (_, k) => `${m[1]}.part${k}`)
+}

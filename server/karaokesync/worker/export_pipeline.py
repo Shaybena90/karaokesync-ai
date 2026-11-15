@@ -13,6 +13,7 @@ import httpx
 from ..animated_backgrounds import BACKGROUNDS as ANIMATED_BACKGROUNDS
 from ..animated_backgrounds import clip_for
 from ..config import Settings
+from ..export_parts import upload_in_parts
 from ..exports.ass import build_ass
 from ..exports.measure import measurer_for
 from ..exports.opening import (
@@ -89,10 +90,11 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
         # The file must fit the storage limit: a long song gets 720p, which looks
         # sharper at the same size than a starved 1080p.
         lead_ms = plan_opening(opening, INTRO_MS).karaoke_start_ms if opening.active else 0
-        chosen = best_resolution(resolution, duration_ms + lead_ms, settings.max_export_mb * 1024 * 1024)
+        high = options.get("quality") == "high" and not preview
+        limit_mb = settings.high_quality_export_mb if high else settings.max_export_mb
+        chosen = best_resolution(resolution, duration_ms + lead_ms, limit_mb * 1024 * 1024)
         if chosen != resolution:
-            log.info("export job=%s %sp -> %sp to keep the picture sharp within %s MB", job["id"], resolution, chosen,
-                     settings.max_export_mb)
+            log.info("export job=%s %sp -> %sp to keep the picture sharp within %s MB", job["id"], resolution, chosen, limit_mb)
             resolution = chosen
         canvas = canvas_for(aspect, resolution)
         ass_text = build_ass(lines, style, project.get("language"), canvas, measurer_for(str(font)), title=project["title"])
@@ -121,7 +123,7 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
             workdir, source, ass_text, font, style, canvas, duration_ms,
             on_progress=lambda frac: report(6 + int(frac * 87)),
             backgrounds=layers,
-            max_bytes=settings.max_export_mb * 1024 * 1024,
+            max_bytes=limit_mb * 1024 * 1024,
             encoder=_video_encoder(settings),
             opening=opening if opening.active else None,
             aspect=aspect,
@@ -135,7 +137,7 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
         size_mb = out.stat().st_size / 1024 / 1024
         log.info("export job=%s uploading %.1f MB", job["id"], size_mb)
         try:
-            sb.upload_file(settings.exports_bucket, path, str(out), "video/mp4")
+            path = upload_in_parts(sb, settings.exports_bucket, path, out)
         except SupabaseError as exc:
             # Storage's own words (no secrets in them), so the reason shows in the worker window.
             log.warning("export job=%s upload refused: %s (%.1f MB)", job["id"], exc, size_mb)

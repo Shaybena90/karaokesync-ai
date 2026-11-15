@@ -215,6 +215,9 @@ def _router() -> APIRouter:
             "max_audio_duration_seconds": settings.max_audio_duration_seconds,
             "allowed_extensions": ["mp3", "wav", "m4a"],
             "max_uploads_per_day": settings.max_uploads_per_day,
+            # Video size limits (set the same MAX_EXPORT_MB / HIGH_QUALITY_EXPORT_MB on the worker).
+            "max_export_mb": settings.max_export_mb,
+            "high_quality_export_mb": settings.high_quality_export_mb,
         }
 
     @router.post("/uploads", response_model=UploadInitResponse, status_code=201)

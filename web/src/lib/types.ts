@@ -66,6 +66,7 @@ export interface ExportJob {
     resolution?: number
     audio?: 'original' | 'instrumental'
     preview?: boolean
+    quality?: 'standard' | 'high'
     opening?: { intro?: boolean; intro_media_id?: string | null; title?: { song: string } | null; title_theme?: string } | null
   }
   status: 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
@@ -119,4 +120,7 @@ export interface Limits {
   max_audio_duration_seconds: number
   allowed_extensions: string[]
   max_uploads_per_day: number
+  /** Exported video size limits in MB (standard / high quality); older servers do not send them. */
+  max_export_mb?: number
+  high_quality_export_mb?: number
 }

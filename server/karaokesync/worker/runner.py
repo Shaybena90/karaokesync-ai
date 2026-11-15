@@ -17,6 +17,7 @@ import threading
 import time
 import uuid
 
+from ..export_parts import part_paths
 from ..config import Settings, get_settings
 from ..logging_setup import setup_logging
 from ..supabase_client import SupabaseClient, SupabaseError
@@ -268,7 +269,7 @@ def _run_export(sb: SupabaseClient, settings: Settings, worker_id: str, job: dic
                 raise JobLost(job["id"])
             ok = sb.rpc("complete_export_job", {"p_job_id": job["id"], "p_worker_id": worker_id, "p_output_path": path})
             if not ok:  # deleted or re-claimed meanwhile: do not leave an orphan file
-                sb.remove_objects(settings.exports_bucket, [path])
+                sb.remove_objects(settings.exports_bucket, part_paths(path))
             log.info("export=%s %s", job["id"], "succeeded" if ok else "lost before completion")
         except JobLost:
             log.warning("export=%s lease lost; dropping result", job["id"])

@@ -76,6 +76,8 @@ class Settings(BaseSettings):
     # Supabase's free plan stores files of up to 50 MB: videos are encoded to fit.
     # Raise it after raising the storage upload limit (Supabase Pro).
     max_export_mb: int = 48
+    # "High quality" exports may be this big; they are stored in parts of 45 MB (export_parts.py).
+    high_quality_export_mb: int = 150
     # auto = the NVIDIA card's encoder (NVENC) when it works, else the CPU (libx264)
     video_encoder: Literal["auto", "libx264", "h264_nvenc"] = "auto"
     export_retention_days: int = 7
