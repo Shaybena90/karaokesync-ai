@@ -16,9 +16,10 @@ from ..config import Settings
 from ..exports.ass import build_ass
 from ..exports.measure import measurer_for
 from ..exports.opening import (
-    PREVIEW_RESOLUTION, PREVIEW_SONG_MS, CustomIntro, OpeningOptions, custom_intro_length, opening_files, title_ass,
+    INTRO_MS, PREVIEW_RESOLUTION, PREVIEW_SONG_MS, CustomIntro, OpeningOptions, custom_intro_length, opening_files,
+    plan_opening, title_ass,
 )
-from ..exports.video import ASPECTS, RESOLUTIONS, BackgroundLayer, canvas_for, render_mp4
+from ..exports.video import ASPECTS, RESOLUTIONS, BackgroundLayer, best_resolution, canvas_for, render_mp4
 from ..fonts import ensure_font
 from ..lyrics_data import load_lyrics
 from ..styles import SubtitleStyle, parse_style
@@ -82,12 +83,19 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
             font = ensure_font(style.font)
         except RuntimeError as exc:
             raise PipelineError("font_unavailable", retryable=True) from exc
-        canvas = canvas_for(aspect, resolution)
-        ass_text = build_ass(lines, style, project.get("language"), canvas, measurer_for(str(font)), title=project["title"])
-
         duration_ms = int(audio.get("duration_ms") or (max(l["end_ms"] for l in lines) + 3000))
         if preview:
             duration_ms = min(duration_ms, PREVIEW_SONG_MS)
+        # The file must fit the storage limit: a long song gets 720p, which looks
+        # sharper at the same size than a starved 1080p.
+        lead_ms = plan_opening(opening, INTRO_MS).karaoke_start_ms if opening.active else 0
+        chosen = best_resolution(resolution, duration_ms + lead_ms, settings.max_export_mb * 1024 * 1024)
+        if chosen != resolution:
+            log.info("export job=%s %sp -> %sp to keep the picture sharp within %s MB", job["id"], resolution, chosen,
+                     settings.max_export_mb)
+            resolution = chosen
+        canvas = canvas_for(aspect, resolution)
+        ass_text = build_ass(lines, style, project.get("language"), canvas, measurer_for(str(font)), title=project["title"])
         report(4)
         title_subs, extra_fonts, custom_intro = None, [], None
         if opening.active:

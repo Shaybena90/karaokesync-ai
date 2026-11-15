@@ -87,3 +87,21 @@ export function useOpeningChoice(projectId: string, projectTitle: string) {
   }, [projectId, choice])
   return [choice, setChoice] as const
 }
+
+/**
+ * Whether 1080p would look blocky for a song this long: exported videos must fit
+ * the storage limit (48 MB on Supabase's free plan), so a long video gets few
+ * bits per second. Same numbers as best_resolution() in server/karaokesync/exports/video.py,
+ * which then makes the video in 720p instead.
+ */
+export function starved1080p(songMs: number, c: OpeningChoice | null, maxMb = 48): boolean {
+  if (songMs <= 0) return false
+  const parts = c ? [c.intro ? 8000 : 0, c.titleCard ? 6500 : 0].filter(Boolean) : []
+  const blend = c?.transition === 'none' ? 34 : 1800
+  const lead = parts.length ? parts.reduce((a, b) => a + b, 0) - blend * parts.length : 0
+  const seconds = (songMs + lead) / 1000
+  const budget = ((maxMb * 1024 * 1024 * 8) / 1000) * 0.9
+  const perSecond = budget / seconds
+  const audio = perSecond >= 2000 ? 192 : perSecond >= 600 ? 128 : 96
+  return (budget - audio * seconds) / (seconds + 2) < 2800
+}

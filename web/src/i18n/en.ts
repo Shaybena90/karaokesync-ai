@@ -386,6 +386,7 @@ export const en: Record<MessageKey, string> = {
   'export.opening.ownHint': 'A video (MP4 / MOV / WEBM), GIF or picture, up to 30 MB. A video plays up to 30 seconds with its sound; a picture shows 5 seconds. It is kept in your account and offered for every song.',
   'export.opening.needOwnIntro': 'Upload your opening (or choose the KaraokeSync opening).',
   'export.opening.noIntro': 'No opening',
+  'export.qualityNote': 'The song is long, and with the file size limit (50 MB) a 1080p video would look blocky, so it will be made in 720p, which looks sharper at the same size.',
   'style.background': 'Video background',
   'style.bgColor1': 'Color 1',
   'style.bgColor2': 'Color 2',

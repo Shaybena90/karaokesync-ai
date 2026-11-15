@@ -141,6 +141,7 @@ export function StylePage() {
               canRenderVideo={Boolean(storagePath)}
               beforeExport={save}
               instrumental={instrumental}
+              songMs={audio?.duration_ms ?? 0}
             />
           </div>
         </div>

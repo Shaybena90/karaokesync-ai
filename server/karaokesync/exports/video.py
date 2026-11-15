@@ -89,7 +89,7 @@ def background_inputs_and_filters(
 
 def bitrates_for(duration_ms: int, max_bytes: int | None) -> tuple[int, int] | None:
     """(video kbps, audio kbps) that keep the whole file under max_bytes, or
-    None for no cap. 10% is kept for the container, and one second of video
+    None for no cap. 10% is kept for the container, and two seconds of video
     for the encoder's buffer (it may spend that much above the rate)."""
     if not max_bytes or duration_ms <= 0:
         return None
@@ -97,15 +97,37 @@ def bitrates_for(duration_ms: int, max_bytes: int | None) -> tuple[int, int] | N
     budget_kbit = max_bytes * 8 / 1000 * 0.9
     per_second = budget_kbit / seconds
     audio = 192 if per_second >= 2000 else 128 if per_second >= 600 else 96
-    video = (budget_kbit - audio * seconds) / (seconds + 1)
+    video = (budget_kbit - audio * seconds) / (seconds + 2)
     return max(150, int(video)), audio
 
 
-def encoder_args(encoder: str, video_cap: list[str]) -> list[str]:
-    """Same visual quality target on the CPU (x264 CRF 23) or the NVIDIA card (NVENC CQ 23)."""
+# Below this video rate, 1080p looks blocky; 720p at the same rate looks sharp.
+MIN_1080P_KBPS = 2800
+# Below this rate the encoder takes its time (better quality for the same size).
+CAREFUL_BELOW_KBPS = 6000
+
+
+def best_resolution(requested: int, duration_ms: int, max_bytes: int | None) -> int:
+    """720 instead of 1080 when the size limit would leave 1080p too few bits."""
+    rates = bitrates_for(duration_ms, max_bytes)
+    if requested == 1080 and rates and rates[0] < MIN_1080P_KBPS:
+        return 720
+    return requested
+
+
+def video_cap_args(rates: tuple[int, int] | None) -> list[str]:
+    """Never above the rate that fits the size limit; a 2 s buffer lets busy
+    moments borrow from calm ones (the budget keeps 2 s for it)."""
+    return ["-maxrate", f"{rates[0]}k", "-bufsize", f"{rates[0] * 2}k"] if rates else []
+
+
+def encoder_args(encoder: str, video_cap: list[str], careful: bool = False) -> list[str]:
+    """Same visual quality target on the CPU (x264 CRF 21) or the NVIDIA card (NVENC CQ 21).
+    `careful` (the size limit is tight): slower settings that keep more detail for the same size."""
     if encoder == "h264_nvenc":
-        return ["-c:v", "h264_nvenc", "-preset", "p5", "-tune", "hq", "-rc", "vbr", "-cq", "23", "-b:v", "0", *video_cap]
-    return ["-c:v", "libx264", "-preset", "veryfast", "-crf", "23", *video_cap]
+        return ["-c:v", "h264_nvenc", "-preset", "p7" if careful else "p5", "-tune", "hq", "-rc", "vbr", "-cq", "21",
+                "-b:v", "0", "-spatial-aq", "1", "-rc-lookahead", "32", *video_cap]
+    return ["-c:v", "libx264", "-preset", "medium" if careful else "veryfast", "-crf", "21", *video_cap]
 
 
 def plan_chunks(duration_ms: int, workers: int, min_chunk_ms: int = 15_000) -> list[tuple[int, int]]:
@@ -164,7 +186,8 @@ def render_mp4(
 
     # Quality first (CRF), but never above the bitrate that fits the storage limit.
     rates = bitrates_for(duration_ms + lead_ms, max_bytes)
-    video_cap = ["-maxrate", f"{rates[0]}k", "-bufsize", f"{rates[0]}k"] if rates else []
+    video_cap = video_cap_args(rates)
+    careful = bool(rates) and rates[0] < CAREFUL_BELOW_KBPS
     audio_kbps = rates[1] if rates else 192
     base = workdir / "base.png"
     made = subprocess.run([ffmpeg, "-nostdin", "-hide_banner", "-loglevel", "error", "-y", "-f", "lavfi",
@@ -208,7 +231,7 @@ def render_mp4(
                 "-framerate", "30", "-i", "base.png",
                 *bg_inputs,
                 "-filter_complex", graph, "-map", "[v]", "-an",
-                *encoder_args(encoder, video_cap), "-pix_fmt", "yuv420p",
+                *encoder_args(encoder, video_cap, careful), "-pix_fmt", "yuv420p",
                 "-threads", str(threads), "-r", "30",
                 "-t", f"{(t1 - t0) / 1000:.3f}",
                 "-progress", "pipe:1", "-nostats",
@@ -245,7 +268,7 @@ def render_mp4(
     if plan:
         names[0] = render_opening(
             ffmpeg, workdir, canvas, opening, aspect, plan, "part0.mp4", "title.ass" if title_subs else None,
-            encoder_args(encoder, video_cap), max(1, os.cpu_count() or 1), max(60.0, deadline - time.monotonic()),
+            encoder_args(encoder, video_cap, careful), max(1, os.cpu_count() or 1), max(60.0, deadline - time.monotonic()),
             custom_intro=custom_intro,
         )
         # The song starts where the karaoke starts; the intro's own sound plays before it.

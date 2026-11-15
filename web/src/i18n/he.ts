@@ -384,6 +384,7 @@ export const he = {
   'export.opening.ownHint': 'סרטון (MP4 / MOV / WEBM), GIF או תמונה, עד 30MB. סרטון מוצג עד 30 שניות עם הצליל שלו, ותמונה 5 שניות. הפתיח נשמר בחשבון שלכם ומוצע לכל השירים.',
   'export.opening.needOwnIntro': 'העלו את הפתיח שלכם (או בחרו בפתיח KaraokeSync).',
   'export.opening.noIntro': 'בלי פתיח',
+  'export.qualityNote': 'השיר ארוך, ובגלל מגבלת הגודל של קבצים (50MB) סרטון ב-1080p היה יוצא מפוקסל. לכן הוא ייווצר אוטומטית ב-720p, שנראה חד יותר באותו גודל.',
   'style.background': 'רקע הסרטון',
   'style.bgColor1': 'צבע 1',
   'style.bgColor2': 'צבע 2',

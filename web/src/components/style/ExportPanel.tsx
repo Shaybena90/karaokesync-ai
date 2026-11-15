@@ -7,7 +7,7 @@ import type { InstrumentalState } from '../../lib/useInstrumental'
 import type { ExportJob } from '../../lib/types'
 import type { VideoAspect } from '../player/KaraokePlayer'
 import { Alert, Button, ProgressBar, Spinner } from '../ui'
-import { TITLE_THEMES, openingProblem, openingRequest, useOpeningChoice } from '../../lib/opening'
+import { TITLE_THEMES, openingProblem, openingRequest, starved1080p, useOpeningChoice } from '../../lib/opening'
 import { OpeningPanel } from './OpeningPanel'
 import { useOwnIntro } from '../../lib/ownIntro'
 import { Segmented } from './StyleControls'
@@ -22,12 +22,14 @@ interface Props {
   beforeExport: () => Promise<void>
   /** The song's melody-only track (shared with the player on the same page). */
   instrumental: InstrumentalState
+  /** Length of the song (for the size/quality note). */
+  songMs?: number
 }
 
 const TEXT_FORMATS: TextExportFormat[] = ['srt', 'lrc', 'ass']
 
 /** Subtitle downloads + MP4 render queue for one project. */
-export function ExportPanel({ projectId, title, aspect, onAspectChange, canRenderVideo, beforeExport, instrumental }: Props) {
+export function ExportPanel({ projectId, title, aspect, onAspectChange, canRenderVideo, beforeExport, instrumental, songMs = 0 }: Props) {
   const { t, locale } = useI18n()
   const [resolution, setResolution] = useState<'720' | '1080'>('1080')
   const [noVocals, setNoVocals] = useState(false)
@@ -160,6 +162,9 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
           onChange={onAspectChange}
         />
         <Segmented value={resolution} options={[['720', '720p'], ['1080', '1080p']]} onChange={setResolution} />
+        {resolution === '1080' && starved1080p(songMs, opening) && (
+          <p className="-mt-1 text-xs text-amber-200/90" data-testid="quality-note">{t('export.qualityNote')}</p>
+        )}
         <label className={`flex min-h-10 items-center gap-2 text-sm ${instrumental.ready ? '' : 'opacity-50'}`}>
           <input
             type="checkbox"

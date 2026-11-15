@@ -268,3 +268,12 @@ test('my own opening clip instead of the KaraokeSync one', async ({ page, backen
   await page.reload()
   await expect(page.getByTestId('opening').getByRole('radio', { name: 'פתיח KaraokeSync' })).toHaveAttribute('aria-checked', 'true')
 })
+
+test('a long song warns that 1080p will be made in 720p to stay sharp', async ({ page, backend }) => {
+  await expect(page.getByTestId('quality-note')).toHaveCount(0) // a 16 s song: fine in 1080p
+  backend.audioFiles[0].duration_ms = 5 * 60_000
+  await page.reload()
+  await expect(page.getByTestId('quality-note')).toContainText('720p')
+  await page.getByRole('radio', { name: '720p' }).click()
+  await expect(page.getByTestId('quality-note')).toHaveCount(0)
+})

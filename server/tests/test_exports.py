@@ -300,3 +300,18 @@ def test_worker_export_pipeline(fake_sb, ready_project, tmp_path, monkeypatch):
     assert 2.8 < float(info["format"]["duration"]) < 3.3
     assert progress[0] < progress[-1] and progress[-1] >= 90
     assert not list((tmp_path / "work").iterdir())  # temporary files removed
+
+
+def test_long_songs_get_720p_to_stay_sharp():
+    from karaokesync.exports.video import MIN_1080P_KBPS, best_resolution, bitrates_for, encoder_args, video_cap_args
+
+    limit = 48 * 1024 * 1024
+    assert best_resolution(1080, 60_000, limit) == 1080            # a short song: enough bits for 1080p
+    assert best_resolution(1080, 4 * 60_000, limit) == 720         # 4 minutes: 1080p would be blocky
+    assert best_resolution(720, 4 * 60_000, limit) == 720
+    assert best_resolution(1080, 4 * 60_000, None) == 1080         # no size limit
+    assert bitrates_for(4 * 60_000, limit)[0] < MIN_1080P_KBPS
+    rates = bitrates_for(4 * 60_000, limit)
+    assert video_cap_args(rates) == ["-maxrate", f"{rates[0]}k", "-bufsize", f"{rates[0] * 2}k"]
+    assert "medium" in encoder_args("libx264", [], careful=True) and "veryfast" in encoder_args("libx264", [])
+    assert "p7" in encoder_args("h264_nvenc", [], careful=True)

@@ -20,7 +20,7 @@ OUT = Path(__file__).resolve().parents[2] / "web" / "public" / "backgrounds"
 
 
 def one(bg_id: str) -> str:
-    clip = render_clip(bg_id, OUT / f"{bg_id}.mp4", crf=28)
+    clip = render_clip(bg_id, OUT / f"{bg_id}.mp4", crf=20)  # sharp: the video scales it up 2-3x
     subprocess.run(
         ["ffmpeg", "-nostdin", "-loglevel", "error", "-y", "-ss", "3", "-i", str(clip),
          "-frames:v", "1", "-vf", "scale=240:-2", "-q:v", "5", str(OUT / f"{bg_id}.jpg")],
