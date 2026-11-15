@@ -26,6 +26,8 @@ interface Props {
   onLineText: (lineId: string, text: string, sync: boolean) => void
   /** Mark the stretch where this line is sung, then sync inside it. */
   onMarkRange: (line: DocLine) => void
+  /** Add a copy of the line right after it. */
+  onDuplicateLine: (lineId: string) => void
 }
 
 /** All lines as editable word chips. Low-confidence words are underlined so they are easy to find. */
@@ -45,6 +47,7 @@ export const LinesList = memo(function LinesList({
   onDismissSync,
   onLineText,
   onMarkRange,
+  onDuplicateLine,
 }: Props) {
   const { t } = useI18n()
   const [editing, setEditing] = useState<{ lineId: string; text: string } | null>(null)
@@ -67,6 +70,9 @@ export const LinesList = memo(function LinesList({
               <IconBtn label={t('editor.loopLine')} onClick={() => onLoopLine(line)}>⟲</IconBtn>
               <IconBtn label={t('editor.line.edit')} onClick={() => setEditing({ lineId: line.id, text: line.words.map((w) => w.text).join(' ') })}>
                 ✏️
+              </IconBtn>
+              <IconBtn label={t('editor.duplicateLine')} onClick={() => onDuplicateLine(line.id)}>
+                ⧉
               </IconBtn>
               <IconBtn label={t('editor.range.open')} onClick={() => onMarkRange(line)}>
                 ⏱

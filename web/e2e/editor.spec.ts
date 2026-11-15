@@ -270,3 +270,21 @@ test('the stretch can be set from the playback position', async ({ page, backend
   await expect(panel.getByRole('button', { name: /סנכרון המילים בקטע הזה/ })).toBeDisabled()
   expect(backend.syncJobs).toHaveLength(0)
 })
+
+test('duplicate a line', async ({ page, backend }) => {
+  const lines = page.locator('ol > li')
+  const before = await lines.count()
+  await lines.first().getByRole('button', { name: /שכפול שורה/ }).click()
+  await expect(lines).toHaveCount(before + 1)
+  // the copy is right after the original, with the same words
+  const words = (i: number) => lines.nth(i).locator('.ks-chip').allTextContents()
+  expect(await words(1)).toEqual(await words(0))
+  await waitForSave(backend, 1)
+  const saved = backend.lyricSaves.at(-1)!.p_lines
+  expect(saved).toHaveLength(before + 1)
+  expect(saved[1].words.map((w) => w.text)).toEqual(saved[0].words.map((w) => w.text))
+  expect(saved[1].words[0].start_ms).toBeGreaterThanOrEqual(saved[0].words.at(-1)!.end_ms)
+  // undo removes it
+  await page.keyboard.press('Control+z')
+  await expect(lines).toHaveCount(before)
+})

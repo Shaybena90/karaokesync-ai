@@ -17,6 +17,7 @@ import {
   syncWindow,
   toSavePayload,
   type LyricsDoc,
+  duplicateLine,
 } from './lyricsDoc'
 
 const doc: LyricsDoc = [
@@ -261,3 +262,29 @@ describe('whole sentences', () => {
 function lineEndOf(line: { words: { end_ms: number }[] }) {
   return Math.max(...line.words.map((w) => w.end_ms))
 }
+
+describe('duplicateLine', () => {
+  it('adds a copy right after the line, with new ids and the same rhythm', () => {
+    const res = duplicateLine(doc, 'L1')!
+    expect(res.doc).toHaveLength(doc.length + 1)
+    const copy = res.doc[1]
+    expect(copy.id).toBe(res.lineId)
+    expect(copy.words.map((w) => w.text)).toEqual(['שלום', 'עולם'])
+    expect(copy.words.map((w) => w.id)).not.toContain('a')
+    expect(copy.words[0].start_ms).toBe(2000) // starts where the original ends
+    expect(copy.words.every((w) => w.confidence === 0)).toBe(true) // unsure until synced
+    expect(isValidDoc(res.doc)).toBe(true)
+    expect(res.doc[0]).toBe(doc[0]) // the original is untouched
+  })
+
+  it('squeezes the copy to fit before the next line', () => {
+    const tight: LyricsDoc = [
+      { id: 'A', words: [{ id: 'x', text: 'אחת', start_ms: 0, end_ms: 2000, confidence: 1 }, { id: 'y', text: 'שתיים', start_ms: 2000, end_ms: 4000, confidence: 1 }] },
+      { id: 'B', words: [{ id: 'z', text: 'שלוש', start_ms: 5000, end_ms: 6000, confidence: 1 }] },
+    ]
+    const copy = duplicateLine(tight, 'A')!.doc[1]
+    expect(copy.words[0].start_ms).toBe(4000)
+    expect(copy.words[1].end_ms).toBeLessThanOrEqual(5000)
+    expect(duplicateLine(tight, 'nope')).toBeNull()
+  })
+})

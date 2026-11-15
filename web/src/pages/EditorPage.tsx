@@ -15,6 +15,7 @@ import {
   applyLineTimes,
   applyTapTimes,
   deleteWord,
+  duplicateLine,
   findWord,
   insertLineAt,
   flatWords,
@@ -249,6 +250,21 @@ export function EditorPage() {
       if (sync) syncLine(docRef.current, lineId)
     },
     [edit, syncLine],
+  )
+  const onDuplicateLine = useCallback(
+    (lineId: string) => {
+      const res = duplicateLine(docRef.current, lineId, audioDuration())
+      if (!res) return
+      edit(() => res.doc)
+      // Show the copy and select its first word, ready to be synced.
+      requestAnimationFrame(() => {
+        const first = res.doc.find((l) => l.id === res.lineId)?.words[0]
+        if (!first) return
+        select(first.id)
+        chips.current.get(first.id)?.scrollIntoView({ block: 'center', behavior: 'smooth' })
+      })
+    },
+    [audioDuration, edit, select],
   )
   const addLine = useCallback(
     (atMs: number, text: string) => {
@@ -565,6 +581,7 @@ export function EditorPage() {
               onDismissSync={lineSync.dismiss}
               onLineText={onLineText}
               onMarkRange={onMarkRange}
+              onDuplicateLine={onDuplicateLine}
             />
           )}
         </div>

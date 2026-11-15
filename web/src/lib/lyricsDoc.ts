@@ -372,6 +372,37 @@ export function insertLineAt(doc: LyricsDoc, atMs: number, text: string, duratio
   return { doc: settleLine(next, index, line.words), lineId: line.id }
 }
 
+/**
+ * A copy of a line right after it (for a repeated line, e.g. a chorus): the
+ * same words with new ids and the same rhythm, starting where the original
+ * ends and squeezed to fit before the next line. Its times are a guess, so its
+ * words show as unsure until the line is synced (✨ or 👆).
+ */
+export function duplicateLine(doc: LyricsDoc, lineId: string, durationMs?: number): { doc: LyricsDoc; lineId: string } | null {
+  const i = doc.findIndex((l) => l.id === lineId)
+  if (i < 0) return null
+  const line = doc[i]
+  const s = lineStart(line)
+  const e = lineEnd(line)
+  const length = Math.max(e - s, line.words.length * 100)
+  const nextStart = i + 1 < doc.length ? lineStart(doc[i + 1]) : Number.POSITIVE_INFINITY
+  const songEnd = durationMs && durationMs > 0 ? durationMs : Number.POSITIVE_INFINITY
+  const start = Math.min(e, songEnd)
+  const room = Math.min(nextStart, songEnd) - start
+  const span = Math.max(Math.min(length, room), line.words.length * 50)
+  const scale = span / length
+  const words = line.words.map((w) => ({
+    id: newId(),
+    text: w.text,
+    start_ms: Math.round(start + (w.start_ms - s) * scale),
+    end_ms: Math.round(start + (w.end_ms - s) * scale),
+    confidence: 0,
+  }))
+  const copy: DocLine = { id: newId(), words }
+  const next = [...doc.slice(0, i + 1), copy, ...doc.slice(i + 1)]
+  return { doc: settleLine(next, i + 1, words), lineId: copy.id }
+}
+
 // ------------------------------------------------------------- persistence
 /** Shape expected by the `save_lyrics` database function. */
 export function toSavePayload(doc: LyricsDoc) {

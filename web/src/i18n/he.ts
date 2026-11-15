@@ -172,6 +172,7 @@ export const he = {
   'editor.loopLine': 'השמעת השורה בלולאה',
   'editor.shiftEarlier': 'הקדמת השורה ב-0.1 שניות',
   'editor.shiftLater': 'איחור השורה ב-0.1 שניות',
+  'editor.duplicateLine': 'שכפול שורה (עותק מיד אחריה)',
   'editor.mergeNext': 'איחוד עם השורה הבאה',
   'editor.speed': 'מהירות ניגון',
   'editor.looping': 'לולאה',
