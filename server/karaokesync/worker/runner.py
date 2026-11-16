@@ -13,6 +13,7 @@ import logging
 import os
 import signal
 import socket
+import sys
 import threading
 import time
 import uuid
@@ -23,6 +24,7 @@ from ..logging_setup import setup_logging
 from ..supabase_client import SupabaseClient, SupabaseError
 from . import gpu
 from .cleanup import run_retention
+from . import self_update
 from .errors import JobLost, PipelineError
 from .export_pipeline import run_export
 from .instrumental import run_instrumental
@@ -35,7 +37,7 @@ CLEANUP_INTERVAL_SECONDS = 3600
 # Shown when the worker starts, to tell an up-to-date worker from an old copy.
 # The part before the space is compared by the API: features that need a newer
 # worker (the video opening, previews) check it before queueing a job.
-WORKER_VERSION = "2026-11-16.2 (4K titles)"
+WORKER_VERSION = "2026-11-16.3 (auto update)"
 
 
 class Heartbeat:
@@ -332,6 +334,10 @@ def main() -> None:
     presence = Presence(sb, worker_id, WORKER_VERSION, device)
     presence.start()
     last_cleanup = 0.0
+    # Right after an update, wait a full interval before looking for the next one.
+    last_update_check = time.monotonic() if self_update.just_updated() else -self_update.CHECK_INTERVAL_SECONDS
+    announced = False
+    exit_code = 0
     try:
         while not stopping.is_set():
             if presence.paused.is_set():
@@ -342,6 +348,17 @@ def main() -> None:
                     run_retention(sb, settings)
                     last_cleanup = time.monotonic()
                 if not process_one(sb, settings, worker_id, presence.set_activity):
+                    if settings.auto_update and time.monotonic() - last_update_check > self_update.CHECK_INTERVAL_SECONDS:
+                        last_update_check = time.monotonic()
+                        latest = self_update.latest_version()
+                        if self_update.is_newer(latest, WORKER_VERSION):
+                            if self_update.supervised():
+                                log.info("new version %s is published (this is %s): updating now", latest, WORKER_VERSION)
+                                exit_code = self_update.UPDATE_EXIT_CODE
+                                break
+                            if not announced:
+                                log.warning("new version %s is published: run 9-update-worker.bat to update", latest)
+                                announced = True
                     stopping.wait(settings.worker_poll_seconds)
             except Exception as exc:
                 log.error("worker loop error: %s", type(exc).__name__)
@@ -350,6 +367,8 @@ def main() -> None:
         presence.stop()
         presence.set_activity("stopped")
     log.info("worker stopped")
+    if exit_code:
+        sys.exit(exit_code)
 
 
 if __name__ == "__main__":

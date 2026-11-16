@@ -95,6 +95,9 @@ class Settings(BaseSettings):
     # Word-by-word precision: refine every word's start and end with a CTC acoustic model
     # (worker/ctc_refine.py). "auto" = when torchaudio and uroman are installed.
     word_refine: Literal["auto", "on", "off"] = "auto"
+    # Update the worker by itself when a new version is published (only when started by
+    # scripts/windows/worker-forever.bat, e.g. the automatic start of 8-autostart-worker.bat).
+    auto_update: bool = True
 
     @property
     def max_upload_bytes(self) -> int:
