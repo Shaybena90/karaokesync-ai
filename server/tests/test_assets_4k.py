@@ -76,3 +76,21 @@ def test_4k_falls_back_to_1080p_when_the_size_limit_would_starve_it():
     mb = 1024 * 1024
     assert best_resolution(2160, 4 * 60_000, 600 * mb) == 2160
     assert best_resolution(2160, 12 * 60_000, 600 * mb) == 1080
+
+
+def test_4k_title_designs_have_their_backdrops_listed_and_fetched(tmp_path, monkeypatch):
+    from karaokesync.exports import opening as op
+
+    uhd = [t for t in op.THEMES.values() if t.uhd]
+    assert len(uhd) == 20
+    for t in uhd:
+        assert (op.INTRO_DIR / t.backdrop).is_file()   # the website's light preview
+        for size in (2160, 1080):
+            assert assets_4k.has(f"intro/title-{t.id}-{size}.mp4"), (t.id, size)
+    asked = []
+    monkeypatch.setattr(assets_4k, "fetch", lambda name, cache, url: asked.append(name) or tmp_path / name)
+    op.backdrop_file(op.THEMES["velvet"], 2160, tmp_path)
+    op.backdrop_file(op.THEMES["velvet"], 1080, tmp_path)
+    assert asked == ["intro/title-velvet-2160.mp4", "intro/title-velvet-1080.mp4"]
+    assert op.backdrop_file(op.THEMES["gold"], 2160, tmp_path) == op.INTRO_DIR / "title-gold.mp4"   # older designs stay local
+    assert op.opening_files(op.OpeningOptions(title=op.TitleCard(song="שיר"), title_theme="velvet"), "16:9") == []

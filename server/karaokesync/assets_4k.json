@@ -183,6 +183,14 @@
   "bytes": 68686361,
   "sha256": "34fae482ee28b0b4ac0298d1ff7253fbccbb033d3461dc70556202c70c4ecc85"
  },
+ "intro/title-desert-1080.mp4": {
+  "bytes": 924437,
+  "sha256": "908862f837409b1c634f6d5a27b6547d52ff4ce9920ca546a3f7b3b0d0f6897c"
+ },
+ "intro/title-desert-2160.mp4": {
+  "bytes": 2895642,
+  "sha256": "f61f5c12739b6b71b708677a9be62f3aa58f3255a999545f6193d0ac88fb82ba"
+ },
  "intro/title-diamond-1080.mp4": {
   "bytes": 2912430,
   "sha256": "87f0549988e8db919127c2aa1d7be9b237fe99ecb61f3bbeafc4b6bffd34130d"
@@ -215,6 +223,14 @@
   "bytes": 7548405,
   "sha256": "6d4b90cf8c6f17d4e24b27bc6177b049481a42bc7de8ec225bad1f7976d2d8bb"
  },
+ "intro/title-floral-1080.mp4": {
+  "bytes": 1190645,
+  "sha256": "7ee29a0d360f2ec61693d49d3c666732afc7ed1a8ac2629a2ed88411d3914b64"
+ },
+ "intro/title-floral-2160.mp4": {
+  "bytes": 2891337,
+  "sha256": "bc075fabe454d8c16c06f30da3b9f587bffecf3f0a8fe5c711f3163358b382ac"
+ },
  "intro/title-ice-1080.mp4": {
   "bytes": 2053137,
   "sha256": "b6828e024995f005536fea00a8267e2ecfd119d76ac07477adcfaed3426934f6"
@@ -222,6 +238,14 @@
  "intro/title-ice-2160.mp4": {
   "bytes": 4307281,
   "sha256": "89fd4ef39e0664e22f6204147951c2c03dfdbadb9edffed92bbe4be6a90eae07"
+ },
+ "intro/title-jazz-1080.mp4": {
+  "bytes": 1667424,
+  "sha256": "4db9b89de222a30e62ba72e160ff1c37201327bc0a2cfa6b79b8a41698ac7c04"
+ },
+ "intro/title-jazz-2160.mp4": {
+  "bytes": 4965332,
+  "sha256": "700b502dd01e265c4712fc64072bf933e136c934a561ece5dbb87035f4f89c87"
  },
  "intro/title-nebula-1080.mp4": {
   "bytes": 2513166,
@@ -247,6 +271,14 @@
   "bytes": 9503027,
   "sha256": "a944e5a411557d5a7ca8b7f50719c68af85d0282966b18b765ae51c1d9f05db8"
  },
+ "intro/title-rainbow-1080.mp4": {
+  "bytes": 1143877,
+  "sha256": "f9c11204e54241fad6a52084250369ea34c2a91e1a327ee9c6813eeb350e0e76"
+ },
+ "intro/title-rainbow-2160.mp4": {
+  "bytes": 2965828,
+  "sha256": "391448e360d76e1ceecb62645b3d0c50d9079dff1771dd39f8c8a035c47a0654"
+ },
  "intro/title-retro-1080.mp4": {
   "bytes": 2047896,
   "sha256": "e062f8e3037e83bb7e3f324a784cd01701d33acb5f1ccaa1c66e33921ed8d5c1"
@@ -262,6 +294,14 @@
  "intro/title-rosegold-2160.mp4": {
   "bytes": 3679553,
   "sha256": "4a52bbddd2f67323731a692074d0a60a5dc7d9c80e04157a4bcb33ad79c4ba37"
+ },
+ "intro/title-sakura-1080.mp4": {
+  "bytes": 1046825,
+  "sha256": "97a8f1a379346719e37203a3999d2d9b5cfb59fe0ae19303d3158e53660c472d"
+ },
+ "intro/title-sakura-2160.mp4": {
+  "bytes": 2918337,
+  "sha256": "ddcf3de3d4bc2857ed358adfe9a340dfec55f6f5dcf0fcd95d904128d3845232"
  },
  "intro/title-tropical-1080.mp4": {
   "bytes": 1551522,
