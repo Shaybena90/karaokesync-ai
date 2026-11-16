@@ -40,10 +40,10 @@ void main() {
   col += step(.996, hash21(g)) * (.5 + .5 * sin(LA * 2. + hash21(g) * 50.)) * smoothstep(.0, .5, p.y);
   // snowy ground
   if (p.y < -.55) col = mix(vec3(.55, .62, .78), vec3(.25, .3, .45), smoothstep(-.55, -1., p.y));
-  // tree rows, far to near (parallax shifts by whole tree widths per loop)
-  col = forestRow(p + vec2(PHASE * 1. / 3., .1), 3., 1., vec3(.06, .1, .14), vec3(.4, .45, .6), col);
-  col = forestRow(p + vec2(PHASE * 2. / 2.2, .35), 2.2, 7., vec3(.025, .06, .07), vec3(.55, .6, .75), col);
-  col = forestRow(p + vec2(PHASE * 3. / 1.4, .7), 1.4, 13., vec3(.01, .03, .03), vec3(.75, .8, .95), col);
+  // tree rows, far to near (still: the camera's sway moves them a little)
+  col = forestRow(p + vec2(.13, .1), 3., 1., vec3(.06, .1, .14), vec3(.4, .45, .6), col);
+  col = forestRow(p + vec2(.41, .35), 2.2, 7., vec3(.025, .06, .07), vec3(.55, .6, .75), col);
+  col = forestRow(p + vec2(.77, .7), 1.4, 13., vec3(.01, .03, .03), vec3(.75, .8, .95), col);
   // falling snow, three depths
   for (int i = 0; i < 3; i++) {
     float fi = float(i);
