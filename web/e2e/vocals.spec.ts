@@ -48,7 +48,7 @@ test('a failed separation can be tried again', async ({ page, backend }) => {
 })
 
 test('video without the singer', async ({ page, backend }) => {
-  await page.goto(`/projects/${PID}/style`)
+  await page.goto(`/projects/${PID}/export`)
   const box = page.getByRole('checkbox', { name: /סרטון בלי הזמר/ })
   await expect(box).toBeDisabled() // no melody-only track yet
   await expect(page.getByText('צרו קודם גרסה בלי הזמר')).toBeVisible()

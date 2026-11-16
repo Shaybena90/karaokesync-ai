@@ -481,7 +481,7 @@ export function EditorPage() {
 
       {/* Waveform + transport (sticky) */}
       {/* Sticky only on tall screens: on short phones (and in landscape) it would leave no room for the words. */}
-      <div className="glass z-20 mt-3 rounded-3xl bg-ink-950/85 p-3 [@media(min-height:700px)]:sticky [@media(min-height:700px)]:top-16">
+      <div className="glass z-20 mt-3 rounded-3xl bg-ink-950/85 p-3 top-16 [@media(min-height:1000px)]:sticky lg:[@media(min-height:700px)]:sticky">
         {url ? (
           <>
           <WaveformTimeline

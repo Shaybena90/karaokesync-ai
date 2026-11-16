@@ -321,7 +321,7 @@ test('a very long line is flagged, and a sync that waits says why', async ({ pag
 })
 
 test('timeline: drag a line to move it, drag its end to stretch it, with explanations on the buttons', async ({ page, backend }, info) => {
-  test.skip(isMobileProject(info), 'mouse dragging on the timeline is tested on desktop')
+  test.skip(isMobileProject(info.project.name), 'mouse dragging on the timeline is tested on desktop')
   const track = page.getByTestId('lines-track')
   const block = track.getByRole('button', { name: /שלום עולם/ })
   await expect(block).toBeVisible()

@@ -160,7 +160,7 @@ export function LinesTrack({ ws, ready, doc, activeLineId, lyricDir, onSeek, onS
               <button
                 type="button"
                 className="absolute inset-0 cursor-grab overflow-hidden rounded-lg px-2.5 text-start active:cursor-grabbing focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
-                aria-label={`${t('editor.timelineLine')} ${i + 1}: ${text} (${formatDuration(start)}–${formatDuration(end)})`}
+
                 onPointerDown={(e) => startDrag(e, line.id, 'move', lineStart(line), lineEnd(line))}
                 onPointerMove={moveDrag}
                 onPointerUp={endDrag}
@@ -173,6 +173,7 @@ export function LinesTrack({ ws, ready, doc, activeLineId, lyricDir, onSeek, onS
                   } else if (e.key === 'Enter') onSelectLine(line.id)
                 }}
               >
+                <span className="sr-only">{t('editor.timelineLine')} {i + 1}: </span>
                 <span className="block truncate pt-1 font-semibold leading-4" dir={lyricDir}>
                   {text}
                 </span>

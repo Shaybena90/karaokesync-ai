@@ -9,6 +9,12 @@ const frame = (page: Page) =>
   })
 const lyricFontPx = (page: Page) => page.evaluate(() => parseFloat(getComputedStyle(document.querySelector('.ks-lyric')!).fontSize))
 
+/** The export has its own page (the ⬇️ tab). */
+async function openExport(page: Page) {
+  await page.getByRole('link', { name: /ייצוא קבצים/ }).first().click()
+  await expect(page.getByRole('heading', { name: 'ייצוא' })).toBeVisible()
+}
+
 test.beforeEach(async ({ page, backend }) => {
   void backend
   await page.goto(`/projects/${PID}/style`)
@@ -36,11 +42,13 @@ test('presets change the look and are saved', async ({ page, backend }) => {
 })
 
 test('subtitle files download with the song name', async ({ page }) => {
+  await openExport(page)
   const [download] = await Promise.all([page.waitForEvent('download'), page.getByRole('button', { name: /SRT/ }).click()])
   expect(download.suggestedFilename()).toBe('שיר בדיקה.srt')
 })
 
 test('video export: request, progress, download', async ({ page, backend }) => {
+  await openExport(page)
   await page.getByRole('radio', { name: '9:16 טלפון' }).click()
   await page.getByRole('radio', { name: '720p' }).click()
   await page.getByRole('button', { name: /יצירת סרטון/ }).click()
@@ -175,6 +183,7 @@ test('3D background and 3D Hebrew letters, in the preview and saved', async ({ p
 })
 
 test('opening clip, 3D title with the song and singer, and a transition', async ({ page, backend }) => {
+  await openExport(page)
   const box = page.getByTestId('opening')
   const song = box.getByRole('textbox', { name: 'שם השיר' })
   await expect(song).toHaveValue('שיר בדיקה') // starts as the project's name
@@ -202,6 +211,7 @@ test('opening clip, 3D title with the song and singer, and a transition', async 
 })
 
 test('a video without opening and title', async ({ page, backend }) => {
+  await openExport(page)
   const box = page.getByTestId('opening')
   await box.getByRole('checkbox', { name: /כותרת יוקרתית/ }).uncheck()
   await box.getByRole('checkbox', { name: /סרטון פתיח/ }).uncheck()
@@ -212,6 +222,7 @@ test('a video without opening and title', async ({ page, backend }) => {
 })
 
 test('preview the whole video (opening, transitions, title) before making it', async ({ page, backend }) => {
+  await openExport(page)
   await page.getByTestId('opening').getByRole('radio', { name: /פיקסלים/ }).click()
   await page.getByRole('button', { name: /תצוגה מקדימה/ }).click()
   await expect.poll(() => backend.exportJobs[0]?.options).toMatchObject({ preview: true, resolution: 480, opening: { transition: 'pixelize' } })
@@ -229,6 +240,7 @@ test('preview the whole video (opening, transitions, title) before making it', a
 })
 
 test('a video waiting in the queue says when the processing computer is off', async ({ page, backend }) => {
+  await openExport(page)
   backend.workerStatus = { available: true, online: false, paused: false, admin: false }
   backend.exportJobs.push({ id: 'q1', project_id: backend.project().id, format: 'mp4', options: { aspect: '16:9', resolution: 480, preview: true },
     status: 'queued', progress: 0, output_path: null, error_code: null, created_at: new Date().toISOString(), finished_at: null })
@@ -238,6 +250,7 @@ test('a video waiting in the queue says when the processing computer is off', as
 
 
 test('choose the title card design', async ({ page, backend }) => {
+  await openExport(page)
   const themes = page.getByTestId('opening').getByRole('radiogroup', { name: 'עיצוב הכותרת והרקע' })
   expect(await themes.getByRole('radio').count()).toBeGreaterThanOrEqual(6)
   await expect(themes.locator('img').first()).toHaveAttribute('src', '/intro/title-brand-sample.jpg')
@@ -250,6 +263,7 @@ test('choose the title card design', async ({ page, backend }) => {
 })
 
 test('my own opening clip instead of the KaraokeSync one', async ({ page, backend }) => {
+  await openExport(page)
   const box = page.getByTestId('opening')
   await box.getByRole('radio', { name: 'הפתיח שלי' }).click()
   const create = page.getByRole('button', { name: /יצירת סרטון/ })
@@ -271,6 +285,7 @@ test('my own opening clip instead of the KaraokeSync one', async ({ page, backen
 })
 
 test('a long song warns that 1080p will be made in 720p to stay sharp', async ({ page, backend }) => {
+  await openExport(page)
   await expect(page.getByTestId('quality-note')).toHaveCount(0) // a 16 s song: fine in 1080p
   backend.audioFiles[0].duration_ms = 5 * 60_000
   await page.reload()
@@ -280,6 +295,7 @@ test('a long song warns that 1080p will be made in 720p to stay sharp', async ({
 })
 
 test('high quality: a bigger video, stored in parts, joined into one file on download', async ({ page, backend }) => {
+  await openExport(page)
   await page.getByRole('radio', { name: 'איכות גבוהה' }).click()
   await expect(page.getByTestId('quality-high-note')).toContainText('150MB')
   await page.getByRole('button', { name: /יצירת סרטון/ }).click()
@@ -295,6 +311,7 @@ test('high quality: a bigger video, stored in parts, joined into one file on dow
 })
 
 test('4K: a choice of its own, with what it costs, and the job asks for 2160p', async ({ page, backend }) => {
+  await openExport(page)
   await page.getByRole('radio', { name: '4K', exact: true }).click()
   await expect(page.getByTestId('uhd-note')).toContainText('600MB')
   await expect(page.getByRole('radio', { name: 'איכות גבוהה' })).toHaveCount(0) // 4K always uses its own size limit

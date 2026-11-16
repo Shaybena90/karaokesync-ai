@@ -83,7 +83,7 @@ export function Tip({ text, children, className = '' }: { text: string; children
       <span
         id={id}
         role="tooltip"
-        className="pointer-events-none invisible absolute bottom-full start-1/2 z-50 mb-2 w-max max-w-[15rem] -translate-x-1/2 rounded-xl border border-white/15 bg-ink-900/95 px-3 py-2 text-start text-xs font-normal leading-snug text-white opacity-0 shadow-2xl backdrop-blur transition delay-150 duration-150 group-hover/tip:visible group-hover/tip:opacity-100 group-focus-within/tip:visible group-focus-within/tip:opacity-100 rtl:translate-x-1/2"
+        className="pointer-events-none absolute bottom-full start-1/2 z-50 mb-2 hidden w-max max-w-[min(15rem,80vw)] -translate-x-1/2 rounded-xl border border-white/15 bg-ink-900/95 px-3 py-2 text-start text-xs font-normal leading-snug text-white shadow-2xl backdrop-blur [@media(hover:hover)]:group-hover/tip:block group-has-[:focus-visible]/tip:block rtl:translate-x-1/2"
       >
         {text}
       </span>

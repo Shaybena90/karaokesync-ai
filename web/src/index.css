@@ -308,3 +308,17 @@
   font-weight: 700;
   line-height: 1;
 }
+
+/* The home page's little karaoke line: the words light up one after the other. */
+.ks-teaser-word {
+  color: rgb(255 255 255 / 0.45);
+  animation: ks-teaser 2.4s infinite;
+}
+@keyframes ks-teaser {
+  0%, 8% { color: rgb(255 255 255 / 0.45); text-shadow: none; }
+  15%, 60% { color: #f0abfc; text-shadow: 0 0 14px rgb(232 121 249 / 0.7); }
+  100% { color: rgb(255 255 255 / 0.45); text-shadow: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ks-teaser-word { animation: none; color: #f0abfc; }
+}

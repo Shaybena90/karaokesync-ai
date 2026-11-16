@@ -148,7 +148,7 @@ export const LinesList = memo(function LinesList({
                   ref={(el) => registerChip(w.id, el)}
                   onClick={() => onSelect(w.id)}
                   title={`${(w.start_ms / 1000).toFixed(2)}–${(w.end_ms / 1000).toFixed(2)}`}
-                  className={`ks-chip min-h-10 scroll-mt-48 scroll-mb-[55vh] rounded-xl px-3 sm:scroll-mb-4 text-base font-semibold transition ${
+                  className={`ks-chip min-h-10 scroll-mt-80 scroll-mb-[55vh] rounded-xl px-3 sm:scroll-mb-4 text-base font-semibold transition ${
                     w.id === selectedId ? 'bg-fuchsia-500/40 ring-2 ring-fuchsia-300' : 'bg-white/[0.07] hover:bg-white/15'
                   } ${unsure ? 'underline decoration-amber-300/80 decoration-dotted decoration-2 underline-offset-4' : ''}`}
                 >
@@ -221,7 +221,7 @@ function ActionBtn({ label, tip, short, icon, onClick, disabled, accent }: {
         type="button"
         onClick={onClick}
         disabled={disabled}
-        aria-label={label}
+        aria-label={`${short} – ${label}`}
         className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-3.5 text-sm font-semibold transition active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-300 disabled:opacity-40 ${
           accent ? 'bg-gradient-to-br from-violet-600 to-blue-600 text-white shadow-md shadow-violet-900/40 hover:from-violet-500 hover:to-blue-500' : 'bg-white/10 text-white hover:bg-white/20'
         }`}
