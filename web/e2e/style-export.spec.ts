@@ -319,3 +319,9 @@ test('4K: a choice of its own, with what it costs, and the job asks for 2160p', 
   await expect.poll(() => (backend.exportJobs[0]?.options as { resolution?: number })?.resolution).toBe(2160)
   await expect(page.getByText('16:9 · 4K')).toBeVisible()
 })
+
+test('the design tab shows the way to the opening and title designer', async ({ page }) => {
+  await page.getByTestId('opening-shortcut').click()
+  await expect(page).toHaveURL(/\/export#opening$/)
+  await expect(page.getByTestId('opening')).toBeInViewport({ timeout: 5000 })
+})

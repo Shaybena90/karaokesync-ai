@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { Navigate, useParams } from 'react-router-dom'
+import { Link, Navigate, useLocation, useParams } from 'react-router-dom'
 import { ProjectHeader } from '../components/ProjectNav'
 import { KaraokePlayer, type VideoAspect } from '../components/player/KaraokePlayer'
 import { BackgroundPanel } from '../components/style/BackgroundPanel'
@@ -40,6 +40,13 @@ export function StylePage({ mode = 'style' }: { mode?: 'style' | 'export' }) {
   }, [project, style])
 
   const pending = useRef<SubtitleStyle | null>(null)
+  const { hash } = useLocation()
+  // Came from "design the opening and title": go straight to that part of the export page.
+  useEffect(() => {
+    if (mode === 'export' && hash === '#opening' && style) {
+      requestAnimationFrame(() => document.getElementById('opening')?.scrollIntoView({ behavior: 'smooth', block: 'start' }))
+    }
+  }, [mode, hash, style])
 
   const save = async () => {
     if (timer.current) clearTimeout(timer.current)
@@ -113,6 +120,19 @@ export function StylePage({ mode = 'style' }: { mode?: 'style' | 'export' }) {
 
         {mode === 'style' ? (
           <div className="space-y-5">
+            {/* The opening and the title card are chosen with the video, on the export tab: show the way there. */}
+            <Link
+              to={`/projects/${id}/export#opening`}
+              className="flex min-h-16 items-center gap-3 rounded-3xl border border-violet-300/30 bg-gradient-to-br from-violet-600/30 to-blue-600/20 p-4 transition hover:border-violet-200/60"
+              data-testid="opening-shortcut"
+            >
+              <span aria-hidden="true" className="grid size-11 shrink-0 place-items-center rounded-2xl bg-white/10 text-2xl">🎬</span>
+              <span className="min-w-0 flex-1">
+                <span className="block font-semibold">{t('style.openingShortcut')}</span>
+                <span className="block text-xs text-white/60">{t('style.openingShortcutHint')}</span>
+              </span>
+              <span aria-hidden="true" className="text-white/60 rtl:-scale-x-100">→</span>
+            </Link>
             <div className="glass rounded-3xl p-4">
               <StyleControls style={style} onChange={change} />
             </div>

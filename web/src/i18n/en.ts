@@ -166,7 +166,7 @@ export const en: Record<MessageKey, string> = {
   'nav.play': 'Player',
   'nav.playHint': 'Sing along full screen',
   'nav.export': 'Export',
-  'nav.exportHint': 'MP4 video up to 4K and subtitle files',
+  'nav.exportHint': 'Opening, title, MP4 video up to 4K and subtitle files',
   'editor.short.play': 'Play',
   'editor.short.autoSync': 'AI sync',
   'editor.short.tapSync': 'Tap',
@@ -286,6 +286,8 @@ export const en: Record<MessageKey, string> = {
   'editor.tap.cancel': 'Cancel',
   'editor.tap.done': 'Done',
 
+  'style.openingShortcut': 'Design the opening and title',
+  'style.openingShortcutHint': 'The opening clip, the 3D title with the song and singer, and the transition — on the Export tab',
   'style.open': 'Style & export',
   'style.title': 'Style & export',
   'style.presets': 'Presets',

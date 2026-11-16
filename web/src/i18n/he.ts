@@ -164,7 +164,7 @@ export const he = {
   'nav.play': 'נגן',
   'nav.playHint': 'לשיר עם הכתוביות במסך מלא',
   'nav.export': 'ייצוא קבצים',
-  'nav.exportHint': 'סרטון MP4 עד 4K וקובצי כתוביות',
+  'nav.exportHint': 'פתיח, כותרת, סרטון MP4 עד 4K וקובצי כתוביות',
   'editor.short.play': 'השמעה',
   'editor.short.autoSync': 'סנכרון AI',
   'editor.short.tapSync': 'בהקשה',
@@ -284,6 +284,8 @@ export const he = {
   'editor.tap.cancel': 'ביטול',
   'editor.tap.done': 'סיום',
 
+  'style.openingShortcut': 'עיצוב הפתיח והכותרת',
+  'style.openingShortcutHint': 'סרטון הפתיחה, הכותרת בתלת מימד עם שם השיר והזמר, והמעבר — בלשונית "ייצוא קבצים"',
   'style.open': 'עיצוב וייצוא',
   'style.title': 'עיצוב וייצוא',
   'style.presets': 'תבניות מוכנות',

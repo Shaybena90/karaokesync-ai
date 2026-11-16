@@ -67,7 +67,7 @@ export function OpeningPanel({ choice, onChange, aspect, projectId, own }: Props
   const input = 'min-h-11 w-full rounded-xl border border-white/10 bg-white/5 px-3 text-base focus:border-violet-400 focus:outline-none'
 
   return (
-    <fieldset className="space-y-3 rounded-2xl border border-white/10 p-3" data-testid="opening">
+    <fieldset id="opening" className="scroll-mt-24 space-y-3 rounded-2xl border border-white/10 p-3" data-testid="opening">
       <legend className="px-1 text-sm font-semibold text-white/80">🎬 {t('export.opening.title')}</legend>
 
       <div className="grid gap-2 sm:grid-cols-2">
