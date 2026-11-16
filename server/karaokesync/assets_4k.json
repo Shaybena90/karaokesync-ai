@@ -24,12 +24,12 @@
   "sha256": "0644e05db1cd5a2d92d4b2f2ece711ccf8354377a938f89d9e2413c149130f53"
  },
  "backgrounds/golden-bokeh-1080.mp4": {
-  "bytes": 5128534,
-  "sha256": "5afe95b6151c48408a2671ed24a207a59383e526a10f9e0aed261fd038a39974"
+  "bytes": 5496023,
+  "sha256": "4885b105dfe7b2d3edc01e22e402348a88ba8afee4e9eb5c6b275f0cda78ace7"
  },
  "backgrounds/golden-bokeh-2160.mp4": {
-  "bytes": 10745909,
-  "sha256": "31c125e2471479ec4ac6d804b1b5c1d01a1ac0f88b702a8cc813472d0f50279b"
+  "bytes": 11456966,
+  "sha256": "3ce885e704574238d8d60c18ceab195dc988b324b30ffdb5d1e259dbe00aaf26"
  },
  "backgrounds/mic-spotlight-1080.mp4": {
   "bytes": 2459908,
@@ -55,29 +55,21 @@
   "bytes": 7325870,
   "sha256": "7c0ac226065806c8c8f1167f2c90424e60f9133194e4f348a5cf243399172162"
  },
- "backgrounds/snow-forest-1080.mp4": {
-  "bytes": 15517779,
-  "sha256": "ad5c322f118a07df58d8b1edeeb99401d327ee2c134235fe5d8b35d1437218cd"
- },
- "backgrounds/snow-forest-2160.mp4": {
-  "bytes": 30384734,
-  "sha256": "46acf14f9b42b469b0d35ab1067ffd2625e6d9ab792a40d9f107efb519fe22b0"
- },
  "backgrounds/sound-waves-1080.mp4": {
-  "bytes": 14819245,
-  "sha256": "ecd976e07ca4e8d41eaa1609bf4ec74683e9a9256637e4da797bd8759297077a"
+  "bytes": 14957212,
+  "sha256": "f109bc1bcaff29099a098307cb3b5422f1a4e9cde590eeba4fe30c62bb3b134a"
  },
  "backgrounds/sound-waves-2160.mp4": {
-  "bytes": 32896214,
-  "sha256": "ca344d7025520b72dfd9911992fe41650d82c46c2252613c261f6afd79a317ea"
+  "bytes": 33374320,
+  "sha256": "04da6d5df7081085a63e243ef06ba59fc94228f3834aa6154c248c4f5da7b22a"
  },
  "backgrounds/underwater-rays-1080.mp4": {
-  "bytes": 5183309,
-  "sha256": "0685776775cb4e52b6d54fabebc479e9802af53b8f211e1809e6f890c88dfafc"
+  "bytes": 5113859,
+  "sha256": "1a762081e0e9045a910ad0165279378ee889b2180a740ad1838986a7b7b97224"
  },
  "backgrounds/underwater-rays-2160.mp4": {
-  "bytes": 11658570,
-  "sha256": "bee08b62bb15fc2748ecff028a1971f82b59a430d3e7ffa511cb67c03eb9ffc8"
+  "bytes": 11644942,
+  "sha256": "3f0cb699a08fe4ef2e04a926de22015d726705f353a3e3913ae053ba60b5acbc"
  },
  "backgrounds/vinyl-spin-1080.mp4": {
   "bytes": 3449661,
