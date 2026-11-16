@@ -1,7 +1,7 @@
 // Desert dunes at sunset: wind-shaped sand dunes rolling to the horizon under
 // a huge low sun, with sand blowing off the crests and the first stars.
 float dunes(vec2 x) {
-  x += vec2(2.5 * fbm(x * .08), 1.5 * fbm(x * .07 + 9.));   // wind-bent, not straight rows
+  x += vec2(2.2 * sin(x.y * .11 + 1.3) + 1.1 * sin(x.y * .27), 1.4 * sin(x.x * .09 + 2.));   // wind-bent, not straight rows (cheap)
   float h = .0;
   h += .5 * (1. - abs(sin(x.x * .25 + sin(x.y * .15) * 1.5)));
   h += .25 * (1. - abs(sin(x.x * .55 + x.y * .2 + 1.)));
@@ -22,11 +22,11 @@ void main() {
   col += step(.997, hash21(st)) * smoothstep(.25, .6, rd.y) * .6;
   float t = .1;
   bool hit = false;
-  for (int i = 0; i < 100; i++) {
+  for (int i = 0; i < 64; i++) {
     vec3 q = ro + rd * t;
     float d = q.y - dunes(q.xz);
     if (d < .002 * t) { hit = true; break; }
-    t += d * .5;
+    t += d * .65;
     if (t > 80.) break;
   }
   if (hit) {
