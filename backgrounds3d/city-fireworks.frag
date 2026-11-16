@@ -19,6 +19,10 @@ vec3 fireworks(vec2 p) {
     float age = (t - .18) / .82;
     float rad = (1. - pow(1. - age, 3.)) * .6;
     float fade = pow(1. - age, 2.);
+    if (length(p - centre) > rad + .25) {                  // far from this burst: only its soft glow
+      c += colr * fade * .03 * exp(-length(p - centre) * 4.);
+      continue;
+    }
     for (int i = 0; i < 60; i++) {
       float a = float(i) / 60. * 3. * TAU + hash11(fk);
       vec2 dir = vec2(cos(a), sin(a)) * (.3 + .7 * hash11(float(i) + fk * 10.));
