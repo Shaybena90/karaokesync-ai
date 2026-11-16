@@ -61,6 +61,7 @@ class ExportRequest(BaseModel):
 MIN_OPENING_WORKER = "2026-11-14.2"   # the intro, transitions, previews
 MIN_OWN_INTRO_WORKER = "2026-11-15.2"  # the user's own opening clip
 MIN_UHD_WORKER = "2026-11-16.1"       # 4K videos and the 4K backgrounds
+MIN_UHD_TITLE_WORKER = "2026-11-16.2"  # the title designs with a 4K backdrop
 MIN_TITLE_WORKER = "2026-11-15.5"     # the title card as it is now: song on top, singer under it, the user's sizes
 
 
@@ -162,6 +163,7 @@ def exports_router() -> APIRouter:
             MIN_TITLE_WORKER if body.opening and body.opening.active and body.opening.title else "",
             MIN_OWN_INTRO_WORKER if body.opening and body.opening.intro and body.opening.intro_media_id else "",
             MIN_UHD_WORKER if body.resolution == UHD_RESOLUTION or (animated and ANIMATED_BACKGROUNDS[animated].uhd) else "",
+            MIN_UHD_TITLE_WORKER if body.opening and body.opening.title and body.opening.theme.uhd else "",
         )
         if body.opening and body.opening.intro and body.opening.intro_media_id:
             own = sb.select("background_media", {"id": f"eq.{body.opening.intro_media_id}", "user_id": f"eq.{user.id}",

@@ -35,7 +35,7 @@ CLEANUP_INTERVAL_SECONDS = 3600
 # Shown when the worker starts, to tell an up-to-date worker from an old copy.
 # The part before the space is compared by the API: features that need a newer
 # worker (the video opening, previews) check it before queueing a job.
-WORKER_VERSION = "2026-11-16.1 (4K)"
+WORKER_VERSION = "2026-11-16.2 (4K titles)"
 
 
 class Heartbeat:
