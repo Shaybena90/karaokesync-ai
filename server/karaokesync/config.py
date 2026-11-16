@@ -80,6 +80,10 @@ class Settings(BaseSettings):
     max_export_mb: int = 48
     # "High quality" exports may be this big; they are stored in parts of 45 MB (export_parts.py).
     high_quality_export_mb: int = 150
+    # 4K exports (2160p) may be this big (stored in parts too).
+    uhd_export_mb: int = 600
+    # Where the worker downloads 4K backgrounds and title backdrops (see assets_4k.py).
+    assets_4k_url: str = "https://raw.githubusercontent.com/Shaybena90/karaokesync-ai/assets-4k/"
     # auto = the NVIDIA card's encoder (NVENC) when it works, else the CPU (libx264)
     video_encoder: Literal["auto", "libx264", "h264_nvenc"] = "auto"
     export_retention_days: int = 7

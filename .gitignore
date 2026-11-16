@@ -28,3 +28,7 @@ models/
 Thumbs.db
 .vscode/
 .idea/
+
+# 4K masters: published to the assets-4k branch (server/scripts/publish_4k_assets.py)
+/assets-4k/
+/.assets-4k-worktree/

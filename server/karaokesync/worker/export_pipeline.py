@@ -17,10 +17,10 @@ from ..export_parts import upload_in_parts
 from ..exports.ass import build_ass
 from ..exports.measure import measurer_for
 from ..exports.opening import (
-    INTRO_MS, PREVIEW_RESOLUTION, PREVIEW_SONG_MS, CustomIntro, OpeningOptions, custom_intro_length, opening_files,
+    INTRO_MS, PREVIEW_RESOLUTION, PREVIEW_SONG_MS, CustomIntro, OpeningOptions, backdrop_file, custom_intro_length, opening_files,
     plan_opening, title_ass,
 )
-from ..exports.video import ASPECTS, RESOLUTIONS, BackgroundLayer, best_resolution, canvas_for, render_mp4
+from ..exports.video import ASPECTS, RESOLUTIONS, UHD_RESOLUTION, BackgroundLayer, best_resolution, canvas_for, render_mp4
 from ..fonts import ensure_font
 from ..lyrics_data import load_lyrics
 from ..styles import SubtitleStyle, parse_style
@@ -91,7 +91,8 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
         # sharper at the same size than a starved 1080p.
         lead_ms = plan_opening(opening, INTRO_MS).karaoke_start_ms if opening.active else 0
         high = options.get("quality") == "high" and not preview
-        limit_mb = settings.high_quality_export_mb if high else settings.max_export_mb
+        limit_mb = (settings.uhd_export_mb if resolution == UHD_RESOLUTION
+                    else settings.high_quality_export_mb if high else settings.max_export_mb)
         chosen = best_resolution(resolution, duration_ms + lead_ms, limit_mb * 1024 * 1024)
         if chosen != resolution:
             log.info("export job=%s %sp -> %sp to keep the picture sharp within %s MB", job["id"], resolution, chosen, limit_mb)
@@ -99,7 +100,7 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
         canvas = canvas_for(aspect, resolution)
         ass_text = build_ass(lines, style, project.get("language"), canvas, measurer_for(str(font)), title=project["title"])
         report(4)
-        title_subs, extra_fonts, custom_intro = None, [], None
+        title_subs, extra_fonts, custom_intro, backdrop = None, [], None, None
         if opening.active:
             opening_files(opening, aspect)
             if opening.intro and opening.intro_media_id:
@@ -108,6 +109,9 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
                      ("own" if custom_intro else "karaokesync") if opening.intro else "none",
                      f"{opening.title_theme} (singer {opening.title.artist_size}%, song {opening.title.song_size}%)"
                      if opening.title else "none", opening.transition)
+            if opening.title and opening.theme.uhd:
+                backdrop = backdrop_file(opening.theme, resolution, Path(settings.worker_tmp_dir) / "animated-backgrounds",
+                                         settings.assets_4k_url)
             if opening.title:
                 try:
                     title_font, artist_font = ensure_font(opening.theme.name_font), ensure_font(opening.theme.song_font)
@@ -116,7 +120,7 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
                 extra_fonts = [title_font, artist_font]
                 title_subs = title_ass(opening.title, canvas, measurer_for(str(title_font)), measurer_for(str(artist_font)),
                                        project.get("language"), opening.theme)
-        layers = _animated_layer(settings, style, duration_ms) + _download_backgrounds(
+        layers = _animated_layer(settings, style, duration_ms, resolution) + _download_backgrounds(
             sb, settings, project, style, duration_ms, workdir
         )
         report(6)
@@ -131,6 +135,8 @@ def run_export(job: dict, sb: SupabaseClient, settings: Settings, report) -> str
             title_subs=title_subs,
             extra_fonts=extra_fonts,
             custom_intro=custom_intro,
+            backdrop=backdrop,
+            timeout_s=4 * 3600 if resolution == UHD_RESOLUTION else 3600,   # 4K takes much longer
         )
 
         report(95)
@@ -210,14 +216,18 @@ def _download_backgrounds(
     return layers
 
 
-def _animated_layer(settings: Settings, style: SubtitleStyle, duration_ms: int) -> list[BackgroundLayer]:
+def _animated_layer(settings: Settings, style: SubtitleStyle, duration_ms: int,
+                    resolution: int = 1080) -> list[BackgroundLayer]:
     """The chosen built-in moving background, for the whole song, under the uploaded ones.
     Drawn once on this computer and kept for the next exports."""
     if not style.animated_background:
         return []
     bg = ANIMATED_BACKGROUNDS[style.animated_background]
     try:
-        clip = clip_for(bg.id, Path(settings.worker_tmp_dir) / "animated-backgrounds")
+        clip = clip_for(bg.id, Path(settings.worker_tmp_dir) / "animated-backgrounds", resolution=resolution,
+                        assets_url=settings.assets_4k_url)
+    except PipelineError:
+        raise   # a 4K file that could not be downloaded
     except (subprocess.SubprocessError, OSError, ValueError) as exc:
         log.warning("animated background %s could not be drawn: %s", bg.id, type(exc).__name__)
         raise PipelineError("background_failed", retryable=True) from exc

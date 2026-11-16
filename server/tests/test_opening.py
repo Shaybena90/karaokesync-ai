@@ -399,3 +399,21 @@ def test_the_api_checks_my_intro_is_mine(client, fake_sb, ready_project):  # noq
     assert r.status_code == 422 and r.json()["detail"] == "intro_missing"
     r = client.post(f"/projects/{pid}/exports", json={"opening": {"intro": True, "intro_media_id": mine}}, headers=AUTH)
     assert r.status_code == 201 and r.json()["options"]["opening"]["intro_media_id"] == mine
+
+
+def test_4k_needs_an_up_to_date_worker(client, fake_sb, ready_project):  # noqa: F811
+    from datetime import datetime, timezone
+
+    from karaokesync.worker.runner import WORKER_VERSION
+
+    pid = ready_project["id"]
+    now = datetime.now(timezone.utc).isoformat()
+    fake_sb.tables["workers"] = [{"id": "pc", "version": "2026-11-15.5 (equal title lines)", "last_seen": now, "activity": "idle"}]
+    assert client.post(f"/projects/{pid}/exports", json={"resolution": 2160}, headers=AUTH).json()["detail"] == "worker_outdated"
+    # a 4K background needs it too, even in 1080p
+    fake_sb.update("projects", {"id": f"eq.{pid}"}, {"style": {"animated_background": "aurora-night"}})
+    assert client.post(f"/projects/{pid}/exports", json={}, headers=AUTH).json()["detail"] == "worker_outdated"
+    fake_sb.tables["workers"][0]["version"] = WORKER_VERSION
+    job = client.post(f"/projects/{pid}/exports", json={"resolution": 2160}, headers=AUTH).json()
+    assert job["options"]["resolution"] == 2160
+    assert client.post(f"/projects/{pid}/exports", json={"resolution": 4000}, headers=AUTH).status_code == 422

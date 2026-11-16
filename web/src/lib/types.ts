@@ -123,4 +123,5 @@ export interface Limits {
   /** Exported video size limits in MB (standard / high quality); older servers do not send them. */
   max_export_mb?: number
   high_quality_export_mb?: number
+  uhd_export_mb?: number
 }

@@ -1,5 +1,5 @@
 """Built-in animated backgrounds: 30 looping clips made by FFmpeg from a short
-"recipe" each, and 23 3D scenes (GLSL shaders in /backgrounds3d, drawn ahead of
+"recipe" each, and 23 + 20 3D scenes (the newer ones in 4K) (GLSL shaders in /backgrounds3d, drawn ahead of
 time by web/scripts/render-3d-backgrounds.mjs into web/public/backgrounds). The same recipe makes the preview clip the website plays and the
 clip the worker puts behind the lyrics in an exported video, so both look the
 same. Every recipe is periodic in time (it only uses whole turns of sin/cos and
@@ -29,6 +29,7 @@ class AnimatedBackground:
     seconds: int  # length of one loop
     source: str | None  # FFmpeg filter graph (no inputs) that draws one loop; None = a 3D scene
     kind: str = "classic"  # "classic" (FFmpeg recipe) | "3d" (pre-drawn clip only)
+    uhd: bool = False  # drawn in 4K: the worker's files are on the assets-4k branch (assets_4k.py)
 
     @property
     def duration_ms(self) -> int:
@@ -219,9 +220,21 @@ def _all() -> list[AnimatedBackground]:
         ("logo-neon", "שלט ניאון", "Neon sign"),
         ("logo-equalizer", "אקולייזר תלת מימד", "3D equalizer"),
     ]
+    scenes_4k = [  # 3D scenes drawn in 4K (the website shows a light preview)
+        ("aurora-night", "זוהר צפוני", "Northern lights"),
+        ("vinyl-spin", "תקליט מסתובב", "Spinning vinyl"),
+        ("galaxy-spiral", "גלקסיה ספירלית", "Spiral galaxy"),
+        ("sound-waves", "גלי קול", "Sound waves"),
+        ("mic-spotlight", "מיקרופון בזרקור", "Mic in the spotlight"),
+        ("city-fireworks", "זיקוקים בעיר", "City fireworks"),
+        ("golden-bokeh", "אורות זהב", "Golden bokeh"),
+        ("piano-keys", "פסנתר", "Piano keys"),
+        ("underwater-rays", "מתחת למים", "Underwater"),
+        ("plasma-orb", "כדור פלזמה", "Plasma orb"),
+    ]
     return [AnimatedBackground(i, he, en, s, src) for i, he, en, s, src in items] + [
         AnimatedBackground(i, he, en, 10, None, "3d") for i, he, en in scenes
-    ]
+    ] + [AnimatedBackground(i, he, en, 10, None, "3d", uhd=True) for i, he, en in scenes_4k]
 
 
 BACKGROUNDS: dict[str, AnimatedBackground] = {b.id: b for b in _all()}
@@ -260,13 +273,22 @@ def cached_clip(bg_id: str, cache_dir: Path) -> Path:
     return out
 
 
-def clip_for(bg_id: str, cache_dir: Path, prebuilt_dir: Path = PREBUILT_DIR) -> Path:
+def clip_for(bg_id: str, cache_dir: Path, prebuilt_dir: Path = PREBUILT_DIR, resolution: int = 1080,
+             assets_url: str | None = None) -> Path:
     """The clip to put behind the lyrics: the website's own file when this copy
     of the project has it (identical to the preview), otherwise drawn here from
-    the recipe. A 3D scene only exists as a file (FileNotFoundError without it)."""
+    the recipe. A 3D scene only exists as a file (FileNotFoundError without it).
+    A 4K scene comes from the assets-4k branch, at the video's size (4K for a 4K
+    video, else 1080p), downloaded once and checked."""
+    bg = BACKGROUNDS[bg_id]
+    if bg.uhd:
+        from . import assets_4k
+
+        name = f"backgrounds/{bg_id}-{2160 if resolution > 1080 else 1080}.mp4"
+        return assets_4k.fetch(name, cache_dir, assets_url or assets_4k.DEFAULT_URL)
     prebuilt = prebuilt_dir / f"{bg_id}.mp4"
     if prebuilt.is_file():
         return prebuilt
-    if BACKGROUNDS[bg_id].source is None:
+    if bg.source is None:
         raise FileNotFoundError(prebuilt)
     return cached_clip(bg_id, cache_dir)

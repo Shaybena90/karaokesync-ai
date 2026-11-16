@@ -9,6 +9,8 @@
  *   options: --ss 2 (draw at double size: smooth edges; used for the committed clips)
  *            --crf 27 (quality; star-warp uses 29 to stay small)  --frames N  --size 960x540
  *            --preview 0,3.3,6.6 (a picture of these moments, to look at a scene quickly)
+ *            --uhd (4K: <id>-2160.mp4 and <id>-1080.mp4 into ../assets-4k/<out>/ for the assets-4k
+ *                   branch, plus a light 960x540 preview + JPG for the website; see server/scripts/publish_4k_assets.py)
  *
  * A shader can set, in comment lines at its top:
  *   // @seconds 8                       length (default 10: a loop)
@@ -19,7 +21,7 @@
  *   // @audio audio/intro.lavfi         a sound track made by FFmpeg from this graph
  */
 import { spawn } from 'node:child_process'
-import { readFileSync, readdirSync, renameSync, unlinkSync } from 'node:fs'
+import { mkdirSync, readFileSync, readdirSync, renameSync, unlinkSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium } from '@playwright/test'
@@ -39,6 +41,8 @@ const sizeOpt = opt('--size', '960x540')
 const crf = opt('--crf', '27')
 const ss = Number(opt('--ss', '1')) // supersampling: draw bigger, then shrink (smoother edges)
 const outOpt = opt('--out', '')
+const uhd = args.includes('--uhd') && Boolean(args.splice(args.indexOf('--uhd'), 1))
+const ASSETS = join(ROOT, 'assets-4k')
 const preview = opt('--preview', '') // e.g. 0,3.3,6.6: a picture of these moments instead of a clip
 const ids = args.length ? args : readdirSync(SHADERS).filter((f) => f.endsWith('.frag')).map((f) => f.replace('.frag', ''))
 const common = readFileSync(join(SHADERS, 'common.glsl'), 'utf8')
@@ -165,13 +169,40 @@ async function preparePage(page, source, w, h, text) {
   )
 }
 
+/** 4K: one pass of drawing, three files (4K and 1080p masters for the worker, a light preview for the site). */
+async function renderUhd(page, name, outDir, sub, frames, W, H, ss) {
+  const dir = join(ASSETS, sub)
+  mkdirSync(dir, { recursive: true })
+  const started = Date.now()
+  const enc = (crfv, preset) => ['-c:v', 'libx264', '-preset', preset, '-crf', crfv, '-g', String(FPS * 2), '-movflags', '+faststart', '-an']
+  await run('ffmpeg', ['-nostdin', '-loglevel', 'error', '-y', '-f', 'rawvideo', '-pix_fmt', 'rgba', '-s', `${W * ss}x${H * ss}`, '-r', String(FPS),
+    '-i', '-', '-filter_complex',
+    `[0:v]vflip,scale=${W}:${H}:flags=lanczos,format=yuv420p,split=3[a][b][c];[b]scale=${W / 2}:${H / 2}:flags=lanczos[b2];[c]scale=${W / 4}:${H / 4}:flags=lanczos[c2]`,
+    '-map', '[a]', ...enc('20', 'slow'), join(dir, `${name}-2160.part.mp4`),
+    '-map', '[b2]', ...enc('18', 'slow'), join(dir, `${name}-1080.part.mp4`),
+    '-map', '[c2]', ...enc('27', 'slow'), join(outDir, `${name}.part.mp4`)],
+  async (stdin) => {
+    for (let i = 0; i < frames; i++) {
+      const b64 = await page.evaluate((t) => window.drawFrame(t), i / FPS)
+      if (!stdin.write(Buffer.from(b64, 'base64'))) await new Promise((r) => stdin.once('drain', r))
+    }
+    stdin.end()
+  })
+  renameSync(join(dir, `${name}-2160.part.mp4`), join(dir, `${name}-2160.mp4`))
+  renameSync(join(dir, `${name}-1080.part.mp4`), join(dir, `${name}-1080.mp4`))
+  renameSync(join(outDir, `${name}.part.mp4`), join(outDir, `${name}.mp4`))
+  await run('ffmpeg', ['-nostdin', '-loglevel', 'error', '-y', '-ss', '3', '-i', join(outDir, `${name}.mp4`),
+    '-frames:v', '1', '-vf', 'scale=240:-2', '-q:v', '4', join(outDir, `${name}.jpg`)])
+  console.log(`${name}: 4K in ${((Date.now() - started) / 1000).toFixed(0)} s`)
+}
+
 async function renderOne(browser, id) {
   const raw = readFileSync(join(SHADERS, `${id}.frag`), 'utf8')
   const source = `#version 300 es\nprecision highp float;\n${common}\n${withIncludes(raw)}`
   const seconds = Number(directive(raw, 'seconds') ?? 10)
   const frames = Number(framesOpt || seconds * FPS)
   const outDir = outOpt || join(PUBLIC, directive(raw, 'out') ?? 'backgrounds')
-  const sizes = (directive(raw, 'sizes') ?? `${id}=${sizeOpt}`).split(/\s+/).map((s) => {
+  const sizes = (uhd ? `${id}=3840x2160` : directive(raw, 'sizes') ?? `${id}=${sizeOpt}`).split(/\s+/).map((s) => {
     const [name, size] = s.split('=')
     const [w, h] = size.split('x').map(Number)
     return { name, w, h }
@@ -195,6 +226,11 @@ async function renderOne(browser, id) {
         for (const t of times) stdin.write(Buffer.from(await page.evaluate((t) => window.drawFrame(t), t), 'base64'))
         stdin.end()
       })
+      await page.close()
+      continue
+    }
+    if (uhd) {
+      await renderUhd(page, name, outDir, directive(raw, 'out') ?? 'backgrounds', frames, W, H, ss)
       await page.close()
       continue
     }

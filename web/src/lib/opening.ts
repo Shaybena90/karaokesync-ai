@@ -103,7 +103,8 @@ export function useOpeningChoice(projectId: string, projectTitle: string) {
  * bits per second. Same numbers as best_resolution() in server/karaokesync/exports/video.py,
  * which then makes the video in 720p instead.
  */
-export function starved1080p(songMs: number, c: OpeningChoice | null, maxMb = 48): boolean {
+/** True when the size limit leaves too few bits for this resolution (the worker then makes it smaller). */
+export function starved1080p(songMs: number, c: OpeningChoice | null, maxMb = 48, minKbps = 2800): boolean {
   if (songMs <= 0) return false
   const parts = c ? [c.intro ? 8000 : 0, c.titleCard ? 6500 : 0].filter(Boolean) : []
   const blend = c?.transition === 'none' ? 34 : 1800
@@ -112,7 +113,7 @@ export function starved1080p(songMs: number, c: OpeningChoice | null, maxMb = 48
   const budget = ((maxMb * 1024 * 1024 * 8) / 1000) * 0.9
   const perSecond = budget / seconds
   const audio = perSecond >= 2000 ? 192 : perSecond >= 600 ? 128 : 96
-  return (budget - audio * seconds) / (seconds + 2) < 2800
+  return (budget - audio * seconds) / (seconds + 2) < minKbps
 }
 
 /** A big export is stored in parts ("<path>.parts3" -> "<path>.part0".."part2"); see server/karaokesync/export_parts.py. */

@@ -1,5 +1,5 @@
 /**
- * Built-in moving backgrounds (30 classic + 23 in 3D) — mirror of server/karaokesync/animated_backgrounds.py
+ * Built-in moving backgrounds (30 classic + 23 in 3D + the 4K 3D scenes) — mirror of server/karaokesync/animated_backgrounds.py
  * (a server test checks the lists match). Each one is a short clip that loops
  * seamlessly, drawn from the same FFmpeg recipe the video export uses.
  * Files: public/backgrounds/<id>.mp4 (the clip) and <id>.jpg (a small picture).
@@ -12,6 +12,8 @@ export interface AnimatedBackground {
   seconds: number
   /** A 3D scene (drawn ahead of time from a shader in /backgrounds3d). */
   kind?: '3d'
+  /** Drawn in 4K (the exported video gets the full 4K file; the site plays a light preview). */
+  uhd?: boolean
 }
 
 export const ANIMATED_BACKGROUNDS: readonly AnimatedBackground[] = [
@@ -68,6 +70,16 @@ export const ANIMATED_BACKGROUNDS: readonly AnimatedBackground[] = [
   { id: 'speaker-duo', he: "רמקולים ולוגו", en: 'Speakers and logo', seconds: 10, kind: '3d' },
   { id: 'logo-neon', he: "שלט ניאון", en: 'Neon sign', seconds: 10, kind: '3d' },
   { id: 'logo-equalizer', he: "אקולייזר תלת מימד", en: '3D equalizer', seconds: 10, kind: '3d' },
+  { id: 'aurora-night', he: "זוהר צפוני", en: 'Northern lights', seconds: 10, kind: '3d', uhd: true },
+  { id: 'vinyl-spin', he: "תקליט מסתובב", en: 'Spinning vinyl', seconds: 10, kind: '3d', uhd: true },
+  { id: 'galaxy-spiral', he: "גלקסיה ספירלית", en: 'Spiral galaxy', seconds: 10, kind: '3d', uhd: true },
+  { id: 'sound-waves', he: "גלי קול", en: 'Sound waves', seconds: 10, kind: '3d', uhd: true },
+  { id: 'mic-spotlight', he: "מיקרופון בזרקור", en: 'Mic in the spotlight', seconds: 10, kind: '3d', uhd: true },
+  { id: 'city-fireworks', he: "זיקוקים בעיר", en: 'City fireworks', seconds: 10, kind: '3d', uhd: true },
+  { id: 'golden-bokeh', he: "אורות זהב", en: 'Golden bokeh', seconds: 10, kind: '3d', uhd: true },
+  { id: 'piano-keys', he: "פסנתר", en: 'Piano keys', seconds: 10, kind: '3d', uhd: true },
+  { id: 'underwater-rays', he: "מתחת למים", en: 'Underwater', seconds: 10, kind: '3d', uhd: true },
+  { id: 'plasma-orb', he: "כדור פלזמה", en: 'Plasma orb', seconds: 10, kind: '3d', uhd: true },
 ]
 
 export const ANIMATED_IDS: ReadonlySet<string> = new Set(ANIMATED_BACKGROUNDS.map((b) => b.id))

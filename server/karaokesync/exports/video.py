@@ -17,11 +17,12 @@ from .ass import Canvas
 from .opening import INTRO_MS, CustomIntro, OpeningOptions, intro_file, plan_opening, render_opening
 
 ASPECTS = {"16:9": (16, 9), "9:16": (9, 16), "1:1": (1, 1)}
-RESOLUTIONS = (720, 1080)
+RESOLUTIONS = (720, 1080, 2160)
+UHD_RESOLUTION = 2160   # 4K
 
 
 def canvas_for(aspect: str, resolution: int) -> Canvas:
-    """`resolution` is the length of the short side (720p / 1080p)."""
+    """`resolution` is the length of the short side (720p / 1080p / 2160p = 4K)."""
     w, h = ASPECTS[aspect]
     short = resolution
     if w >= h:
@@ -103,13 +104,18 @@ def bitrates_for(duration_ms: int, max_bytes: int | None) -> tuple[int, int] | N
 
 # Below this video rate, 1080p looks blocky; 720p at the same rate looks sharp.
 MIN_1080P_KBPS = 2800
+# Below this rate 4K is not worth it: 1080p looks better at the same size.
+MIN_2160P_KBPS = 9000
 # Below this rate the encoder takes its time (better quality for the same size).
 CAREFUL_BELOW_KBPS = 6000
 
 
 def best_resolution(requested: int, duration_ms: int, max_bytes: int | None) -> int:
-    """720 instead of 1080 when the size limit would leave 1080p too few bits."""
+    """720 instead of 1080 when the size limit would leave 1080p too few bits
+    (and 1080 instead of 4K when 4K would be starved)."""
     rates = bitrates_for(duration_ms, max_bytes)
+    if requested == UHD_RESOLUTION and rates and rates[0] < MIN_2160P_KBPS:
+        requested = 1080
     if requested == 1080 and rates and rates[0] < MIN_1080P_KBPS:
         return 720
     return requested
@@ -165,6 +171,7 @@ def render_mp4(
     title_subs: str | None = None,
     extra_fonts: list[Path] | None = None,
     custom_intro: CustomIntro | None = None,
+    backdrop: Path | None = None,
 ) -> Path:
     """Render the video in parts at the same time (one FFmpeg per part), join
     them without re-encoding and add the song once.
@@ -270,6 +277,7 @@ def render_mp4(
             ffmpeg, workdir, canvas, opening, aspect, plan, "part0.mp4", "title.ass" if title_subs else None,
             encoder_args(encoder, video_cap, careful), max(1, os.cpu_count() or 1), max(60.0, deadline - time.monotonic()),
             custom_intro=custom_intro,
+            backdrop=backdrop,
         )
         # The song starts where the karaoke starts; the intro's own sound plays before it.
         delay = f"adelay=delays={lead_ms}:all=1"

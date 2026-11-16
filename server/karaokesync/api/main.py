@@ -218,6 +218,7 @@ def _router() -> APIRouter:
             # Video size limits (set the same MAX_EXPORT_MB / HIGH_QUALITY_EXPORT_MB on the worker).
             "max_export_mb": settings.max_export_mb,
             "high_quality_export_mb": settings.high_quality_export_mb,
+            "uhd_export_mb": settings.uhd_export_mb,
         }
 
     @router.post("/uploads", response_model=UploadInitResponse, status_code=201)

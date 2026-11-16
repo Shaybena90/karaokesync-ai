@@ -22,9 +22,10 @@ from ..exports.measure import measurer_for
 from ..export_parts import part_paths
 from ..exports.opening import PREVIEW_RESOLUTION, OpeningOptions
 from ..exports.text_formats import to_lrc, to_srt
-from ..exports.video import RESOLUTIONS, canvas_for
+from ..exports.video import RESOLUTIONS, UHD_RESOLUTION, canvas_for
 from ..fonts import ensure_font
 from ..lyrics_data import load_lyrics
+from ..animated_backgrounds import BACKGROUNDS as ANIMATED_BACKGROUNDS
 from ..styles import parse_style
 from ..supabase_client import AuthUser, SupabaseClient, SupabaseError
 from .common import iso, owned_project
@@ -44,7 +45,7 @@ MEDIA_TYPES = {
 class ExportRequest(BaseModel):
     format: Literal["mp4"] = "mp4"
     aspect: Literal["16:9", "9:16", "1:1"] = "16:9"
-    resolution: Literal[720, 1080] = 1080
+    resolution: Literal[720, 1080, 2160] = 1080   # 2160 = 4K
     # "instrumental" = the melody-only track (the singer's voice removed)
     audio: Literal["original", "instrumental"] = "original"
     # Opening: the KaraokeSync intro, a title card (song + singer) and the transition into the karaoke
@@ -59,6 +60,7 @@ class ExportRequest(BaseModel):
 # what they report in the `workers` table; see worker.runner.WORKER_VERSION).
 MIN_OPENING_WORKER = "2026-11-14.2"   # the intro, transitions, previews
 MIN_OWN_INTRO_WORKER = "2026-11-15.2"  # the user's own opening clip
+MIN_UHD_WORKER = "2026-11-16.1"       # 4K videos and the 4K backgrounds
 MIN_TITLE_WORKER = "2026-11-15.5"     # the title card as it is now: song on top, singer under it, the user's sizes
 
 
@@ -154,19 +156,20 @@ def exports_router() -> APIRouter:
             if not track or track["status"] != "succeeded" or not track.get("output_path"):
                 raise HTTPException(status.HTTP_409_CONFLICT, detail="instrumental_not_ready")
 
-        if body.preview or (body.opening and body.opening.active):
-            needed = max(
-                MIN_OPENING_WORKER,
-                MIN_TITLE_WORKER if body.opening and body.opening.title else "",
-                MIN_OWN_INTRO_WORKER if body.opening and body.opening.intro and body.opening.intro_media_id else "",
-            )
-            if body.opening and body.opening.intro and body.opening.intro_media_id:
-                own = sb.select("background_media", {"id": f"eq.{body.opening.intro_media_id}", "user_id": f"eq.{user.id}",
-                                                     "status": "eq.verified", "select": "id"})
-                if not own:
-                    raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail="intro_missing")
-            if _worker_too_old(sb, needed):
-                raise HTTPException(status.HTTP_409_CONFLICT, detail="worker_outdated")
+        animated = parse_style(project.get("style")).animated_background
+        needed = max(
+            MIN_OPENING_WORKER if body.preview or (body.opening and body.opening.active) else "",
+            MIN_TITLE_WORKER if body.opening and body.opening.active and body.opening.title else "",
+            MIN_OWN_INTRO_WORKER if body.opening and body.opening.intro and body.opening.intro_media_id else "",
+            MIN_UHD_WORKER if body.resolution == UHD_RESOLUTION or (animated and ANIMATED_BACKGROUNDS[animated].uhd) else "",
+        )
+        if body.opening and body.opening.intro and body.opening.intro_media_id:
+            own = sb.select("background_media", {"id": f"eq.{body.opening.intro_media_id}", "user_id": f"eq.{user.id}",
+                                                 "status": "eq.verified", "select": "id"})
+            if not own:
+                raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, detail="intro_missing")
+        if needed and _worker_too_old(sb, needed):
+            raise HTTPException(status.HTTP_409_CONFLICT, detail="worker_outdated")
         existing = sb.select("export_jobs", {"project_id": f"eq.{project_id}", "status": f"in.{ACTIVE}", "select": "*"})
         if existing:
             return existing[0]  # idempotent: one active render per project

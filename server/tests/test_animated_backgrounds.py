@@ -32,10 +32,11 @@ def _diff(a: bytes, b: bytes) -> float:
 
 CLASSIC = [b.id for b in ab.BACKGROUNDS.values() if b.kind == "classic"]
 SCENES = [b.id for b in ab.BACKGROUNDS.values() if b.kind == "3d"]
+UHD = [b.id for b in ab.BACKGROUNDS.values() if b.uhd]
 
 
 def test_thirty_classic_and_twenty_three_3d_backgrounds_with_names():
-    assert len(CLASSIC) == 30 and len(SCENES) == 23
+    assert len(CLASSIC) == 30 and len(SCENES) - len(UHD) == 23 and len(UHD) >= 10
     for bg in ab.BACKGROUNDS.values():
         assert re.fullmatch(r"[a-z]+(-[a-z]+)*", bg.id) and bg.name_he and bg.name_en
         assert bg.seconds in (10, 20)
@@ -43,8 +44,9 @@ def test_thirty_classic_and_twenty_three_3d_backgrounds_with_names():
 
 def test_the_website_lists_the_same_backgrounds():
     ts = (ROOT / "web/src/lib/animatedBackgrounds.ts").read_text(encoding="utf-8")
-    rows = re.findall(r"id: '([^']+)', he: \"([^\"]+)\", en: '([^']+)', seconds: (\d+)(?:, kind: '(3d)')?", ts)
-    assert rows == [(b.id, b.name_he, b.name_en, str(b.seconds), "3d" if b.kind == "3d" else "") for b in ab.BACKGROUNDS.values()]
+    rows = re.findall(r"id: '([^']+)', he: \"([^\"]+)\", en: '([^']+)', seconds: (\d+)(?:, kind: '(3d)')?(, uhd: true)?", ts)
+    assert rows == [(b.id, b.name_he, b.name_en, str(b.seconds), "3d" if b.kind == "3d" else "", ", uhd: true" if b.uhd else "")
+                    for b in ab.BACKGROUNDS.values()]
 
 
 @pytest.mark.parametrize("bg_id", SCENES)
@@ -132,7 +134,7 @@ def test_the_export_puts_it_under_the_whole_song(tmp_path, monkeypatch):
 
     settings = get_settings()
     monkeypatch.setattr(settings, "worker_tmp_dir", str(tmp_path))
-    monkeypatch.setattr(export_pipeline, "clip_for", lambda bg_id, folder: folder / f"{bg_id}.mp4")
+    monkeypatch.setattr(export_pipeline, "clip_for", lambda bg_id, folder, **kw: folder / f"{bg_id}.mp4")
     assert export_pipeline._animated_layer(settings, SubtitleStyle(), 90_000) == []
     [layer] = export_pipeline._animated_layer(settings, SubtitleStyle(animated_background="aurora"), 90_000)
     assert (layer.kind, layer.start_ms, layer.end_ms, layer.duration_ms) == ("video", 0, 90_000, 10_000)
@@ -143,7 +145,7 @@ def test_a_failed_drawing_is_reported(tmp_path, monkeypatch):
     from karaokesync.config import get_settings
     from karaokesync.worker.errors import PipelineError
 
-    def broken(bg_id, folder):
+    def broken(bg_id, folder, **kw):
         raise subprocess.CalledProcessError(1, "ffmpeg")
 
     monkeypatch.setattr(export_pipeline, "clip_for", broken)

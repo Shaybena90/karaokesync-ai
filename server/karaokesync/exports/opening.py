@@ -81,6 +81,7 @@ class TitleTheme:
     song_glow: str
     edge_width: float = 1.2  # in 720p pixels
     sweep: bool = True       # a light sweeping across the name
+    uhd: bool = False        # a 4K backdrop on the assets-4k branch (web/public/intro has a light preview)
 
 
 THEMES: dict[str, TitleTheme] = {t.id: t for t in [
@@ -194,9 +195,22 @@ def intro_file(aspect: str) -> Path:
     return INTRO_DIR / INTRO_FILES.get(aspect, INTRO_FILES["16:9"])
 
 
+def backdrop_file(theme: TitleTheme, resolution: int, cache_dir: Path, assets_url: str | None = None) -> Path:
+    """The title card's backdrop clip: a 4K theme's comes from the assets-4k branch
+    (4K for a 4K video, else 1080p), downloaded once and checked."""
+    if not theme.uhd:
+        return INTRO_DIR / theme.backdrop
+    from .. import assets_4k
+
+    stem = theme.backdrop.rsplit(".", 1)[0]
+    return assets_4k.fetch(f"intro/{stem}-{2160 if resolution > 1080 else 1080}.mp4", cache_dir,
+                           assets_url or assets_4k.DEFAULT_URL)
+
+
 def opening_files(options: OpeningOptions, aspect: str) -> list[Path]:
     builtin_intro = options.intro and not options.intro_media_id   # the user's own clip is downloaded instead
-    files = ([intro_file(aspect)] if builtin_intro else []) + ([INTRO_DIR / options.theme.backdrop] if options.title else [])
+    local_backdrop = options.title and not options.theme.uhd       # a 4K backdrop is downloaded instead
+    files = ([intro_file(aspect)] if builtin_intro else []) + ([INTRO_DIR / options.theme.backdrop] if local_backdrop else [])
     missing = [f for f in files if not f.is_file()]
     if missing:
         # An older copy of the project on this computer: the clips come with the update.
@@ -298,6 +312,7 @@ def render_opening(
     threads: int,
     timeout: float,
     custom_intro: CustomIntro | None = None,
+    backdrop: Path | None = None,
 ) -> str:
     """Encode the opening (intro, title, transitions and the karaoke's first
     moment) into one silent clip with the same settings as the karaoke parts."""
@@ -320,7 +335,7 @@ def render_opening(
             inputs += ["-i", str(intro_file(aspect).resolve())]
             chains.append(f"[{index}:v]{fit},trim=duration={ms / 1000:.3f},setpts=PTS-STARTPTS[s{index}]")
         else:
-            inputs += ["-stream_loop", "-1", "-i", str((INTRO_DIR / options.theme.backdrop).resolve())]
+            inputs += ["-stream_loop", "-1", "-i", str((backdrop or INTRO_DIR / options.theme.backdrop).resolve())]
             chains.append(f"[{index}:v]{fit},trim=duration={ms / 1000:.3f},setpts=PTS-STARTPTS,"
                           f"ass=filename={title_subs}:fontsdir=fonts[s{index}]")
         labels.append((f"s{index}", ms))

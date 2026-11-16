@@ -32,7 +32,7 @@ const TEXT_FORMATS: TextExportFormat[] = ['srt', 'lrc', 'ass']
 /** Subtitle downloads + MP4 render queue for one project. */
 export function ExportPanel({ projectId, title, aspect, onAspectChange, canRenderVideo, beforeExport, instrumental, songMs = 0 }: Props) {
   const { t, locale } = useI18n()
-  const [resolution, setResolution] = useState<'720' | '1080'>('1080')
+  const [resolution, setResolution] = useState<'720' | '1080' | '2160'>('1080')
   const [quality, setQualityState] = useState<'standard' | 'high'>(() => {
     try {
       return localStorage.getItem('ks-export-quality') === 'high' ? 'high' : 'standard'
@@ -56,6 +56,7 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
   const limits = useLimits()
   const exportMb = limits.max_export_mb ?? 48
   const highMb = limits.high_quality_export_mb ?? 150
+  const uhdMb = limits.uhd_export_mb ?? 600
   const openingBlocked = openingProblem(opening, Boolean(ownIntro.intro)) !== null
   const [jobs, setJobs] = useState<ExportJob[]>([])
   const [busy, setBusy] = useState<string | null>(null)
@@ -213,9 +214,16 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
           ]}
           onChange={onAspectChange}
         />
-        <Segmented value={resolution} options={[['720', '720p'], ['1080', '1080p']]} onChange={setResolution} />
-        <Segmented value={quality} options={[['standard', t('export.quality.standard')], ['high', t('export.quality.high')]]} onChange={setQuality} />
-        {quality === 'high' && (
+        <Segmented value={resolution} options={[['720', '720p'], ['1080', '1080p'], ['2160', '4K']]} onChange={setResolution} />
+        {resolution === '2160' ? (
+          <p className="-mt-1 text-xs text-white/50" data-testid="uhd-note">{t('export.uhdHint', { mb: uhdMb })}</p>
+        ) : (
+          <Segmented value={quality} options={[['standard', t('export.quality.standard')], ['high', t('export.quality.high')]]} onChange={setQuality} />
+        )}
+        {resolution === '2160' && starved1080p(songMs, opening, uhdMb, 9000) && (
+          <p className="-mt-1 text-xs text-amber-200/90" data-testid="uhd-starved">{t('export.uhdStarved')}</p>
+        )}
+        {resolution !== '2160' && quality === 'high' && (
           <p className="-mt-1 text-xs text-white/50" data-testid="quality-high-note">{t('export.quality.highHint').replace('{mb}', String(highMb))}</p>
         )}
         {resolution === '1080' && starved1080p(songMs, opening, quality === 'high' ? highMb : exportMb) && (
@@ -281,7 +289,7 @@ export function ExportPanel({ projectId, title, aspect, onAspectChange, canRende
                 <span>
                   {job.options.preview ? `👁 ${t('export.previewLabel')} · ` : '🎬 '}
                   {job.options.quality === 'high' && `✦ ${t('export.quality.high')} · `}
-                  <span dir="ltr">{job.options.aspect} · {job.options.resolution}p</span>
+                  <span dir="ltr">{job.options.aspect} · {job.options.resolution === 2160 ? '4K' : `${job.options.resolution}p`}</span>
                   {job.options.audio === 'instrumental' && ` · 🎵 ${t('vocals.off')}`}
                 </span>
                 <span className="text-xs text-white/50">{new Date(job.created_at).toLocaleString(locale)}</span>

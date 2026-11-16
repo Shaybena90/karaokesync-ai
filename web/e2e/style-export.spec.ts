@@ -140,9 +140,10 @@ test('choose a Hebrew font and a line entrance effect', async ({ page, backend }
 
 test('choose a built-in animated background for the whole song', async ({ page, backend }) => {
   const picker = page.getByRole('radiogroup', { name: /רקע מונפש מוכן/ })
-  expect(await picker.getByRole('radio').count()).toBe(54) // 23 in 3D, 30 classic and "none"
-  await expect(picker.locator('img').first()).toHaveAttribute('src', '/backgrounds/neon-tunnel.jpg') // 3D first
-  await picker.getByRole('radio', { name: 'גלקסיה' }).click()
+  expect(await picker.getByRole('radio').count()).toBe(54 + 10) // 23 in 3D, 30 classic, "none" and the 4K scenes
+  await expect(picker.locator('img').first()).toHaveAttribute('src', '/backgrounds/aurora-night.jpg') // 4K 3D first
+  await expect(picker.getByText('3D · 4K').first()).toBeVisible()
+  await picker.getByRole('radio', { name: 'גלקסיה', exact: true }).click()
   await expect.poll(() => (backend.stylePatches.at(-1)?.style as { animated_background?: string })?.animated_background).toBe('galaxy')
   const layer = page.getByTestId('background-layers').locator('video')
   await expect(layer).toHaveAttribute('src', '/backgrounds/galaxy.mp4')
@@ -291,4 +292,13 @@ test('high quality: a bigger video, stored in parts, joined into one file on dow
   // remembered for next time
   await page.reload()
   await expect(page.getByRole('radio', { name: 'איכות גבוהה' })).toHaveAttribute('aria-checked', 'true')
+})
+
+test('4K: a choice of its own, with what it costs, and the job asks for 2160p', async ({ page, backend }) => {
+  await page.getByRole('radio', { name: '4K', exact: true }).click()
+  await expect(page.getByTestId('uhd-note')).toContainText('600MB')
+  await expect(page.getByRole('radio', { name: 'איכות גבוהה' })).toHaveCount(0) // 4K always uses its own size limit
+  await page.getByRole('button', { name: /יצירת סרטון/ }).click()
+  await expect.poll(() => (backend.exportJobs[0]?.options as { resolution?: number })?.resolution).toBe(2160)
+  await expect(page.getByText('16:9 · 4K')).toBeVisible()
 })
