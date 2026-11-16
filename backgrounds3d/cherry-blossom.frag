@@ -14,7 +14,7 @@ vec4 petals(vec2 p, float scale, float speed, float seed, float blur) {
   vec2 id = floor(g);
   for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
     vec2 cell = id + vec2(x, y);
-    vec3 h = hash33(vec3(cell, seed));
+    vec3 h = hash33(vec3(mod(cell, speed), seed));
     if (h.z < .55) continue;
     vec2 centre = cell + .5 + .3 * vec2(sin(LA + h.x * TAU), cos(LA * 2. + h.y * TAU));
     vec2 q = rot(LA * (h.x > .5 ? 1. : -1.) + h.y * 6.) * (g - centre) / (.6 + .3 * h.y);
@@ -37,7 +37,7 @@ void main() {
   float blossom = smoothstep(.55, .75, br) * smoothstep(-.1, .6, p.y + .2 * p.x);
   col = mix(col, vec3(.95, .5, .7), blossom * .75);
   col = mix(col, vec3(.35, .2, .25), smoothstep(.72, .8, br) * smoothstep(.2, .9, p.y + .4 * p.x) * .5);
-  vec4 l1 = petals(p, 1.4, 2., 1., .15), l2 = petals(p, 2.6, 3., 2., .05), l3 = petals(p, 5., 5., 3., .02);
+  vec4 l1 = petals(p, 1.4, 6., 1., .15), l2 = petals(p, 2.6, 10., 2., .05), l3 = petals(p, 5., 19., 3., .02);
   col = mix(col, l1.rgb, l1.a * .55);
   col = mix(col, l2.rgb, l2.a * .9);
   col = mix(col, l3.rgb, l3.a);

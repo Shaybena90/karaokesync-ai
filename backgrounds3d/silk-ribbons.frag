@@ -27,8 +27,8 @@ void main() {
     if (r.x >= 0.) col = r + col * .1;
   }
   // a little floating gold dust
-  vec2 g = p * 30. + vec2(PHASE * 30., 0.);
-  float h = hash21(floor(g));
+  vec2 g = p * 30. + vec2(PHASE * 120., 0.);
+  float h = hash21(vec2(mod(floor(g.x), 120.), floor(g.y)));   // repeats every 120 cells: the loop closes
   col += vec3(1., .8, .45) * step(.99, h) * smoothstep(.3, .0, length(fract(g) - .5)) * (.5 + .5 * sin(LA * 3. + h * 60.));
   outColor = finish(col);
 }

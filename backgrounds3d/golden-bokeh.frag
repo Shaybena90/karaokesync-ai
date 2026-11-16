@@ -7,7 +7,7 @@ vec3 layer(vec2 p, float scale, float speed, float blur, float seed) {
   vec2 id = floor(g);
   for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
     vec2 cell = id + vec2(x, y);
-    vec3 h = hash33(vec3(cell, seed));
+    vec3 h = hash33(vec3(cell.x, mod(cell.y, speed), seed));   // repeats every `speed` cells: the loop closes
     vec2 centre = cell + .5 + .35 * vec2(sin(LA + h.x * TAU), cos(LA + h.y * TAU));
     float d = length(g - centre);
     float size = .15 + .25 * h.z;
@@ -23,12 +23,13 @@ void main() {
   vec2 p = screen();
   vec3 col = mix(vec3(.08, .045, .015), vec3(.01, .005, .0), length(p) * .7);
   col += vec3(.4, .22, .06) * exp(-length(p - vec2(.3 * sin(LA), .1)) * 1.5) * .35;
-  col += layer(p, 2.2, 2., .1, 1.) * .22;
-  col += layer(p * rot(.2), 4., 4., .05, 2.) * .35;
-  col += layer(p * rot(-.1), 9., 10., .02, 3.) * .5;
+  // speeds (cells per loop) are more than the screen's height in cells, so the repeat is never seen
+  col += layer(p, 2.2, 6., .1, 1.) * .22;
+  col += layer(p * rot(.2), 4., 11., .05, 2.) * .35;
+  col += layer(p * rot(-.1), 9., 24., .02, 3.) * .5;
   // fine sparkling dust
-  vec2 g = p * 40. + vec2(0., PHASE * 40.);
-  float r = hash21(floor(g));
+  vec2 g = p * 40. + vec2(0., PHASE * 100.);
+  float r = hash21(vec2(floor(g.x), mod(floor(g.y), 100.)));
   col += vec3(1., .85, .5) * step(.985, r) * smoothstep(.3, 0., length(fract(g) - .5)) * (.5 + .5 * sin(LA * 4. + r * 80.)) * 1.5;
   outColor = finish(col * 1.2);
 }

@@ -16,11 +16,11 @@ vec3 city(vec2 p, float blur) {
 vec2 drops(vec2 p, float scale, float seed, out float mask) {
   vec2 g = p * vec2(scale, scale * .5);
   float col = floor(g.x);
-  float speed = floor(2. + 3. * hash11(col + seed));          // whole cells per loop
+  float speed = floor(scale + 2. + 3. * hash11(col + seed));  // whole cells per loop, more than the screen
   g.y += PHASE * speed + hash11(col * 7. + seed);
   vec2 id = floor(g), f = fract(g) - .5;
-  float r = hash21(id + seed);
-  f.x += .2 * sin(g.y * 6. + col) * (r - .5);
+  float r = hash21(vec2(id.x, mod(id.y, speed)) + seed);       // repeats every `speed` cells: the loop closes
+  f.x += .2 * sin(g.y * TAU + col) * (r - .5);
   vec2 d = f * vec2(1., 2.) - vec2(0., .1);
   float body = smoothstep(.22, .17, length(d));
   float trail = smoothstep(.05, .02, abs(f.x)) * smoothstep(-.1, .5, f.y) * step(.0, f.y) * .5;

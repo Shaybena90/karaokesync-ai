@@ -17,7 +17,7 @@ vec3 layer(vec2 p, float scale, float speed, float blur, float seed) {
   vec2 id = floor(g);
   for (int y = -1; y <= 1; y++) for (int x = -1; x <= 1; x++) {
     vec2 cell = id + vec2(x, y);
-    vec3 h = hash33(vec3(cell, seed));
+    vec3 h = hash33(vec3(cell.x, mod(cell.y, speed), seed));
     if (h.z < .68) continue;
     vec2 centre = cell + .5 + .3 * vec2(sin(LA + h.x * TAU), cos(LA + h.y * TAU) * .5);
     vec2 q = (g - centre) / (.55 + .3 * h.y);
@@ -34,8 +34,8 @@ void main() {
   vec2 p = screen();
   vec3 col = mix(vec3(.18, .03, .1), vec3(.03, .0, .03), length(p) * .6);
   col += vec3(.5, .15, .3) * exp(-length(p - vec2(.2 * sin(LA), -.2)) * 1.5) * .3;
-  col += layer(p, 2., 2., .2, 1.) * .18;
-  col += layer(p * rot(.1), 3.5, 4., .08, 2.) * .3;
-  col += layer(p * rot(-.15), 6., 6., .03, 3.) * .45;
+  col += layer(p, 2., 5., .2, 1.) * .18;
+  col += layer(p * rot(.1), 3.5, 9., .08, 2.) * .3;
+  col += layer(p * rot(-.15), 6., 15., .03, 3.) * .45;
   outColor = finish(col * 1.1);
 }

@@ -38,8 +38,8 @@ void main() {
   // bubbles rising: whole cells per loop
   vec2 g = vec2(p.x * 6., p.y * 6. - PHASE * 24.);
   vec2 id = floor(g);
-  vec3 h = hash33(vec3(id, 5.));
-  vec2 c = id + .5 + vec2(.3 * sin(LA * 2. + h.x * TAU + g.y), 0.) * .5;
+  vec3 h = hash33(vec3(id.x, mod(id.y, 24.), 5.));   // repeats every 24 cells: the loop closes
+  vec2 c = id + .5 + vec2(.3 * sin(LA * 2. + h.x * TAU + g.y * TAU), 0.) * .5;
   float d = length(g - c), r = .05 + .1 * h.y;
   float bub = step(.7, h.z) * (smoothstep(r, r - .03, d) - smoothstep(r - .03, r - .06, d) * .7);
   col += vec3(.8, 1., 1.) * bub * .6;

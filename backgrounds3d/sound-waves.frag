@@ -3,8 +3,9 @@
 // The surface is a ray against a wavy height field (a short march).
 float wave(vec2 x) {
   float beat = .5 + .5 * sin(LA * 8.);           // 8 beats per loop
-  float h = .35 * sin(x.x * .9 + LA * 2.) * sin(x.y * .25 + LA)
-          + .2 * sin(x.x * 2.1 - LA * 3.) * cos(x.y * .6 + LA * 2.);
+  // along the flight (x.y) the waves repeat exactly every 40 rows, the distance flown in one loop
+  float h = .35 * sin(x.x * .9 + LA * 2.) * sin(x.y * TAU * 2. / 40. + LA)
+          + .2 * sin(x.x * 2.1 - LA * 3.) * cos(x.y * TAU * 4. / 40. + LA * 2.);
   return h * (.6 + .5 * beat * exp(-abs(x.x) * .25));
 }
 

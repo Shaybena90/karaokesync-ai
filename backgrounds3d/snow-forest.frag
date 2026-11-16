@@ -48,9 +48,10 @@ void main() {
   for (int i = 0; i < 3; i++) {
     float fi = float(i);
     float sc = 8. + fi * 9.;
-    vec2 s = p * sc + vec2(sin(LA + fi) * .5, PHASE * floor(sc * 1.2));   // whole cells per loop
+    float n = ceil(sc * 2.4);                                   // whole cells per loop, more than the screen
+    vec2 s = p * sc + vec2(sin(LA + fi) * .5, PHASE * n);
     vec2 id = floor(s);
-    vec3 h = hash33(vec3(id, fi));
+    vec3 h = hash33(vec3(id.x, mod(id.y, n), fi));
     vec2 c = id + .5 + .3 * vec2(sin(LA * 2. + h.x * TAU), 0.);
     float r = .04 + .06 * h.y;
     col += vec3(.9, .95, 1.) * smoothstep(r, r * .3, length(s - c)) * step(.5, h.z) * (.5 + fi * .25);

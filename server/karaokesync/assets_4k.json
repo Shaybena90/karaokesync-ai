@@ -1,1 +1,90 @@
-{}
+{
+ "backgrounds/aurora-night-1080.mp4": {
+  "bytes": 3939967,
+  "sha256": "2fb7dcaede6b4c6b3e68204fd84c4f030d85a97c9b71c0ff030595dc7977950f"
+ },
+ "backgrounds/aurora-night-2160.mp4": {
+  "bytes": 10046606,
+  "sha256": "37653081116f24d1eb3ae93872d4bc077fc8d330e506f78c5a1196f7f0f98408"
+ },
+ "backgrounds/city-fireworks-1080.mp4": {
+  "bytes": 3518632,
+  "sha256": "3ebc8d985a40211be5bd22a6b8821dfd697e771c7843683b880e23d300296dce"
+ },
+ "backgrounds/city-fireworks-2160.mp4": {
+  "bytes": 7636498,
+  "sha256": "0c1f845d99a7df619a3223b43830bbdae22d49d7ac727d7a729eb4099e93c168"
+ },
+ "backgrounds/galaxy-spiral-1080.mp4": {
+  "bytes": 3689232,
+  "sha256": "27e6c86cff7fb7bf7cc694ec28a31923bdbcb9adbc9da40cf044a9ccb06dda53"
+ },
+ "backgrounds/galaxy-spiral-2160.mp4": {
+  "bytes": 9097023,
+  "sha256": "0644e05db1cd5a2d92d4b2f2ece711ccf8354377a938f89d9e2413c149130f53"
+ },
+ "backgrounds/golden-bokeh-1080.mp4": {
+  "bytes": 5128534,
+  "sha256": "5afe95b6151c48408a2671ed24a207a59383e526a10f9e0aed261fd038a39974"
+ },
+ "backgrounds/golden-bokeh-2160.mp4": {
+  "bytes": 10745909,
+  "sha256": "31c125e2471479ec4ac6d804b1b5c1d01a1ac0f88b702a8cc813472d0f50279b"
+ },
+ "backgrounds/mic-spotlight-1080.mp4": {
+  "bytes": 2459908,
+  "sha256": "3d891955523d0e769d17bced52a40c9623698c986a1957554c38780d1caee9ba"
+ },
+ "backgrounds/mic-spotlight-2160.mp4": {
+  "bytes": 7573854,
+  "sha256": "ba1febd926beb6a935b55507394a452ab4cdffd2a56980d5306f7dc4b12d7413"
+ },
+ "backgrounds/piano-keys-1080.mp4": {
+  "bytes": 2798999,
+  "sha256": "8910f13c35d7dc8e85fc31206112112fc441481c340b7285c7bd2939f27c672f"
+ },
+ "backgrounds/piano-keys-2160.mp4": {
+  "bytes": 7310776,
+  "sha256": "9026a02a5c4838e93a684ba74de602bac40aaea853b8ca5a64518352487ea424"
+ },
+ "backgrounds/plasma-orb-1080.mp4": {
+  "bytes": 2709842,
+  "sha256": "e080fe42e166aa92373e53818a64c58b61256b577fb5c7c23a1be370cb47a447"
+ },
+ "backgrounds/plasma-orb-2160.mp4": {
+  "bytes": 7325870,
+  "sha256": "7c0ac226065806c8c8f1167f2c90424e60f9133194e4f348a5cf243399172162"
+ },
+ "backgrounds/snow-forest-1080.mp4": {
+  "bytes": 15517779,
+  "sha256": "ad5c322f118a07df58d8b1edeeb99401d327ee2c134235fe5d8b35d1437218cd"
+ },
+ "backgrounds/snow-forest-2160.mp4": {
+  "bytes": 30384734,
+  "sha256": "46acf14f9b42b469b0d35ab1067ffd2625e6d9ab792a40d9f107efb519fe22b0"
+ },
+ "backgrounds/sound-waves-1080.mp4": {
+  "bytes": 14819245,
+  "sha256": "ecd976e07ca4e8d41eaa1609bf4ec74683e9a9256637e4da797bd8759297077a"
+ },
+ "backgrounds/sound-waves-2160.mp4": {
+  "bytes": 32896214,
+  "sha256": "ca344d7025520b72dfd9911992fe41650d82c46c2252613c261f6afd79a317ea"
+ },
+ "backgrounds/underwater-rays-1080.mp4": {
+  "bytes": 5183309,
+  "sha256": "0685776775cb4e52b6d54fabebc479e9802af53b8f211e1809e6f890c88dfafc"
+ },
+ "backgrounds/underwater-rays-2160.mp4": {
+  "bytes": 11658570,
+  "sha256": "bee08b62bb15fc2748ecff028a1971f82b59a430d3e7ffa511cb67c03eb9ffc8"
+ },
+ "backgrounds/vinyl-spin-1080.mp4": {
+  "bytes": 3449661,
+  "sha256": "1415b8557e9cf01ef6f279b26132a8279964dec2302944f3e5feb30b9af0cf52"
+ },
+ "backgrounds/vinyl-spin-2160.mp4": {
+  "bytes": 8453743,
+  "sha256": "aacfc3b39c2cd0c6ae182f9614e28089cf064fd9bca24079aff667c60fd0e75d"
+ }
+}
