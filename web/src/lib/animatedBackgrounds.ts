@@ -80,6 +80,16 @@ export const ANIMATED_BACKGROUNDS: readonly AnimatedBackground[] = [
   { id: 'piano-keys', he: "פסנתר", en: 'Piano keys', seconds: 10, kind: '3d', uhd: true },
   { id: 'underwater-rays', he: "מתחת למים", en: 'Underwater', seconds: 10, kind: '3d', uhd: true },
   { id: 'plasma-orb', he: "כדור פלזמה", en: 'Plasma orb', seconds: 10, kind: '3d', uhd: true },
+  { id: 'snow-forest', he: "יער מושלג", en: 'Snowy forest', seconds: 10, kind: '3d', uhd: true },
+  { id: 'desert-dunes', he: "דיונות בשקיעה", en: 'Desert dunes', seconds: 10, kind: '3d', uhd: true },
+  { id: 'laser-show', he: "מופע לייזרים", en: 'Laser show', seconds: 10, kind: '3d', uhd: true },
+  { id: 'rain-glass', he: "גשם על החלון", en: 'Rain on glass', seconds: 10, kind: '3d', uhd: true },
+  { id: 'heart-bokeh', he: "לבבות אור", en: 'Heart lights', seconds: 10, kind: '3d', uhd: true },
+  { id: 'silk-ribbons', he: "סרטי משי", en: 'Silk ribbons', seconds: 10, kind: '3d', uhd: true },
+  { id: 'cloud-sunrise', he: "מעל העננים", en: 'Above the clouds', seconds: 10, kind: '3d', uhd: true },
+  { id: 'guitar-strings', he: "מיתרי גיטרה", en: 'Guitar strings', seconds: 10, kind: '3d', uhd: true },
+  { id: 'sky-lanterns', he: "פנסים מעופפים", en: 'Sky lanterns', seconds: 10, kind: '3d', uhd: true },
+  { id: 'cherry-blossom', he: "פריחת הדובדבן", en: 'Cherry blossom', seconds: 10, kind: '3d', uhd: true },
 ]
 
 export const ANIMATED_IDS: ReadonlySet<string> = new Set(ANIMATED_BACKGROUNDS.map((b) => b.id))

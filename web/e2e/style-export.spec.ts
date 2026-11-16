@@ -148,7 +148,7 @@ test('choose a Hebrew font and a line entrance effect', async ({ page, backend }
 
 test('choose a built-in animated background for the whole song', async ({ page, backend }) => {
   const picker = page.getByRole('radiogroup', { name: /רקע מונפש מוכן/ })
-  expect(await picker.getByRole('radio').count()).toBe(54 + 10) // 23 in 3D, 30 classic, "none" and the 4K scenes
+  expect(await picker.getByRole('radio').count()).toBe(54 + 20) // 23 in 3D, 30 classic, "none" and the 4K scenes
   await expect(picker.locator('img').first()).toHaveAttribute('src', '/backgrounds/aurora-night.jpg') // 4K 3D first
   await expect(picker.getByText('3D · 4K').first()).toBeVisible()
   await picker.getByRole('radio', { name: 'גלקסיה', exact: true }).click()

@@ -231,6 +231,16 @@ def _all() -> list[AnimatedBackground]:
         ("piano-keys", "פסנתר", "Piano keys"),
         ("underwater-rays", "מתחת למים", "Underwater"),
         ("plasma-orb", "כדור פלזמה", "Plasma orb"),
+        ("snow-forest", "יער מושלג", "Snowy forest"),
+        ("desert-dunes", "דיונות בשקיעה", "Desert dunes"),
+        ("laser-show", "מופע לייזרים", "Laser show"),
+        ("rain-glass", "גשם על החלון", "Rain on glass"),
+        ("heart-bokeh", "לבבות אור", "Heart lights"),
+        ("silk-ribbons", "סרטי משי", "Silk ribbons"),
+        ("cloud-sunrise", "מעל העננים", "Above the clouds"),
+        ("guitar-strings", "מיתרי גיטרה", "Guitar strings"),
+        ("sky-lanterns", "פנסים מעופפים", "Sky lanterns"),
+        ("cherry-blossom", "פריחת הדובדבן", "Cherry blossom"),
     ]
     return [AnimatedBackground(i, he, en, s, src) for i, he, en, s, src in items] + [
         AnimatedBackground(i, he, en, 10, None, "3d") for i, he, en in scenes
