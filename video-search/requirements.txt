@@ -1,0 +1,11 @@
+# Local processing service for video-search (stage 1)
+fastapi>=0.110
+uvicorn>=0.29
+python-multipart>=0.0.9
+av>=12            # PyAV: decoding with each frame's own presentation timestamp
+numpy>=1.26
+opencv-python-headless>=4.9
+ultralytics>=8.3  # optional at runtime: without it the detector is shown as unavailable
+# dev
+pytest>=8
+httpx>=0.27

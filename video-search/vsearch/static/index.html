@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>חיפוש בסרטון</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="top">
+  <h1>חיפוש בסרטון — אזור מסומן</h1>
+  <div id="engines" class="engines" aria-live="polite">טוען מצב מנועים…</div>
+</header>
+
+<main class="layout">
+  <section class="col-main">
+    <!-- 1. source -->
+    <div class="card" id="source-card">
+      <h2>1. בחירת סרטון</h2>
+      <div class="row">
+        <input id="src-path" type="text" dir="ltr" placeholder="נתיב מלא לקובץ במחשב, למשל D:\video\cam1.mp4">
+        <button id="src-add">הוספה לפי נתיב</button>
+      </div>
+      <div class="row">
+        <label class="file">או העלאה לתיקיית העבודה המקומית <input id="src-upload" type="file" accept="video/*,.mkv,.avi,.ts,.mts"></label>
+        <select id="src-list" aria-label="סרטונים קודמים"><option value="">סרטונים שנוספו…</option></select>
+      </div>
+      <div id="src-info" class="info"></div>
+    </div>
+
+    <!-- 2. player + region -->
+    <div class="card">
+      <h2>2. סימון אזור</h2>
+      <div class="stage" id="stage">
+        <video id="video" preload="metadata" playsinline muted></video>
+        <img id="fallback" alt="" hidden>
+        <canvas id="overlay"></canvas>
+        <div id="stage-empty" class="stage-empty">לא נבחר סרטון</div>
+      </div>
+      <div class="controls">
+        <button id="play" title="ניגון / עצירה">▶</button>
+        <button id="step-back" title="פריים אחורה (בקירוב לפי הדפדפן)">⏮︎ פריים</button>
+        <button id="step-fwd" title="פריים קדימה (בקירוב לפי הדפדפן)">פריים ⏭︎</button>
+        <input id="seek" type="range" min="0" max="0" step="0.001" value="0" aria-label="מיקום בסרטון">
+        <span id="clock" class="mono" dir="ltr">00:00:00.000</span>
+      </div>
+      <div class="tools" role="toolbar" aria-label="כלי סימון">
+        <button data-tool="rect">מלבן</button>
+        <button data-tool="poly">מצולע</button>
+        <button data-tool="edit">עריכת נקודות</button>
+        <button id="region-clear" class="danger">מחיקת אזור</button>
+        <label class="inline"><input id="show-boxes" type="checkbox" checked> הצגת תיבות של תוצאות</label>
+      </div>
+      <p id="tool-help" class="hint"></p>
+      <p id="rule" class="rule"></p>
+    </div>
+
+    <!-- 3. query + range -->
+    <div class="card">
+      <h2>3. מה מחפשים</h2>
+      <div class="row">
+        <input id="q" type="text" placeholder="למשל: מצא רכבי קיה לבנים שעברו באזור שסימנתי">
+        <button id="q-parse">פירוש הבקשה</button>
+      </div>
+      <div id="fields" class="fields">
+        <fieldset><legend>סוג</legend><div id="f-types" class="chips"></div></fieldset>
+        <fieldset><legend>צבע</legend><div id="f-colors" class="chips"></div></fieldset>
+        <fieldset><legend>יצרן</legend>
+          <input id="f-makes" list="makes-list" dir="ltr" placeholder="Kia, Toyota…">
+          <datalist id="makes-list"></datalist>
+        </fieldset>
+      </div>
+      <ul id="q-notes" class="notes"></ul>
+
+      <h3>טווח זמן</h3>
+      <div class="row range">
+        <label class="inline"><input id="whole" type="checkbox" checked> הסרטון כולו</label>
+        <label>מ־ <input id="r-start" class="mono" dir="ltr" value="00:00:00.000" disabled></label>
+        <button id="r-start-now" disabled>מהרגע הנוכחי</button>
+        <label>עד <input id="r-end" class="mono" dir="ltr" value="" disabled></label>
+        <button id="r-end-now" disabled>עד הרגע הנוכחי</button>
+      </div>
+      <div class="row">
+        <label>קצב ניתוח
+          <select id="rate">
+            <option value="">כל הפריימים (איטי, ללא דילוג)</option>
+            <option value="15">כ־15 פריימים לשנייה</option>
+            <option value="10" selected>כ־10 פריימים לשנייה</option>
+            <option value="5">כ־5 פריימים לשנייה (סריקה מהירה)</option>
+          </select>
+        </label>
+      </div>
+      <p class="hint">בדגימה חלקית רכב שחולף מהר מאוד עלול להיות מוחמץ. הסריקה תסומן כדגימה בתוצאות.</p>
+
+      <div class="row">
+        <button id="run" class="primary">הפעלת חיפוש</button>
+        <button id="cancel" class="danger" hidden>ביטול</button>
+      </div>
+      <div id="job" class="job" hidden>
+        <div class="bar"><div id="job-bar"></div></div>
+        <div id="job-text" aria-live="polite"></div>
+        <div id="coverage" class="info"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4. results -->
+  <section class="col-side card">
+    <h2>4. תוצאות</h2>
+    <div id="past-jobs" class="row"></div>
+    <div class="tabs" role="tablist">
+      <button role="tab" data-cat="match" class="active">מתאימות <b id="n-match">0</b></button>
+      <button role="tab" data-cat="candidate">מועמדות לבדיקה <b id="n-candidate">0</b></button>
+      <button role="tab" data-cat="excluded">לא מתאימות <b id="n-excluded">0</b></button>
+    </div>
+    <p id="results-note" class="hint"></p>
+    <div id="results" class="results"></div>
+    <div id="exports" class="row" hidden>
+      <a id="exp-csv" class="btn" href="#">ייצוא CSV</a>
+      <a id="exp-json" class="btn" href="#">ייצוא JSON</a>
+      <button id="reapply">החלת השדות המתוקנים על התוצאות</button>
+    </div>
+  </section>
+</main>
+
+<dialog id="lightbox"><img id="lightbox-img" alt=""><form method="dialog"><button>סגירה</button></form></dialog>
+<script src="app.js"></script>
+</body>
+</html>
