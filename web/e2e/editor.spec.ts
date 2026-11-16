@@ -319,3 +319,38 @@ test('a very long line is flagged, and a sync that waits says why', async ({ pag
   await line.getByRole('button', { name: /סנכרון אוטומטי|ריצת סנכרון|✨/ }).first().click()
   await expect(line.getByText(/מחשב העיבוד לא מחובר/)).toBeVisible({ timeout: 25000 })
 })
+
+test('timeline: drag a line to move it, drag its end to stretch it, with explanations on the buttons', async ({ page, backend }, info) => {
+  test.skip(isMobileProject(info), 'mouse dragging on the timeline is tested on desktop')
+  const track = page.getByTestId('lines-track')
+  const block = track.getByRole('button', { name: /שלום עולם/ })
+  await expect(block).toBeVisible()
+  const box = (await block.boundingBox())!
+  // move: 0.5 s to the right (the waveform's zoom: px per second)
+  const pps = await page.evaluate(() => {
+    const host = [...document.querySelectorAll('.ks-waveform *')].find((e) => e.shadowRoot)!
+    const wrapper = host.shadowRoot!.querySelector('[part="scroll"] > div') as HTMLElement | null
+    return wrapper ? wrapper.scrollWidth / 16 : 120
+  })
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(box.x + box.width / 2 + pps * 0.5, box.y + box.height / 2, { steps: 6 })
+  await page.mouse.up()
+  await waitForSave(backend, 1)
+  const start = backend.lyricSaves.at(-1)!.p_lines[0].words[0].start_ms
+  expect(start).toBeGreaterThan(2300)
+  expect(start).toBeLessThan(2700)
+  // stretch: drag the end handle further right
+  const moved = (await block.boundingBox())!
+  const before = backend.lyricSaves.length
+  await page.mouse.move(moved.x + moved.width - 2, moved.y + moved.height / 2)
+  await page.mouse.down()
+  await page.mouse.move(moved.x + moved.width - 2 + pps * 0.3, moved.y + moved.height / 2, { steps: 4 })
+  await page.mouse.up()
+  await waitForSave(backend, before + 1)
+  const words = backend.lyricSaves.at(-1)!.p_lines[0].words
+  expect(words[0].start_ms).toBe(start) // the start stays, the end moved
+  // every button explains itself
+  await page.getByRole('button', { name: 'השמעת השורה בלולאה' }).first().hover()
+  await expect(page.getByRole('tooltip', { name: /שוב ושוב/ })).toBeVisible()
+})

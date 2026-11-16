@@ -169,6 +169,43 @@ export function shiftTiming(doc: LyricsDoc, lineId: string | null, deltaMs: numb
   )
 }
 
+/**
+ * Stretch or squeeze a whole line to new start / end times (the timeline's
+ * edge handles): every word keeps its place within the line, in proportion.
+ * The line stays between its neighbours and inside the song.
+ */
+export function scaleLine(doc: LyricsDoc, lineId: string, startMs: number, endMs: number, durationMs?: number): LyricsDoc {
+  const idx = doc.findIndex((l) => l.id === lineId)
+  if (idx < 0) return doc
+  const line = doc[idx]
+  const all = flatWords(doc)
+  const first = all.indexOf(line.words[0])
+  const last = all.indexOf(line.words[line.words.length - 1])
+  const lower = first > 0 ? all[first - 1].start_ms : 0
+  const upper = last < all.length - 1 ? all[last + 1].start_ms : Number.POSITIVE_INFINITY
+  const max = durationMs && durationMs > 0 ? durationMs : Number.POSITIVE_INFINITY
+  const oldStart = lineStart(line)
+  const oldEnd = Math.max(lineEnd(line), oldStart + 1)
+  const minLength = 80 * line.words.length
+  let start = Math.max(Math.round(startMs), lower, 0)
+  let end = Math.min(Math.round(endMs), max)
+  if (end - start < minLength) end = Math.min(start + minLength, max)
+  if (end - start < minLength) start = Math.max(lower, end - minLength)
+  const map = (ms: number, s0: number, e0: number) => Math.round(s0 + ((ms - oldStart) / (oldEnd - oldStart)) * (e0 - s0))
+  // The last word must still start before the next line's first word.
+  const lastWordStart = line.words[line.words.length - 1].start_ms
+  if (map(lastWordStart, start, end) > upper) {
+    const f = (lastWordStart - oldStart) / (oldEnd - oldStart)
+    if (f > 0) end = Math.floor(start + (upper - start) / f)
+  }
+  if (start === oldStart && end === lineEnd(line)) return doc
+  const words = line.words.map((w) => {
+    const s0 = map(w.start_ms, start, end)
+    return { ...w, start_ms: s0, end_ms: Math.max(s0, map(w.end_ms, start, end)), confidence: 1 }
+  })
+  return doc.map((l, i) => (i === idx ? { ...l, words } : l))
+}
+
 // ------------------------------------------------------- add / remove words
 /** Insert a new word before/after an existing one. Returns the doc and the new id. */
 export function insertWord(doc: LyricsDoc, id: string, where: 'before' | 'after', text: string): { doc: LyricsDoc; id: string } {

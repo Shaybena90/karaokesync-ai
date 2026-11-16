@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { ProjectTabs } from '../components/ProjectNav'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { KaraokePlayer } from '../components/player/KaraokePlayer'
 import { StatusBadge } from '../components/StatusBadge'
@@ -196,20 +197,8 @@ export function ProjectPage() {
               language={project.language}
               style={normalizeStyle(project.style)}
             />
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div className="flex flex-wrap gap-2">
-                <ButtonLink to={`/projects/${project.id}/play`} variant="ghost">
-                  {t('player.open')}
-                </ButtonLink>
-                <ButtonLink to={`/projects/${project.id}/edit`} variant="ghost">
-                  {t('editor.open')}
-                </ButtonLink>
-                <ButtonLink to={`/projects/${project.id}/style`} variant="ghost">
-                  {t('style.open')}
-                </ButtonLink>
-              </div>
-              <p className="hidden text-xs text-white/40 sm:block">{t('player.shortcuts')}</p>
-            </div>
+            <ProjectTabs projectId={project.id} cards />
+            <p className="hidden text-xs text-white/40 sm:block">{t('player.shortcuts')}</p>
             {audio?.status === 'verified' && (
               <LyricsSearchPanel
                 initialQuery={project.title}

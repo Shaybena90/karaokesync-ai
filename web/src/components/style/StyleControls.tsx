@@ -1,4 +1,4 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, type CSSProperties, type ReactNode } from 'react'
 import { AnimatedBackgroundPicker } from './AnimatedBackgroundPicker'
 import { useI18n } from '../../i18n/I18nProvider'
 import type { MessageKey } from '../../i18n/he'
@@ -25,8 +25,8 @@ export function StyleControls({ style, onChange }: Props) {
   useEffect(() => ensureFonts(Object.keys(FONTS) as FontName[]), [])
 
   return (
-    <div className="space-y-5">
-      <Section title={t('style.presets')}>
+    <div className="space-y-3">
+      <Section title={t('style.presets')} icon="✨">
         <div className="grid grid-cols-3 gap-2">
           {(Object.keys(PRESETS) as (keyof typeof PRESETS)[]).map((name) => {
             const p = PRESETS[name]
@@ -37,8 +37,8 @@ export function StyleControls({ style, onChange }: Props) {
                 type="button"
                 onClick={() => onChange({ ...PRESETS[name], backgrounds: style.backgrounds })}
                 aria-pressed={active}
-                className={`rounded-2xl p-2 text-center transition active:scale-[0.98] ${
-                  active ? 'ring-2 ring-violet-400' : 'ring-1 ring-white/10 hover:ring-white/30'
+                className={`relative rounded-2xl p-2 text-center shadow-lg transition active:scale-[0.98] ${
+                  active ? 'ring-2 ring-violet-300 shadow-violet-900/60' : 'ring-1 ring-white/10 hover:ring-white/30'
                 }`}
                 style={{ backgroundImage: `linear-gradient(135deg, ${p.background_color}, ${p.background_color2})` }}
               >
@@ -61,7 +61,7 @@ export function StyleControls({ style, onChange }: Props) {
         {style.preset === 'custom' && <p className="mt-2 text-xs text-white/50">{t('style.custom')}</p>}
       </Section>
 
-      <Section title={t('style.text')}>
+      <Section title={t('style.text')} icon="🔤">
         <Row label={t('style.font')}>
           <div role="radiogroup" aria-label={t('style.font')} className="grid max-h-72 grid-cols-2 gap-1.5 overflow-y-auto pe-1">
             {(Object.keys(FONTS) as FontName[]).map((f) => (
@@ -72,9 +72,7 @@ export function StyleControls({ style, onChange }: Props) {
                 aria-checked={style.font === f}
                 aria-label={f}
                 onClick={() => set('font', f)}
-                className={`min-h-12 rounded-xl px-2 py-1.5 text-start transition ${
-                  style.font === f ? 'bg-violet-500/30 ring-2 ring-violet-300' : 'bg-white/5 hover:bg-white/10'
-                }`}
+                className="ks-choice min-h-14 px-2.5 py-1.5 text-start"
               >
                 <span className="block truncate text-lg leading-tight" style={{ fontFamily: `"${f}", Heebo, sans-serif`, fontWeight: FONTS[f] }}>
                   {t('style.fontSample')}
@@ -107,9 +105,7 @@ export function StyleControls({ style, onChange }: Props) {
                 role="radio"
                 aria-checked={style.text_3d === k}
                 onClick={() => set('text_3d', k)}
-                className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-xl px-1 pb-1.5 pt-1 text-xs transition ${
-                  style.text_3d === k ? 'bg-violet-500/30 font-semibold ring-2 ring-violet-300' : 'bg-white/5 hover:bg-white/10'
-                }`}
+                className="ks-choice flex min-h-20 flex-col items-center justify-center gap-1.5 px-1 pb-1.5 pt-2 text-xs"
               >
                 <span
                   aria-hidden="true"
@@ -131,7 +127,7 @@ export function StyleControls({ style, onChange }: Props) {
         </Row>
       </Section>
 
-      <Section title={t('style.layout')}>
+      <Section title={t('style.layout')} icon="🎬">
         <Row label={t('style.position')}>
           <Segmented
             value={style.position}
@@ -163,9 +159,7 @@ export function StyleControls({ style, onChange }: Props) {
                 role="radio"
                 aria-checked={style.entrance === e}
                 onClick={() => set('entrance', e)}
-                className={`min-h-10 rounded-xl px-2 text-sm transition ${
-                  style.entrance === e ? 'bg-violet-500/30 font-semibold ring-2 ring-violet-300' : 'bg-white/5 hover:bg-white/10'
-                }`}
+                className="ks-choice min-h-11 px-2 text-sm"
               >
                 {t(`style.entrance.${e}`)}
               </button>
@@ -182,9 +176,7 @@ export function StyleControls({ style, onChange }: Props) {
                 role="radio"
                 aria-checked={style.countdown === c}
                 onClick={() => set('countdown', c)}
-                className={`min-h-10 rounded-xl px-2 text-sm transition ${
-                  style.countdown === c ? 'bg-violet-500/30 font-semibold ring-2 ring-violet-300' : 'bg-white/5 hover:bg-white/10'
-                }`}
+                className="ks-choice min-h-11 px-2 text-sm"
               >
                 {t(`style.countdown.${c}`)}
               </button>
@@ -195,7 +187,7 @@ export function StyleControls({ style, onChange }: Props) {
         <Toggle label={t('style.showNext')} checked={style.show_next_line} onChange={(v) => set('show_next_line', v)} />
       </Section>
 
-      <Section title={t('style.background')}>
+      <Section title={t('style.background')} icon="🌌">
         <div className="grid grid-cols-2 gap-2">
           <Color label={t('style.bgColor1')} value={style.background_color} onChange={(v) => set('background_color', v)} />
           <Color label={t('style.bgColor2')} value={style.background_color2} onChange={(v) => set('background_color2', v)} />
@@ -206,19 +198,25 @@ export function StyleControls({ style, onChange }: Props) {
   )
 }
 
-function Section({ title, children }: { title: string; children: ReactNode }) {
+function Section({ title, icon, children }: { title: string; icon: string; children: ReactNode }) {
   return (
-    <section className="space-y-3">
-      <h3 className="text-sm font-semibold text-white/80">{title}</h3>
-      {children}
-    </section>
+    <details open className="group rounded-2xl border border-white/10 bg-white/[0.025] [&_summary::-webkit-details-marker]:hidden">
+      <summary className="flex min-h-12 cursor-pointer list-none items-center gap-2.5 rounded-2xl px-3 py-2 hover:bg-white/[0.04] focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-300">
+        <span aria-hidden="true" className="grid size-8 place-items-center rounded-xl bg-gradient-to-br from-violet-500/40 to-blue-500/30 text-base">
+          {icon}
+        </span>
+        <h3 className="flex-1 text-sm font-semibold text-white/90">{title}</h3>
+        <span aria-hidden="true" className="text-white/40 transition group-open:rotate-180">⌄</span>
+      </summary>
+      <div className="space-y-4 px-3 pb-4 pt-1">{children}</div>
+    </details>
   )
 }
 
 function Row({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="space-y-1.5">
-      <span className="text-xs text-white/60">{label}</span>
+      <span className="text-xs font-medium text-white/70">{label}</span>
       {children}
     </div>
   )
@@ -229,9 +227,9 @@ function Slider({ label, value, min, max, step = 1, suffix = '', onChange }: {
 }) {
   return (
     <label className="block">
-      <span className="flex justify-between text-xs text-white/60">
+      <span className="flex items-center justify-between text-xs font-medium text-white/70">
         {label}
-        <span dir="ltr" className="tabular-nums">{value}{suffix}</span>
+        <span dir="ltr" className="rounded-md bg-white/10 px-1.5 py-0.5 tabular-nums text-white">{value}{suffix}</span>
       </span>
       <input
         type="range"
@@ -240,7 +238,8 @@ function Slider({ label, value, min, max, step = 1, suffix = '', onChange }: {
         step={step}
         value={value}
         onChange={(e) => onChange(Number(e.target.value))}
-        className="mt-1 h-8 w-full accent-violet-400"
+        className="ks-range mt-1 w-full"
+        style={{ '--fill': `${((value - min) / (max - min)) * 100}%` } as CSSProperties}
       />
     </label>
   )
@@ -248,23 +247,36 @@ function Slider({ label, value, min, max, step = 1, suffix = '', onChange }: {
 
 function Color({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
   return (
-    <label className="flex flex-col items-center gap-1 rounded-xl bg-white/5 p-2 text-center text-xs text-white/70">
-      <input
-        type="color"
-        value={value}
-        onChange={(e) => onChange(e.target.value.toLowerCase())}
-        className="h-9 w-full cursor-pointer rounded-lg border-0 bg-transparent"
-      />
+    <label className="ks-choice flex cursor-pointer flex-col items-center gap-1.5 p-2 text-center text-xs text-white/75">
+      <span className="relative block size-10 overflow-hidden rounded-full shadow-lg ring-2 ring-white/25" style={{ background: value }}>
+        <input
+          type="color"
+          value={value}
+          onChange={(e) => onChange(e.target.value.toLowerCase())}
+          className="absolute inset-0 size-full cursor-pointer opacity-0"
+        />
+      </span>
       {label}
+      <span dir="ltr" className="font-mono text-[10px] uppercase text-white/40">{value}</span>
     </label>
   )
 }
 
 function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
   return (
-    <label className="flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl bg-white/5 px-3 text-sm">
+    <label className="ks-choice flex min-h-12 cursor-pointer items-center justify-between gap-3 px-3 text-sm">
       {label}
-      <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="size-5 accent-violet-500" />
+      <span className="relative inline-flex shrink-0">
+        <input type="checkbox" checked={checked} onChange={(e) => onChange(e.target.checked)} className="peer sr-only" />
+        <span
+          aria-hidden="true"
+          className="h-6 w-11 rounded-full bg-white/15 transition peer-checked:bg-gradient-to-r peer-checked:from-violet-500 peer-checked:to-blue-500 peer-focus-visible:ring-2 peer-focus-visible:ring-violet-300"
+        />
+        <span
+          aria-hidden="true"
+          className="absolute start-0.5 top-0.5 size-5 rounded-full bg-white shadow transition peer-checked:translate-x-5 rtl:peer-checked:-translate-x-5"
+        />
+      </span>
     </label>
   )
 }
@@ -273,7 +285,7 @@ export function Segmented<T extends string>({ value, options, onChange }: {
   value: T; options: [T, string][]; onChange: (v: T) => void
 }) {
   return (
-    <div className="grid rounded-xl bg-white/5 p-1" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }} role="radiogroup">
+    <div className="grid gap-1 rounded-xl border border-white/10 bg-white/[0.04] p-1" style={{ gridTemplateColumns: `repeat(${options.length}, minmax(0, 1fr))` }} role="radiogroup">
       {options.map(([v, label]) => (
         <button
           key={v}
@@ -281,7 +293,11 @@ export function Segmented<T extends string>({ value, options, onChange }: {
           role="radio"
           aria-checked={v === value}
           onClick={() => onChange(v)}
-          className={`min-h-10 rounded-lg px-2 text-sm font-medium transition ${v === value ? 'bg-violet-500/40 text-white' : 'text-white/60 hover:text-white'}`}
+          className={`min-h-11 rounded-lg px-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-300 ${
+            v === value
+              ? 'bg-gradient-to-br from-violet-500 to-blue-500 text-white shadow-md shadow-violet-900/50'
+              : 'text-white/65 hover:bg-white/10 hover:text-white'
+          }`}
         >
           {label}
         </button>

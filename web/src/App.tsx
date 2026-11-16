@@ -48,6 +48,7 @@ export default function App() {
                 <Route path="projects/:id/play" element={<RequireAuth><PlayerPage /></RequireAuth>} />
                 <Route path="projects/:id/edit" element={<RequireAuth><EditorPage /></RequireAuth>} />
                 <Route path="projects/:id/style" element={<RequireAuth><StylePage /></RequireAuth>} />
+                <Route path="projects/:id/export" element={<RequireAuth><StylePage mode="export" /></RequireAuth>} />
                 <Route path="worker" element={<RequireAuth><WorkerPage /></RequireAuth>} />
                 <Route path="lyrics-sources" element={<RequireAuth><LyricsSourcesPage /></RequireAuth>} />
                 <Route path="*" element={<HomePage />} />

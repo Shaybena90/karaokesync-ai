@@ -1,4 +1,4 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
+import { cloneElement, isValidElement, useId, type ButtonHTMLAttributes, type ReactElement, type ReactNode } from 'react'
 import { Link, type LinkProps } from 'react-router-dom'
 
 const base =
@@ -65,5 +65,28 @@ export function Spinner({ className = 'size-5' }: { className?: string }) {
       <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity="0.25" strokeWidth="3" />
       <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
     </svg>
+  )
+}
+
+/**
+ * A short, clear explanation that appears above a button when the mouse is
+ * over it or it is reached with the keyboard (and is read by screen readers).
+ */
+export function Tip({ text, children, className = '' }: { text: string; children: ReactNode; className?: string }) {
+  const id = useId()
+  const child = isValidElement(children)
+    ? cloneElement(children as ReactElement<{ 'aria-describedby'?: string }>, { 'aria-describedby': id })
+    : children
+  return (
+    <span className={`group/tip relative inline-flex ${className}`}>
+      {child}
+      <span
+        id={id}
+        role="tooltip"
+        className="pointer-events-none invisible absolute bottom-full start-1/2 z-50 mb-2 w-max max-w-[15rem] -translate-x-1/2 rounded-xl border border-white/15 bg-ink-900/95 px-3 py-2 text-start text-xs font-normal leading-snug text-white opacity-0 shadow-2xl backdrop-blur transition delay-150 duration-150 group-hover/tip:visible group-hover/tip:opacity-100 group-focus-within/tip:visible group-focus-within/tip:opacity-100 rtl:translate-x-1/2"
+      >
+        {text}
+      </span>
+    </span>
   )
 }

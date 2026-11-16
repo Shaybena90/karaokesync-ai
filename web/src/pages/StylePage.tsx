@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { Navigate, useParams } from 'react-router-dom'
+import { ProjectHeader } from '../components/ProjectNav'
 import { KaraokePlayer, type VideoAspect } from '../components/player/KaraokePlayer'
 import { BackgroundPanel } from '../components/style/BackgroundPanel'
 import { ExportPanel } from '../components/style/ExportPanel'
@@ -15,10 +16,10 @@ import { useProjectLive } from '../lib/useProjectLive'
 
 type SaveState = 'saved' | 'saving' | 'error'
 
-/** Subtitle design (with live preview in the video's aspect ratio) and export. */
-export function StylePage() {
+/** Subtitle design or the export (`mode`), with a live preview in the video's aspect ratio. */
+export function StylePage({ mode = 'style' }: { mode?: 'style' | 'export' }) {
   const { id = '' } = useParams()
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   const { project, audio, loading, notFound } = useProjectLive(id)
   const [style, setStyle] = useState<SubtitleStyle | null>(null)
   const [aspect, setAspect] = useState<VideoAspect>('16:9')
@@ -85,20 +86,14 @@ export function StylePage() {
 
   return (
     <div className="pt-4 pb-10">
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Link to={`/projects/${id}`} className="inline-flex min-h-11 items-center gap-1 text-sm text-white/60 hover:text-white">
-          <span aria-hidden="true">{locale === 'he' ? '→' : '←'}</span> {t('project.back')}
-        </Link>
-        <h1 className="min-w-0 flex-1 truncate font-display text-lg font-bold sm:text-xl" dir="auto">
-          {t('style.title')} · {project.title}
-        </h1>
+      <ProjectHeader projectId={id} title={project.title} active={mode}>
         <span
           role="status"
           className={`text-xs font-medium ${saveState === 'saved' ? 'text-emerald-300' : saveState === 'error' ? 'text-red-300' : 'text-white/60'}`}
         >
           {saveState === 'saved' ? t('editor.status.saved') : saveState === 'saving' ? t('editor.status.saving') : t('style.saveError')}
         </span>
-      </div>
+      </ProjectHeader>
 
       <div className="mt-4 grid gap-5 lg:grid-cols-[minmax(0,1fr)_24rem]">
         <div className="space-y-3 lg:sticky lg:top-20 lg:self-start">
@@ -116,21 +111,24 @@ export function StylePage() {
           <p className="text-center text-xs text-white/40">{t('style.previewNote')}</p>
         </div>
 
-        <div className="space-y-5">
-          <div className="glass rounded-3xl p-4">
-            <StyleControls style={style} onChange={change} />
+        {mode === 'style' ? (
+          <div className="space-y-5">
+            <div className="glass rounded-3xl p-4">
+              <StyleControls style={style} onChange={change} />
+            </div>
+            <div className="glass rounded-3xl p-4">
+              <BackgroundPanel
+                projectId={project.id}
+                style={style}
+                onChange={change}
+                media={media}
+                reloadMedia={reloadMedia}
+                songMs={audio?.duration_ms ?? 0}
+                positionRef={positionRef}
+              />
+            </div>
           </div>
-          <div className="glass rounded-3xl p-4">
-            <BackgroundPanel
-              projectId={project.id}
-              style={style}
-              onChange={change}
-              media={media}
-              reloadMedia={reloadMedia}
-              songMs={audio?.duration_ms ?? 0}
-              positionRef={positionRef}
-            />
-          </div>
+        ) : (
           <div className="glass rounded-3xl p-4">
             <h2 className="mb-4 font-display text-lg font-semibold">{t('export.title')}</h2>
             <ExportPanel
@@ -144,7 +142,7 @@ export function StylePage() {
               songMs={audio?.duration_ms ?? 0}
             />
           </div>
-        </div>
+        )}
       </div>
     </div>
   )

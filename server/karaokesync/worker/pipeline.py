@@ -12,7 +12,7 @@ from pathlib import Path
 
 from ..config import Settings
 from ..supabase_client import SupabaseClient, SupabaseError
-from . import alignment
+from . import alignment, ctc_refine
 from .audio_tools import encode_mp3, separate_stems, to_working_wav
 from .errors import PipelineError
 from .lines import lines_to_payload, split_into_lines
@@ -91,6 +91,7 @@ def run_pipeline(job: dict, sb: SupabaseClient, settings: Settings, report: Repo
                 log.warning("vocal separation failed (%s); using original mix", exc.code)
                 rest = None
 
+        ctc_refine.configure(settings.word_refine)
         # 4-6. transcription + language (the user's choice, when given)
         report("transcribing", 40)
         try:
@@ -122,7 +123,8 @@ def run_pipeline(job: dict, sb: SupabaseClient, settings: Settings, report: Repo
 
             # 7-8. alignment
             report("aligning", 88)
-            words, method = alignment.align(transcript.words, transcript.language)
+            words, method = alignment.align(transcript.words, transcript.language, load_wav_16k(working),
+                                            refine_words=ctc_refine.wanted())
 
             # 9. lines
             report("building_lines", 95)

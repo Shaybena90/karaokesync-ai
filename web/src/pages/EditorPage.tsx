@@ -1,13 +1,15 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type ReactNode } from 'react'
-import { Link, Navigate, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useReducer, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { Navigate, useParams } from 'react-router-dom'
+import { ProjectHeader } from '../components/ProjectNav'
 import type WaveSurfer from 'wavesurfer.js'
 import { LinesList } from '../components/editor/LinesList'
 import { LineRangePanel } from '../components/editor/LineRangePanel'
 import { NewLinePanel } from '../components/editor/NewLinePanel'
 import { TapSyncPanel } from '../components/editor/TapSyncPanel'
 import { WaveformTimeline } from '../components/editor/WaveformTimeline'
+import { LinesTrack } from '../components/editor/LinesTrack'
 import { WordInspector } from '../components/editor/WordInspector'
-import { Alert, Spinner } from '../components/ui'
+import { Alert, Spinner, Tip } from '../components/ui'
 import { useI18n } from '../i18n/I18nProvider'
 import type { MessageKey } from '../i18n/he'
 import { directionOf, formatDuration } from '../lib/format'
@@ -28,6 +30,7 @@ import {
   moveLine,
   setLineText,
   setWordText,
+  scaleLine,
   setWordTiming,
   shiftTiming,
   splitLineAt,
@@ -57,7 +60,7 @@ const statusKey: Record<SaveStatus, MessageKey> = {
 
 export function EditorPage() {
   const { id = '' } = useParams()
-  const { t, locale } = useI18n()
+  const { t } = useI18n()
   const { project, audio, loading, notFound } = useProjectLive(id)
   const { lines } = useLyrics(id)
   const storagePath = audio?.status === 'verified' ? audio.storage_path : null
@@ -452,33 +455,19 @@ export function EditorPage() {
 
   return (
     <div className={`pt-4 ${inspector ? 'pb-[52vh] sm:pe-80 sm:pb-10 lg:pe-0' : 'pb-10'}`}>
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-        <Link to={`/projects/${id}`} className="inline-flex min-h-11 items-center gap-1 text-sm text-white/60 hover:text-white">
-          <span aria-hidden="true">{locale === 'he' ? '→' : '←'}</span> {t('project.back')}
-        </Link>
-        <h1 className="min-w-0 flex-1 truncate font-display text-lg font-bold sm:text-xl" dir="auto">
-          {t('editor.title')} · {project.title}
-        </h1>
+      <ProjectHeader projectId={id} title={project.title} active="edit">
         <span className={`text-xs font-medium ${statusTone}`} role="status" aria-live="polite">
           {t(statusKey[status])}
         </span>
         <div className="flex gap-1">
-          <ToolBtn label={t('editor.undo')} disabled={history.past.length === 0} onClick={() => dispatch({ type: 'undo' })}>
+          <ToolBtn label={t('editor.undo')} tip={t('tip.undo')} disabled={history.past.length === 0} onClick={() => dispatch({ type: 'undo' })}>
             <span className="rtl:-scale-x-100">↶</span>
           </ToolBtn>
-          <ToolBtn label={t('editor.redo')} disabled={history.future.length === 0} onClick={() => dispatch({ type: 'redo' })}>
+          <ToolBtn label={t('editor.redo')} tip={t('tip.redo')} disabled={history.future.length === 0} onClick={() => dispatch({ type: 'redo' })}>
             <span className="rtl:-scale-x-100">↷</span>
           </ToolBtn>
-          <Link
-            to={`/projects/${id}/play`}
-            className="grid h-10 place-items-center rounded-xl bg-white/10 px-3 text-sm font-medium hover:bg-white/15"
-          >
-            {t('editor.preview')}
-          </Link>
         </div>
-      </div>
-
+      </ProjectHeader>
       {status === 'conflict' && (
         <div className="mt-3">
           <Alert>
@@ -494,6 +483,7 @@ export function EditorPage() {
       {/* Sticky only on tall screens: on short phones (and in landscape) it would leave no room for the words. */}
       <div className="glass z-20 mt-3 rounded-3xl bg-ink-950/85 p-3 [@media(min-height:700px)]:sticky [@media(min-height:700px)]:top-16">
         {url ? (
+          <>
           <WaveformTimeline
             url={url}
             doc={doc}
@@ -505,28 +495,52 @@ export function EditorPage() {
             range={marking}
             onRangeChange={(start, end) => setMarking((m) => (m ? { ...m, start, end } : m))}
           />
+          <LinesTrack
+            ws={waveReady ? wsRef.current : null}
+            ready={waveReady}
+            doc={doc}
+            activeLineId={selected ? doc[selected.pos.line]?.id ?? null : null}
+            lyricDir={lyricDir}
+            onSeek={(ms) => wsRef.current?.setTime(ms / 1000)}
+            onSelectLine={(lineId) => {
+              const line = docRef.current.find((l) => l.id === lineId)
+              if (line) select(line.words[0].id)
+            }}
+            onMoveLine={onShiftLine}
+            onScaleLine={(lineId, start, end) => edit((d) => scaleLine(d, lineId, start, end, audioDuration()))}
+            onAddAt={(ms) => {
+              wsRef.current?.setTime(ms / 1000)
+              setSelectedId(null)
+              setNewLineOpen(true)
+            }}
+          />
+          <p className="mt-1 hidden text-[11px] text-white/40 sm:block">{t('editor.timelineHint')}</p>
+          </>
         ) : (
           <p className="py-4 text-center text-sm text-white/50">{storagePath ? <Spinner /> : t('project.audioGone')}</p>
         )}
 
         <div className="mt-2 flex flex-wrap items-center gap-2">
-          <button
-            type="button"
-            onClick={togglePlay}
-            disabled={!url}
-            aria-label={playing ? t('project.pause') : t('project.play')}
-            className="grid size-12 place-items-center rounded-full bg-gradient-to-br from-violet-600 to-blue-600 disabled:opacity-50"
-          >
-            {playing ? '❚❚' : '▶'}
-          </button>
+          <Tip text={t('tip.play')}>
+            <button
+              type="button"
+              onClick={togglePlay}
+              disabled={!url}
+              aria-label={playing ? t('project.pause') : t('project.play')}
+              className="grid size-12 place-items-center rounded-full bg-gradient-to-br from-violet-600 to-blue-600 disabled:opacity-50"
+            >
+              {playing ? '❚❚' : '▶'}
+            </button>
+          </Tip>
           <span ref={timeRef} dir="ltr" className="w-16 font-mono text-sm tabular-nums text-white/70">
             0:00.0
           </span>
+          <Tip text={t('tip.speed')}>
           <select
             value={rate}
             onChange={(e) => setRate(Number(e.target.value))}
             aria-label={t('editor.speed')}
-            className="h-10 rounded-xl bg-white/10 px-2 text-base"
+            className="h-11 rounded-xl bg-white/10 px-2 text-base"
           >
             {[0.5, 0.75, 1].map((r) => (
               <option key={r} value={r} className="bg-ink-900">
@@ -534,6 +548,7 @@ export function EditorPage() {
               </option>
             ))}
           </select>
+          </Tip>
           {loop && (
             <button
               type="button"
@@ -543,23 +558,26 @@ export function EditorPage() {
               ⟲ {t('editor.looping')} ✕
             </button>
           )}
-          <label className="ms-auto flex items-center gap-2 text-xs text-white/60">
-            {t('editor.zoom')}
+          <Tip text={t('tip.zoom')} className="ms-auto">
+          <label className="flex items-center gap-2 text-xs text-white/60">
+            🔍 {t('editor.zoom')}
             <input
               type="range"
               min={20}
               max={500}
               value={zoom}
               onChange={(e) => setZoom(Number(e.target.value))}
-              className="w-24 accent-violet-400 sm:w-32"
+              className="ks-range w-24 sm:w-36"
+              style={{ '--fill': `${((zoom - 20) / 480) * 100}%` } as CSSProperties}
             />
           </label>
+          </Tip>
           <div className="flex items-center gap-1 text-xs text-white/60">
             <span className="hidden sm:inline">{t('editor.shiftSong')}</span>
-            <ToolBtn label={t('editor.shiftSongEarlier')} onClick={() => edit((d) => shiftTiming(d, null, -100, audioDuration()))}>
+            <ToolBtn label={t('editor.shiftSongEarlier')} tip={t('tip.shiftSongEarlier')} onClick={() => edit((d) => shiftTiming(d, null, -100, audioDuration()))}>
               −0.1
             </ToolBtn>
-            <ToolBtn label={t('editor.shiftSongLater')} onClick={() => edit((d) => shiftTiming(d, null, 100, audioDuration()))}>
+            <ToolBtn label={t('editor.shiftSongLater')} tip={t('tip.shiftSongLater')} onClick={() => edit((d) => shiftTiming(d, null, 100, audioDuration()))}>
               +0.1
             </ToolBtn>
           </div>
@@ -571,17 +589,19 @@ export function EditorPage() {
           <div className="mb-3 flex flex-wrap items-start gap-2">
             <p className="min-w-0 flex-1 basis-60 text-xs text-white/50">{t('editor.help')}</p>
             {/* Outside the pinned waveform bar, so it never grows over the lines on small phones. */}
-            <button
-              type="button"
-              onClick={() => {
-                setSelectedId(null)
-                setNewLineOpen(true)
-              }}
-              disabled={!url}
-              className="min-h-10 shrink-0 rounded-xl bg-white/10 px-3 text-sm font-semibold hover:bg-white/15 disabled:opacity-40"
-            >
-              ➕ {t('editor.newLine.open')}
-            </button>
+            <Tip text={t('tip.newLine')} className="shrink-0">
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedId(null)
+                  setNewLineOpen(true)
+                }}
+                disabled={!url}
+                className="min-h-11 rounded-xl bg-white/10 px-4 text-sm font-semibold hover:bg-white/20 disabled:opacity-40"
+              >
+                ➕ {t('editor.newLine.open')}
+              </button>
+            </Tip>
           </div>
           {doc.length === 0 ? (
             <p className="text-white/60">{t('project.noWords')}</p>
@@ -631,18 +651,19 @@ export function EditorPage() {
   )
 }
 
-function ToolBtn({ label, onClick, disabled, children }: { label: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
+function ToolBtn({ label, tip, onClick, disabled, children }: { label: string; tip: string; onClick: () => void; disabled?: boolean; children: ReactNode }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      title={label}
-      dir="ltr"
-      className="grid h-10 min-w-10 place-items-center rounded-xl bg-white/10 px-2 text-sm font-medium hover:bg-white/15 disabled:opacity-35"
-    >
-      {children}
-    </button>
+    <Tip text={tip}>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={label}
+        dir="ltr"
+        className="grid h-11 min-w-11 place-items-center rounded-xl bg-white/10 px-2.5 text-sm font-semibold hover:bg-white/20 active:scale-[0.95] disabled:opacity-35"
+      >
+        {children}
+      </button>
+    </Tip>
   )
 }

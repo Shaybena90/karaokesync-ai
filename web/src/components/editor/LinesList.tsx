@@ -3,7 +3,7 @@ import { errorKey, useI18n } from '../../i18n/I18nProvider'
 import { lineEnd, lineStart, type DocLine, type LyricsDoc } from '../../lib/lyricsDoc'
 import { formatDuration } from '../../lib/format'
 import type { LineSyncState } from '../../lib/useLineSync'
-import { Spinner } from '../ui'
+import { Spinner, Tip } from '../ui'
 
 /** After this long in the queue, remind the user that the worker must be running. */
 const SLOW_QUEUE_MS = 15_000
@@ -81,35 +81,28 @@ export const LinesList = memo(function LinesList({
                 ⚠ {t('editor.longLine')}
               </button>
             )}
-            <span className="ms-auto flex flex-wrap gap-1">
-              <IconBtn label={t('editor.playLine')} onClick={() => onPlayLine(line)}>▶</IconBtn>
-              <IconBtn label={t('editor.loopLine')} onClick={() => onLoopLine(line)}>⟲</IconBtn>
-              <IconBtn label={t('editor.line.edit')} onClick={() => setEditing({ lineId: line.id, text: line.words.map((w) => w.text).join(' ') })}>
-                ✏️
-              </IconBtn>
-              <IconBtn label={t('editor.moveUp')} onClick={() => onMoveLine(line.id, -1)} disabled={i === 0}>
-                ▲
-              </IconBtn>
-              <IconBtn label={t('editor.moveDown')} onClick={() => onMoveLine(line.id, 1)} disabled={i === doc.length - 1}>
-                ▼
-              </IconBtn>
-              <IconBtn label={t('editor.duplicateLine')} onClick={() => onDuplicateLine(line.id)}>
-                ⧉
-              </IconBtn>
-              <IconBtn label={t('editor.range.open')} onClick={() => onMarkRange(line)}>
-                ⏱
-              </IconBtn>
-              <IconBtn label={t('editor.autoSync')} onClick={() => onAutoSync(line)} disabled={isBusy(syncStates[line.id])}>
-                ✨
-              </IconBtn>
-              <IconBtn label={t('editor.tapSync')} onClick={() => onTapSync(line)}>
-                👆
-              </IconBtn>
-              <IconBtn label={t('editor.shiftEarlier')} onClick={() => onShiftLine(line.id, -100)}>−0.1</IconBtn>
-              <IconBtn label={t('editor.shiftLater')} onClick={() => onShiftLine(line.id, 100)}>+0.1</IconBtn>
-              {i < doc.length - 1 && (
-                <IconBtn label={t('editor.mergeNext')} onClick={() => onMergeNext(line.id)}>⤓</IconBtn>
-              )}
+          </div>
+          {/* Main actions with their names; the rest grouped by what they change. */}
+          <div className="mt-2 flex flex-wrap items-center gap-2" data-testid="line-actions">
+            <ActionBtn label={t('editor.playLine')} tip={t('tip.playLine')} short={t('editor.short.play')} icon="▶" onClick={() => onPlayLine(line)} />
+            <ActionBtn label={t('editor.autoSync')} tip={t('tip.autoSync')} short={t('editor.short.autoSync')} icon="✨" accent
+              onClick={() => onAutoSync(line)} disabled={isBusy(syncStates[line.id])} />
+            <ActionBtn label={t('editor.tapSync')} tip={t('tip.tapSync')} short={t('editor.short.tapSync')} icon="👆" onClick={() => onTapSync(line)} />
+            <ActionBtn label={t('editor.line.edit')} tip={t('tip.edit')} short={t('editor.short.edit')} icon="✏️"
+              onClick={() => setEditing({ lineId: line.id, text: line.words.map((w) => w.text).join(' ') })} />
+            <span className="ms-auto flex flex-wrap gap-2">
+              <Group label={t('editor.group.time')}>
+                <IconBtn label={t('editor.loopLine')} tip={t('tip.loop')} onClick={() => onLoopLine(line)}>⟲</IconBtn>
+                <IconBtn label={t('editor.range.open')} tip={t('tip.range')} onClick={() => onMarkRange(line)}>⏱</IconBtn>
+                <IconBtn label={t('editor.shiftEarlier')} tip={t('tip.earlier')} onClick={() => onShiftLine(line.id, -100)}>−0.1</IconBtn>
+                <IconBtn label={t('editor.shiftLater')} tip={t('tip.later')} onClick={() => onShiftLine(line.id, 100)}>+0.1</IconBtn>
+              </Group>
+              <Group label={t('editor.group.order')}>
+                <IconBtn label={t('editor.moveUp')} tip={t('tip.up')} onClick={() => onMoveLine(line.id, -1)} disabled={i === 0}>▲</IconBtn>
+                <IconBtn label={t('editor.moveDown')} tip={t('tip.down')} onClick={() => onMoveLine(line.id, 1)} disabled={i === doc.length - 1}>▼</IconBtn>
+                <IconBtn label={t('editor.duplicateLine')} tip={t('tip.duplicate')} onClick={() => onDuplicateLine(line.id)}>⧉</IconBtn>
+                {i < doc.length - 1 && <IconBtn label={t('editor.mergeNext')} tip={t('tip.merge')} onClick={() => onMergeNext(line.id)}>⤓</IconBtn>}
+              </Group>
             </span>
           </div>
           {editing?.lineId === line.id && (
@@ -219,18 +212,49 @@ function SyncStatus({ state, onDismiss, workerProblem, long }: {
   )
 }
 
-function IconBtn({ label, onClick, children, disabled }: { label: string; onClick: () => void; children: ReactNode; disabled?: boolean }) {
+function ActionBtn({ label, tip, short, icon, onClick, disabled, accent }: {
+  label: string; tip: string; short: string; icon: string; onClick: () => void; disabled?: boolean; accent?: boolean
+}) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={label}
-      title={label}
-      dir="ltr"
-      className="grid h-8 min-w-8 place-items-center rounded-lg bg-white/5 px-1.5 text-xs text-white/70 hover:bg-white/15 hover:text-white disabled:opacity-40"
-    >
+    <Tip text={tip}>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={label}
+        className={`inline-flex min-h-11 items-center gap-2 rounded-xl px-3.5 text-sm font-semibold transition active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-300 disabled:opacity-40 ${
+          accent ? 'bg-gradient-to-br from-violet-600 to-blue-600 text-white shadow-md shadow-violet-900/40 hover:from-violet-500 hover:to-blue-500' : 'bg-white/10 text-white hover:bg-white/20'
+        }`}
+      >
+        <span aria-hidden="true" className="text-base">{icon}</span>
+        {short}
+      </button>
+    </Tip>
+  )
+}
+
+/** A few buttons that belong together, with the group's name for screen readers. */
+function Group({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <span role="group" aria-label={label} className="flex gap-1 rounded-2xl border border-white/10 bg-white/[0.04] p-1">
       {children}
-    </button>
+    </span>
+  )
+}
+
+function IconBtn({ label, tip, onClick, children, disabled }: { label: string; tip: string; onClick: () => void; children: ReactNode; disabled?: boolean }) {
+  return (
+    <Tip text={tip}>
+      <button
+        type="button"
+        onClick={onClick}
+        disabled={disabled}
+        aria-label={label}
+        dir="ltr"
+        className="grid h-11 min-w-11 place-items-center rounded-xl px-2 text-base font-semibold text-white/85 transition hover:bg-white/15 hover:text-white active:scale-[0.95] focus-visible:outline focus-visible:outline-2 focus-visible:outline-violet-300 disabled:opacity-30"
+      >
+        {children}
+      </button>
+    </Tip>
   )
 }

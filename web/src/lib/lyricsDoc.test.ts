@@ -12,6 +12,7 @@ import {
   setLineText,
   setWordText,
   setWordTiming,
+  scaleLine,
   shiftTiming,
   splitLineAt,
   syncWindow,
@@ -99,6 +100,26 @@ describe('timing', () => {
     // whole song
     expect(times(shiftTiming(doc, null, 250))[0]).toBe('1250-1650')
     expect(times(shiftTiming(doc, null, -5000))[0]).toBe('0-400')
+  })
+})
+
+describe('stretching a line on the timeline', () => {
+  it('keeps every word in proportion', () => {
+    const d = scaleLine(doc, 'L1', 1000, 3000)
+    expect(times(d).slice(0, 2)).toEqual(['1000-1800', '2000-3000'])
+    expect(isValidDoc(d)).toBe(true)
+  })
+  it('stays after the previous line and before the next one, inside the song', () => {
+    const d = scaleLine(doc, 'L2', 0, 9000, 4000)
+    expect(d[1].words[0].start_ms).toBe(1500) // not before the previous word
+    expect(d[1].words[1].end_ms).toBe(4000) // not past the song's end
+    const wide = scaleLine(doc, 'L1', 0, 20_000)
+    expect(wide[0].words[1].start_ms).toBeLessThanOrEqual(3000) // never past the next line
+    expect(isValidDoc(wide)).toBe(true)
+  })
+  it('does nothing for an unknown line or the same times', () => {
+    expect(scaleLine(doc, 'nope', 0, 1)).toBe(doc)
+    expect(scaleLine(doc, 'L1', 1000, 2000)).toBe(doc)
   })
 })
 

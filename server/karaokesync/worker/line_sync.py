@@ -23,7 +23,8 @@ from pathlib import Path
 
 from ..config import Settings
 from ..supabase_client import SupabaseClient, SupabaseError
-from .audio_tools import to_working_wav
+from . import ctc_refine
+from .audio_tools import separate_stems, to_working_wav
 from .errors import PipelineError
 from .transcribe import _load_model, load_wav_16k
 
@@ -63,6 +64,15 @@ def run_line_sync(job: dict, sb: SupabaseClient, settings: Settings, report: Cal
             raise PipelineError("download_failed", retryable=exc.status_code >= 500) from exc
         report(20)
         clip = to_working_wav(source, workdir / "window.wav", start_ms=win_start, end_ms=win_end)
+        # Listen to the singer alone: the music around the voice blurs where words start and end.
+        from .pipeline import use_vocal_separation
+
+        if use_vocal_separation(settings):
+            try:
+                vocals, _ = separate_stems(clip, workdir / "stems", settings.demucs_model, timeout=900)
+                clip = to_working_wav(vocals, workdir / "window_vocals.wav")
+            except PipelineError as exc:
+                log.warning("line sync: vocal separation failed (%s); using the original mix", exc.code)
         samples = load_wav_16k(clip)
         if len(samples) < SAMPLE_RATE // 5:
             raise PipelineError("invalid_sync_window", retryable=False)
@@ -70,6 +80,7 @@ def run_line_sync(job: dict, sb: SupabaseClient, settings: Settings, report: Cal
 
         model = _load_model(settings.whisper_model, settings.whisper_device, settings.whisper_compute_type)
         report(50)
+        ctc_refine.configure(settings.word_refine)
         times = align_words(model, samples, words, job.get("language"))
         report(95)
         return to_song_time(times, win_start, win_end)
@@ -79,7 +90,9 @@ def run_line_sync(job: dict, sb: SupabaseClient, settings: Settings, report: Cal
 
 # ------------------------------------------------------------------ alignment
 def align_words(model, samples, words: list[str], language: str | None) -> WordTimes:
-    """Times (seconds from the start of `samples`) for each word."""
+    """Times (seconds from the start of `samples`) for each word. Whisper finds them;
+    then (WORD_REFINE, when installed) the CTC aligner sharpens every word's start
+    and end (ctc_refine.py)."""
     from faster_whisper.audio import pad_or_trim
     from faster_whisper.tokenizer import Tokenizer
 
@@ -106,6 +119,8 @@ def align_words(model, samples, words: list[str], language: str | None) -> WordT
     alignment = model.find_alignment(tokenizer, [tokens], encoder_output, num_frames)[0]
     times = assign_to_words([len(wt) for wt in word_tokens], alignment)
     times = trim_edges(times)
+    if ctc_refine.wanted():
+        times = ctc_refine.refine(samples, words, times)
     return [(s + offset, e + offset, p) for s, e, p in times]
 
 

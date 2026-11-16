@@ -4,3 +4,5 @@ faster-whisper>=1.1.0
 # Vocal separation (optional, set ENABLE_VOCAL_SEPARATION=true). Large download
 # (PyTorch). Strongly recommended to run on a GPU machine.
 demucs>=4.0.1
+# Word-by-word precision: CTC refinement of every word (torchaudio comes with Demucs)
+uroman>=1.3

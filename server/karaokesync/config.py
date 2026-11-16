@@ -92,6 +92,9 @@ class Settings(BaseSettings):
     vocal_separation: Literal["auto", "on", "off"] = "auto"
     enable_vocal_separation: bool = False  # older setting: true = "on"
     demucs_model: str = "htdemucs"
+    # Word-by-word precision: refine every word's start and end with a CTC acoustic model
+    # (worker/ctc_refine.py). "auto" = when torchaudio and uroman are installed.
+    word_refine: Literal["auto", "on", "off"] = "auto"
 
     @property
     def max_upload_bytes(self) -> int:
