@@ -7,6 +7,14 @@
   "bytes": 10046606,
   "sha256": "37653081116f24d1eb3ae93872d4bc077fc8d330e506f78c5a1196f7f0f98408"
  },
+ "backgrounds/cherry-blossom-1080.mp4": {
+  "bytes": 2644074,
+  "sha256": "1d672e55e17c277adc61d795431fad6514dcb00e62cab3ee3ec392de4ec102a5"
+ },
+ "backgrounds/cherry-blossom-2160.mp4": {
+  "bytes": 6807134,
+  "sha256": "df733036462f1932b771391f581419f5c925b5b7a75a12b61dbe1fafeac44ab8"
+ },
  "backgrounds/city-fireworks-1080.mp4": {
   "bytes": 3518632,
   "sha256": "3ebc8d985a40211be5bd22a6b8821dfd697e771c7843683b880e23d300296dce"
@@ -14,6 +22,22 @@
  "backgrounds/city-fireworks-2160.mp4": {
   "bytes": 7636498,
   "sha256": "0c1f845d99a7df619a3223b43830bbdae22d49d7ac727d7a729eb4099e93c168"
+ },
+ "backgrounds/cloud-sunrise-1080.mp4": {
+  "bytes": 3102503,
+  "sha256": "a9c945c6bab65d4c917acb3eaaa9234b08d2cd7a8ee517ef03d011349296f5fb"
+ },
+ "backgrounds/cloud-sunrise-2160.mp4": {
+  "bytes": 7750209,
+  "sha256": "b857ee3128f08b279e9b111948cfd99f07648ff4d730081339991c5d0e15ed9f"
+ },
+ "backgrounds/desert-dunes-1080.mp4": {
+  "bytes": 1930676,
+  "sha256": "631ff982ef70d4bbfe5a140094af8b4a8115ecc784c303ed54d61244a447f459"
+ },
+ "backgrounds/desert-dunes-2160.mp4": {
+  "bytes": 5376139,
+  "sha256": "4dfe4f9fec4baca4481f218a261c53b463646abf40c25afb93a890bec0b4e1c2"
  },
  "backgrounds/galaxy-spiral-1080.mp4": {
   "bytes": 3689232,
@@ -30,6 +54,30 @@
  "backgrounds/golden-bokeh-2160.mp4": {
   "bytes": 11456966,
   "sha256": "3ce885e704574238d8d60c18ceab195dc988b324b30ffdb5d1e259dbe00aaf26"
+ },
+ "backgrounds/guitar-strings-1080.mp4": {
+  "bytes": 2181888,
+  "sha256": "b79d1a4dedb12d59a0e4d87dbd3f670e8bcbe565b4c5463dc8b96d7c14810ccb"
+ },
+ "backgrounds/guitar-strings-2160.mp4": {
+  "bytes": 5979243,
+  "sha256": "7a6934ea5d69b2071bc9df017ed9b4e2d54aa472d5d53adf0a66f7a6166a0804"
+ },
+ "backgrounds/heart-bokeh-1080.mp4": {
+  "bytes": 3348248,
+  "sha256": "64ffd6e325c4da4e6ee6a98a0046613c263213fa7d223516b32e6bff9822e9ff"
+ },
+ "backgrounds/heart-bokeh-2160.mp4": {
+  "bytes": 7833608,
+  "sha256": "be862279a26dbd5fc932e69577cf35e96b95ff53df9db5564e856fb3132f12a1"
+ },
+ "backgrounds/laser-show-1080.mp4": {
+  "bytes": 5519834,
+  "sha256": "77abae87e714d9981e0f0aacc7e8d2b4be23906dd3f021a8381ae0912f1fe6e8"
+ },
+ "backgrounds/laser-show-2160.mp4": {
+  "bytes": 12927851,
+  "sha256": "96271526a804c29c50a4a999eb132807d6410b8b750a03b59243d001f243c49c"
  },
  "backgrounds/mic-spotlight-1080.mp4": {
   "bytes": 2459908,
@@ -55,6 +103,38 @@
   "bytes": 7325870,
   "sha256": "7c0ac226065806c8c8f1167f2c90424e60f9133194e4f348a5cf243399172162"
  },
+ "backgrounds/rain-glass-1080.mp4": {
+  "bytes": 4556339,
+  "sha256": "eef7d92bf4b6bfd288f25fbde8d58b48e47aa9e660bbd2a7bca0dacb393e83f2"
+ },
+ "backgrounds/rain-glass-2160.mp4": {
+  "bytes": 9755265,
+  "sha256": "18dc5191bbfef2452a99e6f3c3d791b72b867b7b3adf02a63307be3920f9d148"
+ },
+ "backgrounds/silk-ribbons-1080.mp4": {
+  "bytes": 4439054,
+  "sha256": "286fb196a47bcf76b3c5706fc81c9d25f4b9fc26947444d6713e0c5b665aa3b3"
+ },
+ "backgrounds/silk-ribbons-2160.mp4": {
+  "bytes": 9471462,
+  "sha256": "6a472172065321b600a4dfb4b813bce5f504951d1cb67f4853fa0fa6c73c71f0"
+ },
+ "backgrounds/sky-lanterns-1080.mp4": {
+  "bytes": 3539226,
+  "sha256": "ff7d12e5ae346c26ce6bf4b5a5356285bea33e892ff4221e0948d1f785a2830b"
+ },
+ "backgrounds/sky-lanterns-2160.mp4": {
+  "bytes": 8929140,
+  "sha256": "0981af81d084615dea772f0cdf54b223a106ec75ab9c8e461eeaa1909f56cf5f"
+ },
+ "backgrounds/snow-forest-1080.mp4": {
+  "bytes": 17822937,
+  "sha256": "c5009e6f22ea94d84c4d94abde23c46616ffa4291c0b1101144affbbf2769ee2"
+ },
+ "backgrounds/snow-forest-2160.mp4": {
+  "bytes": 32832115,
+  "sha256": "a96a51a8557360c6c446b445d1c4b8b3018af6d2ac785e3b9a6317f9c91c6e2f"
+ },
  "backgrounds/sound-waves-1080.mp4": {
   "bytes": 14957212,
   "sha256": "f109bc1bcaff29099a098307cb3b5422f1a4e9cde590eeba4fe30c62bb3b134a"
@@ -78,5 +158,125 @@
  "backgrounds/vinyl-spin-2160.mp4": {
   "bytes": 8453743,
   "sha256": "aacfc3b39c2cd0c6ae182f9614e28089cf064fd9bca24079aff667c60fd0e75d"
+ },
+ "intro/title-aurora-1080.mp4": {
+  "bytes": 1485735,
+  "sha256": "95a3304d5886604a8718f161d54cdb3a076b62386fbd06c07afc82c6bc85b73d"
+ },
+ "intro/title-aurora-2160.mp4": {
+  "bytes": 4032950,
+  "sha256": "38611bf14a8cce9b17b9f2786d24ebca227af70756c2e0687fa6d20beb47b6a1"
+ },
+ "intro/title-chrome-1080.mp4": {
+  "bytes": 1162952,
+  "sha256": "7c50c019e89c693b487573bdd06cee047811b39eec0d13e3dbd3a725f3de9551"
+ },
+ "intro/title-chrome-2160.mp4": {
+  "bytes": 2815136,
+  "sha256": "7293a0712935b012f8ebb052e33c7f3bd1a6a7a9da2beb731de6770400674c6b"
+ },
+ "intro/title-cinema-1080.mp4": {
+  "bytes": 11991824,
+  "sha256": "3c5ad1aecb5ec2fc4ba4a68670cda7d6604a4db638fe65925fea8ba8197d7675"
+ },
+ "intro/title-cinema-2160.mp4": {
+  "bytes": 68686361,
+  "sha256": "34fae482ee28b0b4ac0298d1ff7253fbccbb033d3461dc70556202c70c4ecc85"
+ },
+ "intro/title-diamond-1080.mp4": {
+  "bytes": 2912430,
+  "sha256": "87f0549988e8db919127c2aa1d7be9b237fe99ecb61f3bbeafc4b6bffd34130d"
+ },
+ "intro/title-diamond-2160.mp4": {
+  "bytes": 7624425,
+  "sha256": "d7034c27395d5f20f94a66bbc74b9df3b984a17e40992cfe630dc1c1334a8c63"
+ },
+ "intro/title-electric-1080.mp4": {
+  "bytes": 2675967,
+  "sha256": "9619bbd93f87eee6bbe4567293e32a8ca8a60d3b07ed79ac8ded7d97f6afcbd8"
+ },
+ "intro/title-electric-2160.mp4": {
+  "bytes": 6472761,
+  "sha256": "b9887bbba674fd1838ed1037946ab63469e9d0864b69382f4907ebdf4916407b"
+ },
+ "intro/title-emerald-1080.mp4": {
+  "bytes": 2039550,
+  "sha256": "2f03702e20ec2848090a685108dc318e5077a2ce3a267886bd0920bcbca0263c"
+ },
+ "intro/title-emerald-2160.mp4": {
+  "bytes": 4388454,
+  "sha256": "23ac099181a5211341cdd554ad7aadfbdd6ba049c42745142a93b81395f4484a"
+ },
+ "intro/title-fire-1080.mp4": {
+  "bytes": 3632510,
+  "sha256": "650d60f7b0f5a53c0482a9b3b29bebb5640ba32f7a2288d0dc9653ba854fdf30"
+ },
+ "intro/title-fire-2160.mp4": {
+  "bytes": 7548405,
+  "sha256": "6d4b90cf8c6f17d4e24b27bc6177b049481a42bc7de8ec225bad1f7976d2d8bb"
+ },
+ "intro/title-ice-1080.mp4": {
+  "bytes": 2053137,
+  "sha256": "b6828e024995f005536fea00a8267e2ecfd119d76ac07477adcfaed3426934f6"
+ },
+ "intro/title-ice-2160.mp4": {
+  "bytes": 4307281,
+  "sha256": "89fd4ef39e0664e22f6204147951c2c03dfdbadb9edffed92bbe4be6a90eae07"
+ },
+ "intro/title-nebula-1080.mp4": {
+  "bytes": 2513166,
+  "sha256": "ccf6112983f9502db30d49a863cec12889334951616eb8eb810180c13ec04ae3"
+ },
+ "intro/title-nebula-2160.mp4": {
+  "bytes": 6503559,
+  "sha256": "c9532cacb5fb6ba4a1f4311f3bb576e3d8e47497ce7921eb7699b8a0cab4880e"
+ },
+ "intro/title-ocean-1080.mp4": {
+  "bytes": 1902826,
+  "sha256": "8ef6197610d6ec5dbbb44c86a5dfca7ceda661154cf12795532938d29ff29f8b"
+ },
+ "intro/title-ocean-2160.mp4": {
+  "bytes": 4887058,
+  "sha256": "58ca633e1763952f50f55a2709733765d536242df5ab11a850230221c712e5b4"
+ },
+ "intro/title-party-1080.mp4": {
+  "bytes": 4776327,
+  "sha256": "d1f40377e29b7f39391a02458d75760c83144c44517590d54cf6afbb8d0b8490"
+ },
+ "intro/title-party-2160.mp4": {
+  "bytes": 9503027,
+  "sha256": "a944e5a411557d5a7ca8b7f50719c68af85d0282966b18b765ae51c1d9f05db8"
+ },
+ "intro/title-retro-1080.mp4": {
+  "bytes": 2047896,
+  "sha256": "e062f8e3037e83bb7e3f324a784cd01701d33acb5f1ccaa1c66e33921ed8d5c1"
+ },
+ "intro/title-retro-2160.mp4": {
+  "bytes": 4324321,
+  "sha256": "75ca3ab1fb1d3e4142b96bf2ec1b443c9e966e3dc38d39193adc97ca4be10009"
+ },
+ "intro/title-rosegold-1080.mp4": {
+  "bytes": 1342777,
+  "sha256": "fdc2d866567f7455d2a75385b457542daa5345a54a5398c302a2ed867ebc41b5"
+ },
+ "intro/title-rosegold-2160.mp4": {
+  "bytes": 3679553,
+  "sha256": "4a52bbddd2f67323731a692074d0a60a5dc7d9c80e04157a4bcb33ad79c4ba37"
+ },
+ "intro/title-tropical-1080.mp4": {
+  "bytes": 1551522,
+  "sha256": "3e0c6b06c8c3de39126ca7b6f5a56189ef84628f0995ea3d9d5304ac38c3bb24"
+ },
+ "intro/title-tropical-2160.mp4": {
+  "bytes": 3771458,
+  "sha256": "e1a37f1ef80df80642247bc3f3a2e958036c35599dc9d9004effadddc00eed87"
+ },
+ "intro/title-velvet-1080.mp4": {
+  "bytes": 1165891,
+  "sha256": "17dafb33f2596789a12be61dbcf55cc789073235286c968de4b23bf4b4152ea4"
+ },
+ "intro/title-velvet-2160.mp4": {
+  "bytes": 3076464,
+  "sha256": "47c6d4ba22457ba0fbad2df0c4a0b1fbbf138aaeafe5051355f5f628fa39112c"
  }
 }
