@@ -169,6 +169,47 @@ export function shiftTiming(doc: LyricsDoc, lineId: string | null, deltaMs: numb
   )
 }
 
+/** The words from `fromId` to `toId` (either order) in song order: a group chosen on the timeline. */
+export function wordRange(doc: LyricsDoc, fromId: string, toId: string): string[] {
+  const all = flatWords(doc)
+  const a = all.findIndex((w) => w.id === fromId)
+  const b = all.findIndex((w) => w.id === toId)
+  if (a < 0 || b < 0) return []
+  return all.slice(Math.min(a, b), Math.max(a, b) + 1).map((w) => w.id)
+}
+
+/**
+ * Move a group of words together by `deltaMs`, keeping the spaces between them
+ * (dragged together on the timeline). The group is the run of words from its
+ * first to its last word; it stays between the words around it and inside the song.
+ */
+export function shiftWords(doc: LyricsDoc, ids: string[], deltaMs: number, durationMs?: number): LyricsDoc {
+  const all = flatWords(doc)
+  const idx = ids.map((id) => all.findIndex((w) => w.id === id)).filter((i) => i >= 0)
+  if (idx.length === 0) return doc
+  const a = Math.min(...idx)
+  const b = Math.max(...idx)
+  const target = all.slice(a, b + 1)
+  const lower = a > 0 ? all[a - 1].start_ms : 0
+  const upper = b < all.length - 1 ? all[b + 1].start_ms : Number.POSITIVE_INFINITY
+  const max = durationMs && durationMs > 0 ? durationMs : Number.POSITIVE_INFINITY
+  let delta = Math.round(deltaMs)
+  delta = Math.max(delta, lower - target[0].start_ms)
+  delta = Math.min(delta, upper - target[target.length - 1].start_ms, max - target[target.length - 1].end_ms)
+  if (delta === 0) return doc
+  const moving = new Set(target.map((w) => w.id))
+  return doc.map((line) =>
+    line.words.some((w) => moving.has(w.id))
+      ? {
+          ...line,
+          words: line.words.map((w) =>
+            moving.has(w.id) ? { ...w, start_ms: Math.max(0, w.start_ms + delta), end_ms: Math.max(0, w.end_ms + delta), confidence: 1 } : w,
+          ),
+        }
+      : line,
+  )
+}
+
 /**
  * Stretch or squeeze a whole line to new start / end times (the timeline's
  * edge handles): every word keeps its place within the line, in proportion.

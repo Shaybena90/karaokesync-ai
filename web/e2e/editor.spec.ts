@@ -371,3 +371,38 @@ test('delete a whole line, and add several words at once (each one separate)', a
   expect(backend.lastSavedText()[0]).toBe('שלום עולם עוד שתי מילים')
   expect(backend.lyricSaves.at(-1)!.p_lines[0].words).toHaveLength(5)
 })
+
+test('choose several words and move them together, keeping the spaces', async ({ page, backend }, info) => {
+  const mobile = isMobileProject(info.project.name)
+  const starts = () => backend.lyricSaves.at(-1)!.p_lines.flatMap((l) => l.words.map((w) => w.start_ms))
+  if (mobile) {
+    // phones: the "several words" mode, then tap the first and the last word
+    await page.getByRole('button', { name: /בחירת כמה מילים/ }).click()
+    await page.locator('.ks-chip', { hasText: 'עולם' }).click()
+    await page.locator('.ks-chip', { hasText: 'שיר' }).click()
+  } else {
+    await page.locator('.ks-chip', { hasText: 'עולם' }).click()
+    await page.locator('.ks-chip', { hasText: 'שיר' }).click({ modifiers: ['Shift'] })
+  }
+  await expect(page.getByTestId('word-group')).toContainText('3 מילים')
+  await expect(page.locator('.ks-chip[data-group]')).toHaveCount(3)
+  await page.getByRole('button', { name: 'איחור המילים שנבחרו ב-0.1 שניות' }).click()
+  await waitForSave(backend, 1)
+  // עולם, זה, שיר moved by 0.1 s; שלום and the rest stay
+  expect(starts().slice(0, 4)).toEqual([2000, 3000, 4600, 5200])
+  if (mobile) return
+  // drag one of the group on the waveform: the others follow, same spaces
+  await page.locator('.ks-waveform').scrollIntoViewIfNeeded()
+  const box = await regionBox(page, 'זה')
+  const y = box.y + box.h / 2
+  const x0 = box.x + box.w / 2
+  await page.mouse.move(x0, y)
+  await page.mouse.down()
+  for (let i = 1; i <= 6; i++) await page.mouse.move(x0 - i * 4, y)
+  await page.mouse.up()
+  await waitForSave(backend, 2)
+  const s = starts()
+  expect(s[2] - s[1]).toBe(1600) // עולם → זה: the space is kept
+  expect(s[3] - s[2]).toBe(600) // זה → שיר: the space is kept
+  expect(s[1]).toBeLessThan(3000) // and they moved earlier together
+})

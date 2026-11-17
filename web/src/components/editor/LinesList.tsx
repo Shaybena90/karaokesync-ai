@@ -17,7 +17,9 @@ interface Props {
   selectedId: string | null
   lyricDir: 'rtl' | 'ltr' | 'auto'
   registerChip: (id: string, el: HTMLButtonElement | null) => void
-  onSelect: (wordId: string) => void
+  onSelect: (wordId: string, mods?: { range: boolean; toggle: boolean }) => void
+  /** Words chosen together on the timeline (shown with a cyan ring). */
+  group?: string[]
   onPlayLine: (line: DocLine) => void
   onLoopLine: (line: DocLine) => void
   onShiftLine: (lineId: string, deltaMs: number) => void
@@ -60,6 +62,7 @@ export const LinesList = memo(function LinesList({
   onDuplicateLine,
   onMoveLine,
   onDeleteLine,
+  group = [],
   workerProblem = null,
 }: Props) {
   const { t } = useI18n()
@@ -160,10 +163,15 @@ export const LinesList = memo(function LinesList({
                   key={w.id}
                   type="button"
                   ref={(el) => registerChip(w.id, el)}
-                  onClick={() => onSelect(w.id)}
+                  onClick={(e) => onSelect(w.id, { range: e.shiftKey, toggle: e.ctrlKey || e.metaKey })}
+                  data-group={group.includes(w.id) || undefined}
                   title={`${(w.start_ms / 1000).toFixed(2)}–${(w.end_ms / 1000).toFixed(2)}`}
                   className={`ks-chip min-h-10 scroll-mt-80 scroll-mb-[55vh] rounded-xl px-3 sm:scroll-mb-4 text-base font-semibold transition ${
-                    w.id === selectedId ? 'bg-fuchsia-500/40 ring-2 ring-fuchsia-300' : 'bg-white/[0.07] hover:bg-white/15'
+                    w.id === selectedId
+                      ? 'bg-fuchsia-500/40 ring-2 ring-fuchsia-300'
+                      : group.includes(w.id)
+                        ? 'bg-cyan-400/25 ring-2 ring-cyan-300'
+                        : 'bg-white/[0.07] hover:bg-white/15'
                   } ${unsure ? 'underline decoration-amber-300/80 decoration-dotted decoration-2 underline-offset-4' : ''}`}
                 >
                   {w.text}

@@ -15,6 +15,8 @@ import {
   setWordTiming,
   scaleLine,
   shiftTiming,
+  shiftWords,
+  wordRange,
   splitLineAt,
   syncWindow,
   toSavePayload,
@@ -138,6 +140,23 @@ describe('several words at once and whole lines', () => {
   it('a whole line can be deleted', () => {
     expect(texts(deleteLine(doc, 'L1'))).toEqual(['זה שיר'])
     expect(deleteLine(doc, 'nope')).toBe(doc)
+  })
+})
+
+describe('a group of words moved together', () => {
+  it('keeps the spaces between the words and stays between the neighbours', () => {
+    const group = wordRange(doc, 'c', 'b') // either order: b..c across two lines
+    expect(group).toEqual(['b', 'c'])
+    expect(times(shiftWords(doc, group, 100))).toEqual(['1000-1400', '1600-2100', '3100-3300', '3200-3800'])
+  })
+  it('is clamped by the words around it', () => {
+    const moved = shiftWords(doc, ['b', 'c'], 5000)
+    expect(flatWords(moved)[2].start_ms).toBe(3200) // not past the next word (d starts at 3200)
+    expect(flatWords(moved)[1].start_ms - flatWords(doc)[1].start_ms).toBe(200) // same move for the whole group
+    const early = shiftWords(doc, ['b', 'c'], -5000)
+    expect(flatWords(early)[1].start_ms).toBe(1000) // not before a
+    expect(isValidDoc(early)).toBe(true)
+    expect(shiftWords(doc, ['nope'], 100)).toBe(doc)
   })
 })
 

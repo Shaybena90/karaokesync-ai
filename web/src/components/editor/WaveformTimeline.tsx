@@ -10,7 +10,10 @@ interface Props {
   selectedId: string | null
   zoom: number
   onReady: (ws: WaveSurfer | null) => void
-  onSelect: (wordId: string) => void
+  /** `range`: Shift (or the "several words" mode) extends the group; `toggle`: Ctrl / Cmd. */
+  onSelect: (wordId: string, mods?: { range: boolean; toggle: boolean }) => void
+  /** Words chosen together: dragging one of them moves them all. */
+  group?: string[]
   /** `moved` is true when the whole word was dragged (not one of its edges). */
   onTimingChange: (wordId: string, startMs: number, endMs: number, moved: boolean) => void
   /** A stretch the user marks for a sentence (shown in yellow, edges draggable). */
@@ -25,12 +28,13 @@ type RegionsApi = ReturnType<typeof RegionsPlugin.create>
 
 const COLORS = ['rgba(168, 85, 247, 0.22)', 'rgba(59, 130, 246, 0.22)']
 const SELECTED = 'rgba(232, 121, 249, 0.5)'
+const GROUPED = 'rgba(34, 211, 238, 0.42)'
 
 /**
  * Waveform of the song with one draggable / resizable region per word.
  * Dragging a region (or its edges) changes the word's timing.
  */
-export function WaveformTimeline({ url, doc, selectedId, zoom, onReady, onSelect, onTimingChange, range, onRangeChange }: Props) {
+export function WaveformTimeline({ url, doc, selectedId, zoom, onReady, onSelect, onTimingChange, range, onRangeChange, group = [] }: Props) {
   const container = useRef<HTMLDivElement>(null)
   const wsRef = useRef<WaveSurfer | null>(null)
   const regionsRef = useRef<RegionsApi | null>(null)
@@ -40,6 +44,13 @@ export function WaveformTimeline({ url, doc, selectedId, zoom, onReady, onSelect
   const callbacks = useRef({ onSelect, onTimingChange, onReady, onRangeChange })
   useLayoutEffect(() => {
     callbacks.current = { onSelect, onTimingChange, onReady, onRangeChange }
+  })
+  // The group and every word's time, for moving the whole group while one of its words is dragged.
+  const groupRef = useRef(group)
+  const timesRef = useRef(new Map<string, [number, number]>())
+  useLayoutEffect(() => {
+    groupRef.current = group
+    timesRef.current = new Map(doc.flatMap((l) => l.words.map((w) => [w.id, [w.start_ms / 1000, Math.max(w.end_ms, w.start_ms + 1) / 1000]] as const)))
   })
   const initialZoom = useRef(zoom)
   const zoomRef = useRef(zoom)
@@ -76,7 +87,20 @@ export function WaveformTimeline({ url, doc, selectedId, zoom, onReady, onSelect
     })
     regions.on('region-clicked', (r: Region, e: MouseEvent) => {
       e.stopPropagation()
-      if (r.id !== RANGE_ID) callbacks.current.onSelect(r.id)
+      if (r.id !== RANGE_ID) callbacks.current.onSelect(r.id, { range: e.shiftKey, toggle: e.ctrlKey || e.metaKey })
+    })
+    // While one word of a group is dragged, the others follow it at the same distance.
+    regions.on('region-update', (r: Region, side?: 'start' | 'end') => {
+      const ids = groupRef.current
+      if (side !== undefined || ids.length < 2 || !ids.includes(r.id)) return
+      const own = timesRef.current.get(r.id)
+      if (!own) return
+      const delta = r.start - own[0]
+      for (const other of regions.getRegions()) {
+        if (other.id === r.id || !ids.includes(other.id)) continue
+        const t = timesRef.current.get(other.id)
+        if (t) other.setOptions({ start: t[0] + delta, end: t[1] + delta })
+      }
     })
     ws.on('ready', () => {
       setReady(true)
@@ -106,7 +130,7 @@ export function WaveformTimeline({ url, doc, selectedId, zoom, onReady, onSelect
       for (const w of line.words) {
         const start = w.start_ms / 1000
         const end = Math.max(w.end_ms, w.start_ms + 1) / 1000
-        const color = w.id === selectedId ? SELECTED : COLORS[li % 2]
+        const color = w.id === selectedId ? SELECTED : group.includes(w.id) ? GROUPED : COLORS[li % 2]
         const region = existing.get(w.id)
         if (region) {
           existing.delete(w.id)
@@ -122,7 +146,7 @@ export function WaveformTimeline({ url, doc, selectedId, zoom, onReady, onSelect
     })
     existing.delete(RANGE_ID) // managed below
     for (const stale of existing.values()) stale.remove()
-  }, [doc, selectedId, ready])
+  }, [doc, selectedId, ready, group])
 
   // The marked stretch: drawn over the words while a sentence is being marked.
   useEffect(() => {

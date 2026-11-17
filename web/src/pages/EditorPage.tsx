@@ -34,6 +34,8 @@ import {
   scaleLine,
   setWordTiming,
   shiftTiming,
+  shiftWords,
+  wordRange,
   splitLineAt,
   syncWindow,
   type DocLine,
@@ -133,11 +135,48 @@ export function EditorPage() {
     }
   }, [])
 
+  // ------------------------------------------- several words chosen together
+  const [group, setGroup] = useState<string[]>([])
+  const groupRef = useRef<string[]>([])
+  groupRef.current = group
+  const anchorRef = useRef<string | null>(null)
+  /** On phones (no Shift key): every tap extends the group. */
+  const [multiMode, setMultiMode] = useState(false)
+  const multiRef = useRef(false)
+  multiRef.current = multiMode
+
+  const choose = useCallback(
+    (wordId: string, mods?: { range: boolean; toggle: boolean }) => {
+      const extend = Boolean(mods?.range || mods?.toggle || multiRef.current)
+      const from = anchorRef.current ?? groupRef.current[0]
+      if (extend && from) {
+        const ids = wordRange(docRef.current, from, wordId)
+        setGroup(ids.length > 1 ? ids : [])
+      } else {
+        setGroup([])
+        anchorRef.current = wordId
+      }
+      select(wordId)
+    },
+    [select],
+  )
+
   const onTimingChange = useCallback(
     (wordId: string, start: number, end: number, moved = false) => {
-      edit((d) => setWordTiming(d, wordId, start, end, audioDuration(), moved))
+      const g = groupRef.current
+      const word = flatWords(docRef.current).find((w) => w.id === wordId)
+      if (moved && word && g.length > 1 && g.includes(wordId)) {
+        // One word of the group was dragged: the whole group moves with it, same spaces.
+        edit((d) => shiftWords(d, g, start - word.start_ms, audioDuration()))
+      } else {
+        edit((d) => setWordTiming(d, wordId, start, end, audioDuration(), moved))
+      }
       setSelectedId(wordId)
     },
+    [edit, audioDuration],
+  )
+  const moveGroup = useCallback(
+    (deltaMs: number) => edit((d) => shiftWords(d, groupRef.current, deltaMs, audioDuration())),
     [edit, audioDuration],
   )
 
@@ -501,7 +540,8 @@ export function EditorPage() {
             selectedId={selectedId}
             zoom={zoom}
             onReady={onWaveReady}
-            onSelect={select}
+            onSelect={choose}
+            group={group}
             onTimingChange={onTimingChange}
             range={marking}
             onRangeChange={(start, end) => setMarking((m) => (m ? { ...m, start, end } : m))}
@@ -595,11 +635,39 @@ export function EditorPage() {
         </div>
       </div>
 
+      {(group.length > 1 || multiMode) && (
+        <div className="mt-3 flex flex-wrap items-center gap-2 rounded-2xl border border-cyan-300/40 bg-cyan-400/10 p-2.5 text-sm" data-testid="word-group" role="status">
+          <span className="min-w-0 flex-1 basis-56 text-cyan-50">
+            {group.length > 1 ? t('editor.group.count', { n: group.length }) : t('editor.group.pick')}
+          </span>
+          {group.length > 1 && (
+            <>
+              <ToolBtn label={t('editor.group.earlier')} tip={t('tip.groupEarlier')} onClick={() => moveGroup(-100)}>−0.1</ToolBtn>
+              <ToolBtn label={t('editor.group.later')} tip={t('tip.groupLater')} onClick={() => moveGroup(100)}>+0.1</ToolBtn>
+            </>
+          )}
+          <ToolBtn label={t('editor.group.clear')} tip={t('tip.groupClear')} onClick={() => { setGroup([]); setMultiMode(false) }}>✕</ToolBtn>
+        </div>
+      )}
       <div className="mt-4 grid gap-4 lg:grid-cols-[1fr_22rem]">
         <div>
           <div className="mb-3 flex flex-wrap items-start gap-2">
             <p className="min-w-0 flex-1 basis-60 text-xs text-white/50">{t('editor.help')}</p>
             {/* Outside the pinned waveform bar, so it never grows over the lines on small phones. */}
+            <Tip text={t('tip.multiMode')} className="shrink-0">
+              <button
+                type="button"
+                aria-pressed={multiMode}
+                onClick={() => {
+                  anchorRef.current = null // the next tap is the first word of the group
+                  setGroup([])
+                  setMultiMode((m) => !m)
+                }}
+                className={`min-h-11 rounded-xl px-4 text-sm font-semibold transition ${multiMode ? 'bg-cyan-400/30 text-white ring-2 ring-cyan-300' : 'bg-white/10 hover:bg-white/20'}`}
+              >
+                ▭▭ {t('editor.group.mode')}
+              </button>
+            </Tip>
             <Tip text={t('tip.newLine')} className="shrink-0">
               <button
                 type="button"
@@ -622,7 +690,8 @@ export function EditorPage() {
               selectedId={selectedId}
               lyricDir={lyricDir}
               registerChip={registerChip}
-              onSelect={select}
+              onSelect={choose}
+              group={group}
               onPlayLine={onPlayLine}
               onLoopLine={onLoopLine}
               onShiftLine={onShiftLine}
