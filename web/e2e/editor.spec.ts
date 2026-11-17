@@ -44,7 +44,7 @@ test('edit text, timing, add and delete words — autosaved', async ({ page, bac
   expect(backend.lyricSaves.at(-1)!.p_lines[0].words[0].start_ms).toBe(2050)
 
   await page.locator('.ks-chip', { hasText: 'קריוקי' }).click()
-  await panel.getByPlaceholder('המילה החסרה').fill('יפה')
+  await panel.getByPlaceholder('מילה אחת או כמה מילים').fill('יפה')
   await panel.getByRole('button', { name: 'הוספה אחרי' }).click()
   await waitForSave(backend, 3)
   expect(backend.lastSavedText()[1]).toBe('זה שיר קריוקי יפה')
@@ -187,7 +187,7 @@ test('tap sync can be cancelled without changes', async ({ page, backend }) => {
 
 test('the word panel is mounted once', async ({ page }) => {
   await page.locator('.ks-chip', { hasText: 'שלום' }).click()
-  await expect(page.getByPlaceholder('המילה החסרה')).toHaveCount(1)
+  await expect(page.getByPlaceholder('מילה אחת או כמה מילים')).toHaveCount(1)
   await page.getByRole('button', { name: 'סגירה' }).click()
   await page.getByRole('button', { name: 'סנכרון בהקשה' }).first().click()
   await expect(page.getByTestId('tap-sync')).toHaveCount(1)
@@ -353,4 +353,21 @@ test('timeline: drag a line to move it, drag its end to stretch it, with explana
   // every button explains itself
   await page.getByRole('button', { name: 'השמעת השורה בלולאה' }).first().hover()
   await expect(page.getByRole('tooltip', { name: /שוב ושוב/ })).toBeVisible()
+})
+
+test('delete a whole line, and add several words at once (each one separate)', async ({ page, backend }, info) => {
+  const panel = inspector(page, isMobileProject(info.project.name))
+  await page.getByRole('button', { name: 'מחיקת השורה כולה' }).nth(1).click()
+  await waitForSave(backend, 1)
+  expect(backend.lastSavedText()).toEqual(['שלום עולם', 'סוף טוב'])
+  await page.getByRole('button', { name: 'ביטול פעולה' }).click()
+  await waitForSave(backend, 2)
+  expect(backend.lastSavedText()).toHaveLength(3)
+
+  await page.locator('.ks-chip', { hasText: 'עולם' }).click()
+  await panel.getByPlaceholder('מילה אחת או כמה מילים').fill('עוד שתי מילים')
+  await panel.getByRole('button', { name: 'הוספה אחרי' }).click()
+  await waitForSave(backend, 3)
+  expect(backend.lastSavedText()[0]).toBe('שלום עולם עוד שתי מילים')
+  expect(backend.lyricSaves.at(-1)!.p_lines[0].words).toHaveLength(5)
 })

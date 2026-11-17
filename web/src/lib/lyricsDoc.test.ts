@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   applyLineTimes,
   applyTapTimes,
+  deleteLine,
   deleteWord,
   flatWords,
   historyReducer,
@@ -120,6 +121,23 @@ describe('stretching a line on the timeline', () => {
   it('does nothing for an unknown line or the same times', () => {
     expect(scaleLine(doc, 'nope', 0, 1)).toBe(doc)
     expect(scaleLine(doc, 'L1', 1000, 2000)).toBe(doc)
+  })
+})
+
+describe('several words at once and whole lines', () => {
+  it('several typed words become separate words in the same line', () => {
+    const res = insertWord(doc, 'b', 'after', '  עוד  שתי מילים ')
+    expect(texts(res.doc)).toEqual(['שלום עולם עוד שתי מילים', 'זה שיר'])
+    expect(res.doc[0].words).toHaveLength(5)
+    expect(res.doc[0].words[2].id).toBe(res.id) // the first new word is chosen
+    expect(isValidDoc(res.doc)).toBe(true)
+    const before = insertWord(doc, 'c', 'before', 'אז הנה')
+    expect(texts(before.doc)[1]).toBe('אז הנה זה שיר')
+    expect(isValidDoc(before.doc)).toBe(true)
+  })
+  it('a whole line can be deleted', () => {
+    expect(texts(deleteLine(doc, 'L1'))).toEqual(['זה שיר'])
+    expect(deleteLine(doc, 'nope')).toBe(doc)
   })
 })
 

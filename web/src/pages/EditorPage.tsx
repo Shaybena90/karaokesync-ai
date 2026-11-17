@@ -16,6 +16,7 @@ import { directionOf, formatDuration } from '../lib/format'
 import {
   applyLineTimes,
   applyTapTimes,
+  deleteLine,
   deleteWord,
   duplicateLine,
   findWord,
@@ -85,6 +86,8 @@ export function EditorPage() {
   }, [initialized, lines, project, markSaved])
 
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const selectedIdRef = useRef<string | null>(null)
+  selectedIdRef.current = selectedId
   const [tapLineId, setTapLineId] = useState<string | null>(null)
   const tapActive = useRef(false)
   // Off as soon as the line is gone too (merged into another one, or undone).
@@ -205,6 +208,14 @@ export function EditorPage() {
     [edit, audioDuration],
   )
   const onMergeNext = useCallback((lineId: string) => edit((d) => mergeWithNext(d, lineId)), [edit])
+  const onDeleteLine = useCallback(
+    (lineId: string) => {
+      const line = docRef.current.find((l) => l.id === lineId)
+      if (line && line.words.some((w) => w.id === selectedIdRef.current)) setSelectedId(null)
+      edit((d) => deleteLine(d, lineId))
+    },
+    [edit],
+  )
 
   // ------------------------------------------------------ automatic sync
   const onSyncResult = useCallback(
@@ -624,6 +635,7 @@ export function EditorPage() {
               onMarkRange={onMarkRange}
               onDuplicateLine={onDuplicateLine}
               onMoveLine={onMoveLine}
+              onDeleteLine={onDeleteLine}
               workerProblem={workerProblem}
             />
           )}

@@ -207,23 +207,27 @@ export function scaleLine(doc: LyricsDoc, lineId: string, startMs: number, endMs
 }
 
 // ------------------------------------------------------- add / remove words
-/** Insert a new word before/after an existing one. Returns the doc and the new id. */
+/**
+ * Insert new words before/after an existing one. Several words typed together
+ * ("עוד שלוש מילים") become separate words in the same line, sharing the time
+ * the new word gets. Returns the doc and the id of the first new word.
+ */
 export function insertWord(doc: LyricsDoc, id: string, where: 'before' | 'after', text: string): { doc: LyricsDoc; id: string } {
-  const clean = text.trim().split(/\s+/)[0]?.slice(0, MAX_WORD_LENGTH)
+  const parts = splitSentence(text)
   const pos = findWord(doc, id)
-  if (!clean || !pos) return { doc, id }
+  if (parts.length === 0 || !pos) return { doc, id }
   const { prev, next } = neighbours(doc, id)
   const anchor = doc[pos.line].words[pos.word]
-  const newWordId = newId()
+  const roomMs = MIN_NEW_WORD_MS + (parts.length - 1) * 200
 
   let replacedAnchor = anchor
   let start: number
   let end: number
   if (where === 'after') {
     const gapEnd = next ? next.start_ms : anchor.end_ms + 1000
-    if (gapEnd - anchor.end_ms >= MIN_NEW_WORD_MS) {
+    if (gapEnd - anchor.end_ms >= roomMs) {
       start = anchor.end_ms
-      end = Math.min(gapEnd, anchor.end_ms + 600)
+      end = Math.min(gapEnd, anchor.end_ms + 600 * parts.length)
     } else {
       // No free time: share the anchor's time span.
       let mid = Math.round((anchor.start_ms + anchor.end_ms) / 2)
@@ -234,8 +238,8 @@ export function insertWord(doc: LyricsDoc, id: string, where: 'before' | 'after'
     }
   } else {
     const gapStart = prev ? prev.end_ms : Math.max(0, anchor.start_ms - 1000)
-    if (anchor.start_ms - gapStart >= MIN_NEW_WORD_MS) {
-      start = Math.max(gapStart, anchor.start_ms - 600)
+    if (anchor.start_ms - gapStart >= roomMs) {
+      start = Math.max(gapStart, anchor.start_ms - 600 * parts.length)
       end = anchor.start_ms
     } else {
       const mid = Math.round((anchor.start_ms + anchor.end_ms) / 2)
@@ -244,10 +248,16 @@ export function insertWord(doc: LyricsDoc, id: string, where: 'before' | 'after'
       end = mid
     }
   }
-  const created: DocWord = { id: newWordId, text: clean, start_ms: start, end_ms: end, confidence: 1 }
+  const created = spreadWords(parts, start, end).map((w) => ({ ...w, confidence: 1 }))
   const words = [...doc[pos.line].words]
-  words.splice(pos.word, 1, ...(where === 'after' ? [replacedAnchor, created] : [created, replacedAnchor]))
-  return { doc: doc.map((l, i) => (i === pos.line ? { ...l, words } : l)), id: newWordId }
+  words.splice(pos.word, 1, ...(where === 'after' ? [replacedAnchor, ...created] : [...created, replacedAnchor]))
+  return { doc: doc.map((l, i) => (i === pos.line ? { ...l, words } : l)), id: created[0].id }
+}
+
+/** Remove a whole line with all its words. */
+export function deleteLine(doc: LyricsDoc, lineId: string): LyricsDoc {
+  const next = doc.filter((l) => l.id !== lineId)
+  return next.length === doc.length ? doc : next
 }
 
 export function deleteWord(doc: LyricsDoc, id: string): LyricsDoc {

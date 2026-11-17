@@ -34,6 +34,8 @@ interface Props {
   onDuplicateLine: (lineId: string) => void
   /** Move the whole line one place up (-1) or down (+1). */
   onMoveLine: (lineId: string, direction: -1 | 1) => void
+  /** Remove the whole line (undo brings it back). */
+  onDeleteLine: (lineId: string) => void
   /** Why no processing computer can take a sync now (null: one is online, or unknown). */
   workerProblem?: 'offline' | 'paused' | null
 }
@@ -57,6 +59,7 @@ export const LinesList = memo(function LinesList({
   onMarkRange,
   onDuplicateLine,
   onMoveLine,
+  onDeleteLine,
   workerProblem = null,
 }: Props) {
   const { t } = useI18n()
@@ -103,6 +106,17 @@ export const LinesList = memo(function LinesList({
                 <IconBtn label={t('editor.duplicateLine')} tip={t('tip.duplicate')} onClick={() => onDuplicateLine(line.id)}>⧉</IconBtn>
                 {i < doc.length - 1 && <IconBtn label={t('editor.mergeNext')} tip={t('tip.merge')} onClick={() => onMergeNext(line.id)}>⤓</IconBtn>}
               </Group>
+              <Tip text={t('tip.deleteLine')}>
+                <button
+                  type="button"
+                  onClick={() => onDeleteLine(line.id)}
+                  aria-label={t('editor.deleteLine')}
+                  className="grid h-11 min-w-11 place-items-center rounded-xl border border-red-400/30 bg-red-500/10 px-2 text-base text-red-200 transition hover:bg-red-500/25 active:scale-[0.95] focus-visible:outline focus-visible:outline-2 focus-visible:outline-red-300"
+                  data-testid="delete-line"
+                >
+                  🗑
+                </button>
+              </Tip>
             </span>
           </div>
           {editing?.lineId === line.id && (
