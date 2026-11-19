@@ -4,12 +4,9 @@ import { Layout } from './ui/Layout'
 import { ErrorBox, Loading } from './ui/kit'
 import { Onboarding } from './pages/Onboarding'
 import { Home } from './pages/Home'
-import { VaultIntro } from './pages/VaultIntro'
-import { ChallengeLanding } from './pages/ChallengeLanding'
-import { Play } from './pages/Play'
-import { Result } from './pages/Result'
-import { Archive } from './pages/Archive'
-import { Fix } from './pages/Fix'
+import { Rooms } from './pages/Rooms'
+import { Solo } from './pages/Solo'
+import { CoopHub, CoopRoom } from './pages/Coop'
 import { MyRoom } from './pages/MyRoom'
 import { Profile } from './pages/Profile'
 
@@ -32,12 +29,10 @@ export default function App() {
           <Route element={<Layout />}>
             <Route path="/welcome" element={<Onboarding />} />
             <Route path="/" element={<Guarded><Home /></Guarded>} />
-            <Route path="/vault" element={<Guarded><VaultIntro /></Guarded>} />
-            <Route path="/challenge" element={<Guarded><ChallengeLanding /></Guarded>} />
-            <Route path="/play" element={<Guarded><Play /></Guarded>} />
-            <Route path="/result/:id" element={<Guarded><Result /></Guarded>} />
-            <Route path="/archive" element={<Guarded><Archive /></Guarded>} />
-            <Route path="/fix" element={<Guarded><Fix /></Guarded>} />
+            <Route path="/rooms" element={<Guarded><Rooms /></Guarded>} />
+            <Route path="/solo/:roomId" element={<Guarded><Solo /></Guarded>} />
+            <Route path="/coop" element={<Guarded><CoopHub /></Guarded>} />
+            <Route path="/coop/:code" element={<Guarded><CoopRoom /></Guarded>} />
             <Route path="/room" element={<Guarded><MyRoom /></Guarded>} />
             <Route path="/profile" element={<Guarded><Profile /></Guarded>} />
             <Route path="*" element={<ErrorBox title="הדף לא נמצא" text="אולי הקישור שגוי." action={<a className="btn btn-gold" href="#/">לדף הבית</a>} />} />

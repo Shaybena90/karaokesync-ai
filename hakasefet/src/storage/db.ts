@@ -3,7 +3,7 @@
  * To change the schema: bump DB_VERSION and append a migration — never edit old ones.
  */
 export const DB_NAME = 'hakasefet'
-export const DB_VERSION = 2
+export const DB_VERSION = 3
 
 type Migration = (db: IDBDatabase, tx: IDBTransaction) => void
 
@@ -20,6 +20,11 @@ export const MIGRATIONS: Migration[] = [
   (db) => {
     const h = db.createObjectStore('history', { keyPath: 'attemptId' })
     h.createIndex('byDate', 'vaultDate')
+  },
+  // v3 — escape-room runs (the game became an escape room; old trivia data stays untouched)
+  (db) => {
+    const r = db.createObjectStore('runs', { keyPath: 'runId' })
+    r.createIndex('byRoom', 'roomId')
   },
 ]
 

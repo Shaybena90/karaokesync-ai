@@ -77,15 +77,16 @@ export function Onboarding() {
         <div className="card anim-rise space-y-4 p-5">
           <h2 className="text-2xl font-extrabold">איך משחקים?</h2>
           <ol className="space-y-3 text-mist">
-            <li><b className="text-white">1. </b>בכל יום נפתחת כספת חדשה עם תעלומה.</li>
-            <li><b className="text-white">2. </b>עוברים בשלושה חדרים — ספורט, מוזיקה וידע כללי — ועונים על שתי שאלות בכל חדר.</li>
-            <li><b className="text-white">3. </b>בסוף כל חדר מקבלים רמז. גם אם טעיתם.</li>
-            <li><b className="text-white">4. </b>מחברים את שלושת הרמזים לקוד בן ארבע ספרות ופותחים את הכספת.</li>
+            <li><b className="text-white">1. </b>נכנסים לחדר בריחה ממוחשב. יש לכם 30 דקות.</li>
+            <li><b className="text-white">2. </b>לוחצים על חפצים כדי לבחון אותם: פתקים, מחשבים, ארונות, מגירות.</li>
+            <li><b className="text-white">3. </b>מה שמוצאים נכנס לתיק, ומשתמשים בו על חפצים אחרים — מברג על בורג, נתיך בארון חשמל.</li>
+            <li><b className="text-white">4. </b>פותחים מנעולים: ספרות, אותיות, צבעים, חיצים ומתגים — עד שהכספת נפתחת ואתם בחוץ.</li>
+            <li><b className="text-white">5. </b>אפשר לשחק לבד או עם עד 3 חברים, כל אחד מהטלפון שלו.</li>
           </ol>
           <div className="rounded-xl border border-gold/30 bg-black/30 p-4">
             <p className="mb-2 font-bold text-gold">דוגמה קטנה</p>
-            <p className="text-mist">רמז 1 נותן <b className="text-white">5</b>, רמז 2 נותן <b className="text-white">6</b>, ורמז 3 נותן <b className="text-white">60</b>.</p>
-            <p className="text-mist">ההוראה: ״חברו לפי מספרי הרמזים״ → הקוד הוא <b className="text-teal-2" dir="ltr">5660</b>.</p>
+            <p className="text-mist">על שעון הקיר כתוב <b className="text-white">7:45</b>, ובפח פתק: ״המגירה נפתחת בשעה שבה השעון עצר״.</p>
+            <p className="text-mist">הקוד למגירה: <b className="text-teal-2" dir="ltr">745</b> — ובפנים מחכה החפץ הבא.</p>
           </div>
           {error && <p role="alert" className="text-coral">{error}</p>}
           <div className="flex gap-2">

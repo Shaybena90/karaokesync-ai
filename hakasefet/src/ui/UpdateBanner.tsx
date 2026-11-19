@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLocation } from 'react-router-dom'
 import { useRegisterSW } from 'virtual:pwa-register/react'
-import { getActiveAttempt } from '../storage/repo'
 
 const CHECK_EVERY_MS = 30 * 60 * 1000
 
@@ -36,13 +35,13 @@ export function UpdateBanner() {
   })
   const [busy, setBusy] = useState(false)
   const [updating, setUpdating] = useState(false)
-  const inGame = pathname.startsWith('/play')
+  const inGame = pathname.startsWith('/solo') || /^\/coop\/./.test(pathname)
 
   useEffect(() => {
     if (!needRefresh || updating) return
     let alive = true
     const tryUpdate = async () => {
-      const active = await getActiveAttempt().catch(() => undefined)
+      const active = hasGameInProgress()
       if (!alive) return
       setBusy(!!active || inGame)
       if (!active && !inGame) {
@@ -84,4 +83,18 @@ export function UpdateBanner() {
       </div>
     )
   return null
+}
+
+/** Any solo game still running on this device (kept in localStorage backups). */
+function hasGameInProgress(): boolean {
+  try {
+    return Object.keys(localStorage).some((k) => {
+      if (!k.startsWith('hakasefet:game:')) return false
+      const s = JSON.parse(localStorage.getItem(k) ?? 'null')
+      // a game counts as open for 2 hours after it started (abandoned games don't block updates forever)
+      return s?.phase === 'playing' && Date.now() - (s.startedAt ?? 0) < 2 * 3_600_000
+    })
+  } catch {
+    return false
+  }
 }

@@ -182,6 +182,12 @@
   }
 }
 
+/* ── escape-room hotspots ── */
+.hotspot-ring { fill: transparent; stroke: transparent; stroke-width: 3; transition: stroke .2s, fill .2s; }
+.hotspot:hover .hotspot-ring, .hotspot:focus-visible .hotspot-ring { stroke: #7ee8dc; fill: rgb(126 232 220 / .08); filter: drop-shadow(0 0 6px #2ec4b6); }
+.hotspot-using .hotspot-ring { stroke: #f2c14e; stroke-dasharray: 8 6; animation: dash 1s linear infinite; }
+@keyframes dash { to { stroke-dashoffset: -28 } }
+
 /* ── animations ── */
 @keyframes pop { 0% { transform: scale(.6); opacity: 0 } 70% { transform: scale(1.06); opacity: 1 } 100% { transform: scale(1) } }
 @keyframes rise { from { transform: translateY(14px); opacity: 0 } to { transform: none; opacity: 1 } }
