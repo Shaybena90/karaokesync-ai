@@ -1,6 +1,9 @@
 import { expect, test } from '@playwright/test'
 import { getRoom } from '../src/escape/rooms'
 import { doStep, hotspot, noHorizontalScroll, onboard } from './helpers'
+import { lightGraphics } from './fixtures'
+
+test.beforeEach(async ({ page }) => lightGraphics(page))
 
 test('solo: escape the lab — wrong code, refresh mid-game, hint, rewards, then buy a room item', async ({ page }, info) => {
   test.skip(info.project.name !== 'desktop', 'the full run is checked once, on desktop')
@@ -40,7 +43,7 @@ test('solo: escape the lab — wrong code, refresh mid-game, hint, rewards, then
   await page.getByRole('dialog').getByRole('button', { name: 'סגירה' }).click()
 
   for (const s of steps.slice(4)) await doStep(page, 'lab', s)
-  await expect(page.getByRole('heading', { name: 'ברחתם!' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: 'ברחתם!' })).toBeVisible({ timeout: 20_000 })
   await expect(page.getByTestId('rewards')).toContainText('+150 XP')
   await expect(page.getByTestId('rewards')).toContainText('+50 מטבעות')
 
@@ -82,4 +85,20 @@ test('phone layout fits 360px; offline play works after the first visit', async 
   await noHorizontalScroll(page)
   await page.screenshot({ path: `test-results/game-${info.project.name}.png`, fullPage: true })
   await context.setOffline(false)
+})
+
+test('the 3D room renders on high graphics and its objects are clickable', async ({ browser }, info) => {
+  test.skip(info.project.name !== 'desktop', 'once')
+  test.setTimeout(150_000)
+  const ctx = await browser.newContext({ locale: 'he-IL' })
+  await lightGraphics(ctx, 'high')
+  const page = await ctx.newPage()
+  await page.goto('./')
+  await onboard(page)
+  await page.goto('./#/solo/museum')
+  await page.getByRole('button', { name: /מתחילים/ }).click({ timeout: 30_000 })
+  await expect(page.locator('[data-testid=scene-3d][data-ready=true]')).toBeVisible({ timeout: 60_000 })
+  await hotspot(page, 'ציור במסגרת ירוקה').click({ timeout: 60_000 })
+  await expect(page.getByRole('dialog', { name: 'ציור במסגרת ירוקה' })).toContainText('1831')
+  await ctx.close()
 })

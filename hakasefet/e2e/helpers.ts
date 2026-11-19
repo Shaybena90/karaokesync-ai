@@ -11,7 +11,7 @@ export async function onboard(page: Page, nick = 'דנה', avatar = '🦉') {
   await expect(page.getByRole('heading', { name: 'ברוכים הבאים להכספת' })).toBeHidden()
 }
 
-export const hotspot = (page: Page, name: string) => page.locator(`svg g[role="button"][aria-label="${name}"]`)
+export const hotspot = (page: Page, name: string) => page.locator(`[data-hotspot][aria-label="${name}"]`)
 
 async function openHotspot(page: Page, roomId: string, id: string) {
   const room = getRoom(roomId)!

@@ -1,11 +1,14 @@
 /** Simple per-device preferences (localStorage). Game data lives in IndexedDB. */
+export type Graphics = 'ultra' | 'high' | 'normal' | '2d'
+
 export interface Prefs {
   sound: boolean
   reducedMotion: boolean
+  graphics: Graphics
 }
 
 const KEY = 'hakasefet:prefs'
-const DEFAULTS: Prefs = { sound: true, reducedMotion: false }
+const DEFAULTS: Prefs = { sound: true, reducedMotion: false, graphics: 'high' }
 
 export function loadPrefs(): Prefs {
   try {

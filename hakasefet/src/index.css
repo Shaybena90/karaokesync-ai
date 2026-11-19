@@ -188,6 +188,26 @@
 .hotspot-using .hotspot-ring { stroke: #f2c14e; stroke-dasharray: 8 6; animation: dash 1s linear infinite; }
 @keyframes dash { to { stroke-dashoffset: -28 } }
 
+/* 3D hotspots: sci-fi corner brackets on hover / focus / use-mode */
+.hotspot3d { border-radius: 10px; background: transparent; --c: #7ee8dc; }
+.hotspot3d::before, .hotspot3d::after { content: ''; position: absolute; inset: -2px; border-radius: 10px; opacity: 0; transition: opacity .2s; pointer-events: none;
+  background:
+    linear-gradient(var(--c), var(--c)) top left / 16px 3px no-repeat, linear-gradient(var(--c), var(--c)) top left / 3px 16px no-repeat,
+    linear-gradient(var(--c), var(--c)) top right / 16px 3px no-repeat, linear-gradient(var(--c), var(--c)) top right / 3px 16px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom left / 16px 3px no-repeat, linear-gradient(var(--c), var(--c)) bottom left / 3px 16px no-repeat,
+    linear-gradient(var(--c), var(--c)) bottom right / 16px 3px no-repeat, linear-gradient(var(--c), var(--c)) bottom right / 3px 16px no-repeat;
+  filter: drop-shadow(0 0 6px var(--c)); }
+.hotspot3d::after { background: rgb(126 232 220 / .07); filter: none; }
+.hotspot3d:hover::before, .hotspot3d:focus-visible::before, .hotspot3d:hover::after, .hotspot3d:focus-visible::after { opacity: 1; }
+.hotspot3d:focus-visible { outline: none; }
+.hotspot3d-using { --c: #f2c14e; }
+.hotspot3d-using::before { opacity: 1; animation: bracket-pulse 1s ease-in-out infinite; }
+@keyframes bracket-pulse { 50% { opacity: .35 } }
+.hotspot3d-label { position: absolute; left: 50%; bottom: 100%; transform: translate(-50%, -4px); white-space: nowrap; font-size: .75rem; font-weight: 800; padding: .1rem .45rem; border-radius: 6px; background: rgb(5 11 31 / .85); color: #7ee8dc; border: 1px solid rgb(126 232 220 / .4); opacity: 0; transition: opacity .2s; pointer-events: none; }
+.hotspot3d:hover .hotspot3d-label, .hotspot3d:focus-visible .hotspot3d-label { opacity: 1; }
+@keyframes fly-in { 0% { transform: translate(-50%, -50%) scale(.4); opacity: 0 } 25% { transform: translate(-50%, -50%) scale(1.6); opacity: 1 } 100% { transform: translate(-50%, 220px) scale(.6); opacity: 0 } }
+.item-fly { position: absolute; left: 50%; top: 45%; font-size: 3rem; pointer-events: none; animation: fly-in 1.3s cubic-bezier(.3,.7,.4,1) forwards; filter: drop-shadow(0 0 12px #f2c14e); z-index: 5; }
+
 /* ── animations ── */
 @keyframes pop { 0% { transform: scale(.6); opacity: 0 } 70% { transform: scale(1.06); opacity: 1 } 100% { transform: scale(1) } }
 @keyframes rise { from { transform: translateY(14px); opacity: 0 } to { transform: none; opacity: 1 } }

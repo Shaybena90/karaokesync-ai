@@ -91,6 +91,22 @@ export function Profile() {
         <h2 id="set" className="font-extrabold">הגדרות</h2>
         <Toggle label="צלילים" checked={prefs.sound} onChange={(v) => { setPrefs({ ...prefs, sound: v }); if (v) play('tap') }} />
         <Toggle label="הפחתת אנימציות" checked={prefs.reducedMotion} onChange={(v) => setPrefs({ ...prefs, reducedMotion: v })} />
+        <fieldset className="rounded-xl bg-black/20 p-3">
+          <legend className="px-1 font-bold">איכות גרפיקה</legend>
+          <div className="mt-1 grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {([
+              ['ultra', 'אולטרה 4K', 'רזולוציה מלאה, צללים חדים, החלקת קצוות'],
+              ['high', 'גבוהה', 'תלת־ממד עם צללים וזוהר'],
+              ['normal', 'רגילה', 'תלת־ממד קל, חוסך סוללה'],
+              ['2d', 'דו־ממד', 'תצוגה שטוחה, הכי חסכוני'],
+            ] as const).map(([v, label, desc]) => (
+              <button key={v} role="radio" aria-checked={prefs.graphics === v} onClick={() => setPrefs({ ...prefs, graphics: v })} className={`rounded-xl border-2 p-2 text-right ${prefs.graphics === v ? 'border-gold bg-gold/15' : 'border-white/10 bg-white/5'}`}>
+                <span className="block font-bold">{label}</span>
+                <span className="block text-xs text-dim">{desc}</span>
+              </button>
+            ))}
+          </div>
+        </fieldset>
       </section>
 
       <section className="card space-y-2 p-4" aria-labelledby="about">
