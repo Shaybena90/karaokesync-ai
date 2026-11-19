@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom'
 import { AVATARS, TAGLINE } from '../content/labels'
 import { createProfile } from '../storage/repo'
 import { useApp } from '../state/AppState'
-import { Vault } from '../ui/art'
+import { Vault3D } from '../ui/Vault3D'
 import { play } from '../ui/audio'
 
 export function Onboarding() {
@@ -35,8 +35,8 @@ export function Onboarding() {
   return (
     <div className="mx-auto max-w-md py-6">
       <div className="mb-6 flex flex-col items-center text-center">
-        <div className="anim-float"><Vault size={130} /></div>
-        <h1 className="title-gold mt-3 text-4xl font-extrabold">ברוכים הבאים להכספת</h1>
+        <Vault3D showcase className="h-56 w-full" />
+        <h1 className="title-gold mt-1 text-4xl sm:text-5xl">ברוכים הבאים להכספת</h1>
         <p className="mt-2 text-lg text-mist">{TAGLINE}</p>
       </div>
 

@@ -22,7 +22,7 @@ export function Archive() {
 
   return (
     <div className="space-y-3 py-2">
-      <h1 className="text-2xl font-extrabold">🗂️ ארכיון הכספות</h1>
+      <h1 className="title-gold text-3xl">ארכיון הכספות</h1>
       <p className="text-mist">הכספות של שבעת הימים האחרונים. משחק בארכיון הוא אימון: הוא יכול לשבור שיא אישי, אבל לא נותן פרס יומי ולא נספר כיום פעילות.</p>
       <ul className="space-y-2">
         {dates.map((d) => {

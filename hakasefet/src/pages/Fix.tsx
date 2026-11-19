@@ -52,7 +52,7 @@ export function Fix() {
 
   return (
     <div className="space-y-3 py-2">
-      <h1 className="text-2xl font-extrabold">🔁 ההזדמנות לתקן</h1>
+      <h1 className="title-gold text-3xl">ההזדמנות לתקן</h1>
       <p className="text-mist">כאן נאספות שאלות שטעיתם בהן. זה אימון נפרד — לא משפיע על הניקוד היומי.</p>
       <div role="tablist" aria-label="סינון" className="flex gap-2">
         <button role="tab" aria-selected={tab === 'open'} className={`btn ${tab === 'open' ? 'btn-gold' : 'btn-ghost'} flex-1`} onClick={() => setTab('open')}>לתיקון ({open.length})</button>

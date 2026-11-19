@@ -8,8 +8,9 @@ import { activeDaysInWeek, daysPlayedLast7, rankInfo, WEEKLY_COINS, WEEKLY_REQUI
 import { mysteryForDate } from '../engine/selection'
 import { getActiveAttempt, listHistory, listLedger, type HistoryEntry, type LedgerEntry } from '../storage/repo'
 import { useApp } from '../state/AppState'
-import { Coin, Vault } from '../ui/art'
-import { ErrorBox, Loading, ProgressBar } from '../ui/kit'
+import { Coin } from '../ui/art'
+import { ErrorBox, Loading, ProgressBar, TiltCard } from '../ui/kit'
+import { Vault3D } from '../ui/Vault3D'
 
 export function Home() {
   const { profile, today } = useApp()
@@ -50,13 +51,14 @@ export function Home() {
       </p>
 
       {/* today's vault */}
-      <section className="card relative overflow-hidden p-5" aria-labelledby="today-title">
-        <div className="flex items-center gap-4">
-          <div className="shrink-0 anim-float"><Vault size={96} /></div>
+      <TiltCard className="card-hero overflow-hidden p-5 sm:p-6" aria-labelledby="today-title" role="region" max={4}>
+        <div className="relative flex flex-col items-center text-center">
+          <p className="engraved text-xs font-bold uppercase tracking-[.25em] text-gold">הכספת של היום · {formatHebDate(today)}</p>
+          <Vault3D showcase className="-my-2 h-64 w-full sm:h-72" />
           <div className="min-w-0">
-            <p className="text-sm font-bold text-gold">הכספת של היום · {formatHebDate(today)}</p>
-            <h1 id="today-title" className="text-2xl font-extrabold">{mystery.emoji} {mystery.title}</h1>
-            <p className="mt-1 text-sm">
+            <h1 id="today-title" className="title-gold text-3xl sm:text-4xl">{mystery.emoji} {mystery.title}</h1>
+            <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-mist">{mystery.teaser}</p>
+            <p className="mt-2 text-sm">
               {rewarded ? (
                 <span className="text-teal-2">✓ נפתחה היום{best >= 0 && ` · שיא: ${best}`}</span>
               ) : activeIsToday ? (
@@ -67,14 +69,14 @@ export function Home() {
             </p>
           </div>
         </div>
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="relative mt-5 flex flex-wrap gap-2">
           {activeIsToday ? (
             <Link to="/play" className="btn btn-gold flex-1">המשך משחק</Link>
           ) : (
-            <Link to={`/vault?d=${today}`} className="btn btn-gold flex-1">{rewarded ? 'לשחק שוב (אימון)' : 'לכספת של היום'}</Link>
+            <Link to={`/vault?d=${today}`} className="btn btn-gold flex-1 text-lg">{rewarded ? 'לשחק שוב (אימון)' : 'לכספת של היום'}</Link>
           )}
         </div>
-      </section>
+      </TiltCard>
 
       {/* saved game from another vault */}
       {active && !activeIsToday && (
@@ -130,12 +132,12 @@ export function Home() {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <Link to="/archive" className="card p-4 hover:border-gold/50">
+        <Link to="/archive" className="card tilt p-4">
           <p className="text-2xl" aria-hidden="true">🗂️</p>
           <p className="font-bold">ארכיון</p>
           <p className="text-sm text-dim">כספות מהשבוע האחרון</p>
         </Link>
-        <Link to="/fix" className="card p-4 hover:border-gold/50">
+        <Link to="/fix" className="card tilt p-4">
           <p className="text-2xl" aria-hidden="true">🔁</p>
           <p className="font-bold">ההזדמנות לתקן</p>
           <p className="text-sm text-dim">שאלות שטעיתם בהן</p>
