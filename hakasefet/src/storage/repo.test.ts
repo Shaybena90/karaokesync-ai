@@ -1,33 +1,23 @@
 import { beforeEach, describe, expect, it } from 'vitest'
-import { packV1 } from '../content/v1'
-import { createAttempt, currentQuestion, makeCtx, reduce, type Action, type Attempt } from '../engine/attempt'
-import { mysteryForDate } from '../engine/selection'
+import { getRoom } from '../escape/rooms'
+import { newGame, reduce, type Action, type GameState } from '../escape/engine'
+import type { WalkStep } from '../escape/types'
 import { closeDb, DB_NAME, openDb } from './db'
-import { buyOrEquip, completeAttempt, createProfile, getActiveAttempt, getProfile, listLedger, listMistakes, recordPractice, resetAll, saveAttempt } from './repo'
+import { buyOrEquip, completeRun, createProfile, getProfile, listLedger, listRuns, resetAll } from './repo'
 
-const DATE = '2026-11-19'
-const mystery = mysteryForDate(packV1, DATE)
-const ctx = makeCtx(packV1, mystery.id)
 const T0 = Date.parse('2026-11-19T10:00:00Z')
-
-function solved(id: string, mode: Attempt['mode'], level: 'normal' | 'hard', wrongFirst = false): Attempt {
-  let a = createAttempt({ id, mode, contentVersion: packV1.version, vaultDate: DATE, mysteryId: mystery.id, now: T0 })
-  const run = (x: Action) => (a = reduce(a, x, ctx))
-  run({ type: 'SELECT_LEVEL', level, now: T0 })
-  let t = T0
-  for (const cat of ['sports', 'music', 'general'] as const) {
-    run({ type: 'ENTER_ROOM', category: cat, now: ++t })
-    for (let i = 0; i < 2; i++) {
-      const q = currentQuestion(a)!
-      const right = ctx.question(q.questionId).answerId
-      const pick = wrongFirst && cat === 'sports' && i === 0 ? q.optionOrder.find((o) => o !== right)! : right
-      run({ type: 'ANSWER', optionId: pick, now: (t += 1000) })
-      run({ type: 'CONTINUE', now: ++t })
-    }
-    run({ type: 'CLOSE_CLUE', now: ++t })
+let n = 0
+function escaped(roomId: string, start = T0, stepMs = 20_000): GameState {
+  const room = getRoom(roomId)!
+  const a = (x: Record<string, unknown>, now: number) => ({ id: `x${++n}`, by: { nick: 'a', avatar: 'b' }, now, ...x }) as Action
+  let s = reduce(room, newGame(room), a({ type: 'START' }, start)).state
+  let t = start
+  for (const w of room.walkthrough as WalkStep[]) {
+    t += stepMs
+    const x = 'take' in w ? { type: 'TAKE', hotspot: w.take } : 'solve' in w ? { type: 'SOLVE', hotspot: w.solve, input: w.input } : { type: 'USE', hotspot: w.use, item: w.item }
+    s = reduce(room, s, a(x, t)).state
   }
-  run({ type: 'SUBMIT_CODE', code: mystery.code, now: ++t })
-  return a
+  return s
 }
 
 beforeEach(async () => {
@@ -35,63 +25,40 @@ beforeEach(async () => {
   await createProfile('בודק', '🦊', T0)
 })
 
-describe('storage', () => {
-  it('saves and restores an in-progress attempt', async () => {
-    let a = createAttempt({ id: 'x', mode: 'daily', contentVersion: packV1.version, vaultDate: DATE, mysteryId: mystery.id, now: T0 })
-    a = reduce(a, { type: 'SELECT_LEVEL', level: 'normal', now: T0 }, ctx)
-    a = reduce(a, { type: 'ENTER_ROOM', category: 'music', now: T0 }, ctx)
-    await saveAttempt(a)
-    expect(await getActiveAttempt()).toEqual(a)
-    // An older copy (other tab) never overwrites newer progress.
-    await saveAttempt({ ...a, phase: 'map', updatedAt: a.updatedAt - 1 })
-    expect((await getActiveAttempt())!.phase).toBe('question')
-  })
-
-  it('daily reward is granted once, even with two tabs finishing at the same time', async () => {
-    const a = solved('tab-a', 'daily', 'normal')
-    const b = solved('tab-b', 'daily', 'hard') // other level, same vault date
-    const [ra, rb] = await Promise.all([completeAttempt(a), completeAttempt(b)])
-    expect(ra.grants.length + rb.grants.length).toBe(1)
+describe('runs and rewards', () => {
+  it('first escape gives both rewards once, even from two tabs at the same time', async () => {
+    const s = escaped('lab')
+    const [a, b] = await Promise.all([completeRun({ runId: 'r1', state: s, mode: 'solo', players: 1 }), completeRun({ runId: 'r1', state: s, mode: 'solo', players: 1 })])
+    expect(a.grants.length + (b.alreadyRecorded ? 0 : b.grants.length)).toBe(2)
     const p = (await getProfile())!
-    expect(p.xp).toBe(100)
-    expect(p.coins).toBe(20)
-    // Refresh → completing the same attempt again changes nothing.
-    const again = await completeAttempt(a)
+    expect(p.xp).toBe(150)
+    expect(p.coins).toBe(50)
+    expect((await listLedger()).length).toBe(2)
+    const again = await completeRun({ runId: 'r1', state: s, mode: 'solo', players: 1 })
     expect(again.alreadyRecorded).toBe(true)
-    expect((await getProfile())!.coins).toBe(20)
-    expect((await listLedger()).length).toBe(1)
+    expect((await getProfile())!.coins).toBe(50)
   })
 
-  it('archive replays give no reward but can set a personal best', async () => {
-    const r = await completeAttempt(solved('arc', 'archive', 'normal'))
-    expect(r.grants).toEqual([])
-    expect(r.isBest).toBe(true)
-    expect((await getProfile())!.xp).toBe(0)
-  })
-
-  it('records mistakes once per attempt and tracks fixes', async () => {
-    const a = solved('m', 'daily', 'normal', true)
-    await saveAttempt(a)
-    await saveAttempt(a)
-    const [m] = await listMistakes()
-    expect(m.timesWrong).toBe(1)
-    await recordPractice(m.questionId, false)
-    expect((await listMistakes())[0].fixedAt).toBeUndefined()
-    await recordPractice(m.questionId, true, T0 + 5)
-    expect((await listMistakes())[0]).toMatchObject({ practiceTries: 2, fixedAt: T0 + 5 })
+  it('a replay is recorded as a new run without rewards, and can beat the best time', async () => {
+    await completeRun({ runId: 'r1', state: escaped('lab', T0, 60_000), mode: 'solo', players: 1 })
+    const faster = await completeRun({ runId: 'r2', state: escaped('lab', T0 + 3_600_000, 10_000), mode: 'coop', players: 3 })
+    expect(faster.grants).toEqual([])
+    expect(faster.isBest).toBe(true)
+    expect(faster.run.stars).toBe(3)
+    expect((await listRuns()).length).toBe(2)
   })
 
   it('buying an item charges once; buying again just equips', async () => {
-    await completeAttempt(solved('c', 'daily', 'normal')) // 20 coins
-    expect(await buyOrEquip('plant-cactus', 'plant', 30)).toEqual({ ok: false, reason: 'coins' })
-    const first = await buyOrEquip('plant-cactus-mini', 'plant', 20)
-    expect(first.ok && first.charged).toBe(20)
-    const second = await buyOrEquip('plant-cactus-mini', 'plant', 20)
+    await completeRun({ runId: 'r1', state: escaped('lab'), mode: 'solo', players: 1 }) // 50 coins
+    expect(await buyOrEquip('lamp-chandelier', 'lamp', 70)).toEqual({ ok: false, reason: 'coins' })
+    const first = await buyOrEquip('rug-royal', 'rug', 50)
+    expect(first.ok && first.charged).toBe(50)
+    const second = await buyOrEquip('rug-royal', 'rug', 50)
     expect(second.ok && second.charged).toBe(0)
     expect((await getProfile())!.coins).toBe(0)
   })
 
-  it('migrates a v1 database to the current schema without losing data', async () => {
+  it('migrates an older database (v1) to the current schema without losing the profile', async () => {
     await resetAll()
     const v1 = await openDb(indexedDB, 1)
     await new Promise<void>((res) => {
@@ -103,7 +70,7 @@ describe('storage', () => {
     closeDb()
     const db = await openDb()
     expect(db.name).toBe(DB_NAME)
-    expect([...db.objectStoreNames]).toContain('history')
+    expect([...db.objectStoreNames]).toEqual(expect.arrayContaining(['history', 'runs', 'ledger']))
     expect((await getProfile())!.nickname).toBe('ותיק')
   })
 })

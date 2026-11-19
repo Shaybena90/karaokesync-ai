@@ -1,5 +1,3 @@
-import type { Category } from '../content/types'
-
 /** Hand-made SVG art for the game: vault, key, room doors. */
 
 export function Vault({ size = 180, opening = false, label }: { size?: number; opening?: boolean; label?: string }) {
@@ -72,36 +70,6 @@ export function KeyArt({ size = 64, className }: { size?: number; className?: st
       </defs>
       <circle cx="20" cy="22" r="13" fill="none" stroke="url(#kgold)" strokeWidth="6" />
       <path d="M29 31 L54 56 M44 46 L50 40 M49 51 L54 46" stroke="url(#kgold)" strokeWidth="6" strokeLinecap="round" fill="none" />
-    </svg>
-  )
-}
-
-export function RoomIcon({ category, size = 56 }: { category: Category; size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true">
-      <circle cx="32" cy="32" r="30" fill="#0d1838" stroke="#f2c14e" strokeWidth="2" />
-      {category === 'sports' && (
-        <g>
-          <circle cx="32" cy="32" r="16" fill="#f4f6ff" />
-          <path d="M32 22 l7 5 -3 8 h-8 l-3 -8z" fill="#13224a" />
-          <path d="M32 16v6 M45 27l-6 0 M42 44l-5-6 M22 44l5-6 M19 27h6" stroke="#13224a" strokeWidth="2" />
-        </g>
-      )}
-      {category === 'music' && (
-        <g fill="#2ec4b6">
-          <path d="M26 18 L46 14 V40" stroke="#2ec4b6" strokeWidth="4" fill="none" />
-          <path d="M26 18 V44" stroke="#2ec4b6" strokeWidth="4" />
-          <ellipse cx="21" cy="45" rx="7" ry="5.5" />
-          <ellipse cx="41" cy="41" rx="7" ry="5.5" />
-        </g>
-      )}
-      {category === 'general' && (
-        <g>
-          <circle cx="32" cy="32" r="16" fill="#1b5f8f" stroke="#7ee8dc" strokeWidth="2" />
-          <path d="M16 32h32 M32 16c-8 8-8 24 0 32 M32 16c8 8 8 24 0 32" stroke="#7ee8dc" strokeWidth="2" fill="none" />
-          <path d="M22 22c4 3 6 2 9 4s1 6 4 7 5-1 7 1" stroke="#f2c14e" strokeWidth="2.5" fill="none" />
-        </g>
-      )}
     </svg>
   )
 }
