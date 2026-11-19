@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { getRoom } from '../src/escape/rooms'
 import { doStep, onboard } from './helpers'
+import { lightGraphics } from './fixtures'
 
 // Co-op over the same-browser transport (BroadcastChannel). It drives the same
 // session logic as the online (Supabase) transport.
@@ -9,6 +10,7 @@ test('co-op: create a room, a friend joins by link, progress is shared, the host
   test.setTimeout(150_000)
   const ctx = await browser.newContext({ locale: 'he-IL', timezoneId: 'Asia/Jerusalem' })
   await ctx.addInitScript(() => localStorage.setItem('hakasefet:net', 'local'))
+  await lightGraphics(ctx)
   const a = await ctx.newPage()
   await a.goto('./')
   await onboard(a, 'דנה', '🦊')
@@ -44,6 +46,6 @@ test('co-op: create a room, a friend joins by link, progress is shared, the host
   await a.close()
   await b.waitForTimeout(6000)
   for (const s of lab.walkthrough.slice(2)) await doStep(b, 'lab', s)
-  await expect(b.getByRole('heading', { name: 'ברחתם!' })).toBeVisible()
+  await expect(b.getByRole('heading', { name: 'ברחתם!' })).toBeVisible({ timeout: 20_000 })
   await ctx.close()
 })

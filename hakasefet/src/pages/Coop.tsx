@@ -8,6 +8,7 @@ import { EscapeGame } from '../ui/escape/EscapeGame'
 import { EscapeResult } from '../ui/escape/EscapeResult'
 import { ErrorBox, Loading, Toast, TiltCard } from '../ui/kit'
 import { NoNetwork } from './Rooms'
+import { useAfter } from './Solo'
 
 /** Co-op hub: create a room or join with a code. */
 export function CoopHub() {
@@ -52,6 +53,7 @@ export function CoopRoom() {
   const roomId = params.get('room') ?? undefined
   const { snap, session, error } = useSession({ code, roomId, transport: () => createTransport() })
   const [toast, setToast] = useState<string | null>(null)
+  const showResult = useAfter(snap?.state?.phase === 'escaped', 2600)
 
   if (error === 'no-network') return <div className="mx-auto max-w-lg py-4"><NoNetwork /></div>
   if (error) return <ErrorBox title="לא הצלחנו להתחבר" text="בדקו את החיבור לאינטרנט ונסו שוב." action={<button className="btn btn-gold" onClick={() => location.reload()}>ניסיון חוזר</button>} />
@@ -64,8 +66,8 @@ export function CoopRoom() {
   if (!room) return <ErrorBox title="החדר הזה לא קיים בגרסה שלכם" text="ייתכן שצריך לעדכן את המשחק. נסו לרענן את הדף." />
   const s = snap.state
 
-  if (s.phase === 'escaped') return <EscapeResult room={room} state={s} code={code} mode="coop" players={snap.players.length} />
-  if (s.phase === 'playing') return <div className="py-1"><EscapeGame room={room} snap={snap} session={session} coop /></div>
+  if (s.phase === 'escaped' && showResult) return <EscapeResult room={room} state={s} code={code} mode="coop" players={snap.players.length} />
+  if (s.phase === 'playing' || s.phase === 'escaped') return <div className="py-1"><EscapeGame room={room} snap={snap} session={session} coop /></div>
 
   const link = `${new URL('.', location.href.split('#')[0]).href}#/coop/${code}`
   async function invite() {

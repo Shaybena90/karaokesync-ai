@@ -7,7 +7,7 @@ export default defineConfig({
   timeout: 90_000,
   expect: { timeout: 8_000 },
   fullyParallel: true,
-  workers: process.env.CI ? 2 : 3,
+  workers: 2,
   reporter: [['list']],
   use: { baseURL: `http://localhost:${PORT}`, trace: 'off', locale: 'he-IL', timezoneId: 'Asia/Jerusalem' },
   projects: [

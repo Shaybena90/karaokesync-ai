@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { getRoom } from '../escape/rooms'
 import { backupFor, useSession } from '../state/useSession'
@@ -28,9 +28,11 @@ function SoloGame({ roomId, onRestart }: { roomId: string; onRestart: () => void
     onRestart()
   }
 
+  const escaped = snap?.state?.phase === 'escaped'
+  const showResult = useAfter(escaped, 2600)
   if (!snap?.state || !session) return <Loading text="מכינים את החדר…" />
   const s = snap.state
-  if (s.phase === 'escaped') return <EscapeResult room={room} state={s} code={code} mode="solo" players={1} onAgain={restart} />
+  if (s.phase === 'escaped' && showResult) return <EscapeResult room={room} state={s} code={code} mode="solo" players={1} onAgain={restart} />
   if (s.phase === 'lobby')
     return (
       <div className="mx-auto max-w-lg py-2">
@@ -64,4 +66,16 @@ function SoloGame({ roomId, onRestart }: { roomId: string; onRestart: () => void
       </Modal>
     </div>
   )
+}
+
+/** True once `cond` has held for `ms` (lets the escape cinematic play). */
+export function useAfter(cond: boolean, ms: number): boolean {
+  const [done, setDone] = useState(false)
+  useEffect(() => {
+    if (!cond) return setDone(false)
+    const reduced = document.documentElement.dataset.reducedMotion === 'true'
+    const t = window.setTimeout(() => setDone(true), reduced ? 0 : ms)
+    return () => window.clearTimeout(t)
+  }, [cond, ms])
+  return done
 }

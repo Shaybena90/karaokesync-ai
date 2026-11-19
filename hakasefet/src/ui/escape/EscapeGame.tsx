@@ -7,6 +7,8 @@ import { play } from '../audio'
 import { Modal } from '../kit'
 import { LockPanel } from './LockPanel'
 import { ObjectArt, SceneBackground, SceneDefs } from './sceneArt'
+import { Scene3D } from './Scene3D'
+import { useApp } from '../../state/AppState'
 
 /** The playing screen: scenes, objects, inventory, hints, timer and the team feed. */
 export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap: SessionSnapshot; session: GameSession; coop: boolean }) {
@@ -19,6 +21,19 @@ export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap:
   const [toast, setToast] = useState<{ id: number; text: string; kind: string } | null>(null)
   const [now, setNow] = useState(() => session.hostNow())
   const lastLog = useRef(state.log.at(-1)?.id ?? 0)
+  const { prefs } = useApp()
+  const [use2D, setUse2D] = useState(prefs.graphics === '2d')
+  useEffect(() => setUse2D(prefs.graphics === '2d'), [prefs.graphics])
+  // fly-in animation when a new item lands in the bag
+  const [flying, setFlying] = useState<{ key: number; icon: string } | null>(null)
+  const prevInv = useRef(state.inventory)
+  useEffect(() => {
+    const added = state.inventory.find((i) => !prevInv.current.includes(i))
+    prevInv.current = state.inventory
+    if (!added) return
+    const it = room.items.find((x) => x.id === added)
+    if (it) setFlying({ key: Date.now(), icon: it.icon })
+  }, [state.inventory, room.items])
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(session.hostNow()), 500)
@@ -101,31 +116,24 @@ export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap:
       </div>
 
       {/* the scene */}
-      <div className="card overflow-hidden p-1.5">
-        <svg viewBox="0 0 800 600" className="block w-full rounded-xl" role="group" aria-label={scene.name}>
-          <SceneDefs />
-          <SceneBackground theme={scene.theme} />
-          {hotspots.map((h) => (
-            <g
-              key={h.id}
-              transform={`translate(${h.x} ${h.y})`}
-              role="button"
-              tabIndex={0}
-              aria-label={h.name}
-              className={`hotspot cursor-pointer outline-none ${using ? 'hotspot-using' : ''}`}
-              onClick={() => tapHotspot(h)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault()
-                  tapHotspot(h)
-                }
-              }}
-            >
-              <rect className="hotspot-ring" x="-6" y="-6" width={h.w + 12} height={h.h + 12} rx="10" />
-              <ObjectArt art={h.art} w={h.w} h={h.h} active={isActive(h, state.flags)} variant={h.variant} />
-            </g>
-          ))}
-        </svg>
+      <div className="card relative overflow-hidden p-1.5">
+        {use2D ? (
+          <Scene2D room={room} sceneId={sceneId} flags={state.flags} using={!!using} onTap={(id) => tapHotspot(room.hotspots.find((h) => h.id === id)!)} />
+        ) : (
+          <Scene3D
+            room={room}
+            sceneId={sceneId}
+            flags={state.flags}
+            escaped={state.phase === 'escaped'}
+            focusId={open?.id ?? null}
+            using={!!using}
+            quality={prefs.graphics === '2d' ? 'normal' : prefs.graphics}
+            reducedMotion={prefs.reducedMotion}
+            onTap={(id) => tapHotspot(room.hotspots.find((h) => h.id === id)!)}
+            onFail={() => setUse2D(true)}
+          />
+        )}
+        {flying && <span key={flying.key} className="item-fly" aria-hidden="true" onAnimationEnd={() => setFlying(null)}>{flying.icon}</span>}
       </div>
 
       {using && (
@@ -376,5 +384,37 @@ function HintsPanel({ room, state, canHint, onHint }: { room: RoomDef; state: Ga
         {canHint ? 'רמז חדש (+1 דקה)' : 'אין כרגע רמז חדש — המשיכו לחקור'}
       </button>
     </div>
+  )
+}
+
+function Scene2D({ room, sceneId, flags, using, onTap }: { room: RoomDef; sceneId: string; flags: string[]; using: boolean; onTap: (id: string) => void }) {
+  const scene = room.scenes.find((s) => s.id === sceneId)!
+  const hotspots = room.hotspots.filter((h) => h.scene === sceneId)
+  return (
+    <svg viewBox="0 0 800 600" className="block w-full rounded-xl" role="group" aria-label={scene.name}>
+      <SceneDefs />
+      <SceneBackground theme={scene.theme} />
+      {hotspots.map((h) => (
+        <g
+          key={h.id}
+          transform={`translate(${h.x} ${h.y})`}
+          role="button"
+          tabIndex={0}
+          data-hotspot
+          aria-label={h.name}
+          className={`hotspot cursor-pointer outline-none ${using ? 'hotspot-using' : ''}`}
+          onClick={() => onTap(h.id)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault()
+              onTap(h.id)
+            }
+          }}
+        >
+          <rect className="hotspot-ring" x="-6" y="-6" width={h.w + 12} height={h.h + 12} rx="10" />
+          <ObjectArt art={h.art} w={h.w} h={h.h} active={isActive(h, flags)} variant={h.variant} />
+        </g>
+      ))}
+    </svg>
   )
 }
