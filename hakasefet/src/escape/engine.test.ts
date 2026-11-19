@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { ROOMS, getRoom } from './rooms'
-import { currentInteraction, elapsedMs, HINT_PENALTY_MS, nextHintIndex, newGame, normalizeText, reduce, stars, type Action, type GameState } from './engine'
+import { currentInteraction, elapsedMs, hintsLeft, LEVEL_IDS, LEVELS, nextHintIndex, newGame, normalizeText, reduce, remainingMs, stars, type Action, type GameState, type Level } from './engine'
 import type { RoomDef, WalkStep } from './types'
 
 const who = { nick: 'דנה', avatar: '🦊' }
@@ -9,8 +9,9 @@ const act = (a: Record<string, unknown>, now = 1000): Action => ({ id: `a${++n}`
 const stepToAction = (s: WalkStep, now: number): Action =>
   'take' in s ? act({ type: 'TAKE', hotspot: s.take }, now) : 'solve' in s ? act({ type: 'SOLVE', hotspot: s.solve, input: s.input }, now) : act({ type: 'USE', hotspot: s.use, item: s.item }, now)
 
-function started(room: RoomDef): GameState {
-  return reduce(room, newGame(room), act({ type: 'START' }, 0)).state
+function started(room: RoomDef, level: Level = 'medium'): GameState {
+  const lobby = reduce(room, newGame(room), act({ type: 'SET_LEVEL', level }, 0)).state
+  return reduce(room, lobby, act({ type: 'START' }, 0)).state
 }
 
 describe.each(ROOMS.map((r) => [r.id, r] as const))('room %s', (_id, room) => {
@@ -43,8 +44,8 @@ describe.each(ROOMS.map((r) => [r.id, r] as const))('room %s', (_id, room) => {
     expect(room.story.length).toBeGreaterThan(20)
   })
 
-  it('the walkthrough escapes, with every step accepted', () => {
-    let s = started(room)
+  it.each(LEVEL_IDS)('the walkthrough escapes on the %s level, with every step accepted', (level) => {
+    let s = started(room, level)
     let t = 0
     for (const step of room.walkthrough) {
       const r = reduce(room, s, stepToAction(step, (t += 30_000)))
@@ -53,7 +54,17 @@ describe.each(ROOMS.map((r) => [r.id, r] as const))('room %s', (_id, room) => {
     }
     expect(s.phase).toBe('escaped')
     expect(s.flags).toContain('escaped')
+    expect(s.level).toBe(level)
     expect(elapsedMs(s, 999_999_999)).toBe(t)
+  })
+
+  it('every note has text, and level variants only where meaningful', () => {
+    const notes = [...room.hotspots.flatMap((h) => h.interactions.flatMap((i) => ('note' in i ? [i.note] : []))), ...room.items.map((i) => i.note)]
+    for (const n of notes) {
+      expect(n.text.trim().length).toBeGreaterThan(3)
+      if (n.easy) expect(n.easy).not.toBe(n.text)
+      if (n.hard) expect(n.hard).not.toBe(n.text)
+    }
   })
 
   it('every hint becomes relevant and is eventually resolved by the walkthrough', () => {
@@ -137,21 +148,47 @@ describe('engine rules', () => {
     expect(reduce(lab, s, act({ type: 'SOLVE', hotspot: 'terminal', input: '  פרויקט אורה ' })).outcome).toBe('ok')
   })
 
-  it('hints follow progress and add one minute each', () => {
+  it('hints follow progress and cost time by level', () => {
     let s = started(lab)
     s = reduce(lab, s, act({ type: 'HINT' })).state
     expect(s.hintsShown).toEqual([0])
-    expect(s.penaltyMs).toBe(HINT_PENALTY_MS)
+    expect(s.penaltyMs).toBe(LEVELS.medium.hintPenaltyMs)
     s = reduce(lab, s, act({ type: 'HINT' })).state
     expect(s.hintsShown).toEqual([0, 1])
     // 'after' conditions: the screwdriver hint only appears once you have it
     expect(nextHintIndex(lab, s)).toBe(-1)
   })
 
-  it('stars by time', () => {
-    expect(stars(lab, 9 * 60_000)).toBe(3)
-    expect(stars(lab, 15 * 60_000)).toBe(2)
-    expect(stars(lab, 29 * 60_000)).toBe(1)
-    expect(stars(lab, 31 * 60_000)).toBe(0)
+  it('stars by time, relative to the level\'s clock', () => {
+    expect(stars('medium', 29 * 60_000)).toBe(3) // 50 min clock: 60% = 30 min
+    expect(stars('medium', 40 * 60_000)).toBe(2)
+    expect(stars('medium', 49 * 60_000)).toBe(1)
+    expect(stars('medium', 51 * 60_000)).toBe(0)
+    expect(stars('hard', 23 * 60_000)).toBe(3)
+  })
+
+  it('levels: the clock, hint price and hint limit follow the chosen level', () => {
+    const easy = started(lab, 'easy')
+    expect(remainingMs(lab, easy, 0)).toBe(60 * 60_000)
+    expect(easy.flags).toContain('level:easy')
+    expect(reduce(lab, easy, act({ type: 'HINT' })).state.penaltyMs).toBe(30_000)
+
+    const ayalon = getRoom('ayalon')!
+    let hard = started(ayalon, 'hard')
+    expect(remainingMs(ayalon, hard, 0)).toBe(40 * 60_000)
+    for (let i = 0; i < 3; i++) hard = reduce(ayalon, hard, act({ type: 'HINT' })).state
+    expect(hard.hintsShown.length).toBe(3)
+    expect(hard.penaltyMs).toBe(3 * 120_000)
+    expect(hintsLeft(hard)).toBe(0)
+    expect(nextHintIndex(ayalon, hard)).not.toBe(-1) // more hints exist, but the limit is reached
+    expect(reduce(ayalon, hard, act({ type: 'HINT' })).outcome).toBe('invalid')
+  })
+
+  it('the level can only change in the lobby; old saves default to medium', () => {
+    const s = started(lab)
+    expect(reduce(lab, s, act({ type: 'SET_LEVEL', level: 'easy' })).outcome).toBe('invalid')
+    const old = { ...newGame(lab), level: undefined }
+    const st = reduce(lab, old, act({ type: 'START' })).state
+    expect(st.level).toBe('medium')
   })
 })

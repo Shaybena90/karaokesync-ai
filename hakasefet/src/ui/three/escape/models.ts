@@ -19,7 +19,7 @@ export interface ObjState {
 export interface ObjectModel {
   group: THREE.Group
   update(s: ObjState, dt: number, t: number): void
-  /** Stands on the floor (true) or hangs on the wall (false). */
+  /** Stands on the floor (true) or hangs on the wall (false); the scene may override it. */
   floor: boolean
   height: number
 }
@@ -63,7 +63,8 @@ const box = (kit: Kit, w: number, h: number, d: number, mat: THREE.Material, pos
 
 /** A plane printed with the object's 2D artwork; swaps art when the object changes state. */
 function face(kit: Kit, h: Hotspot, w: number, hgt: number, opts: { glow?: boolean; transparent?: boolean } = {}) {
-  const mat = kit.track(new THREE.MeshStandardMaterial({ transparent: opts.transparent ?? true, alphaTest: 0.02, roughness: 0.55, metalness: 0.1, color: 0xffffff }))
+  // slightly off-white and matte, so paper does not blow out under spotlights
+  const mat = kit.track(new THREE.MeshStandardMaterial({ transparent: opts.transparent ?? true, alphaTest: 0.02, roughness: 0.85, metalness: 0.02, color: 0xd9d9d9 }))
   const plane = mesh(kit, new THREE.PlaneGeometry(w, hgt), mat)
   plane.castShadow = false
   let current: boolean | null = null
@@ -104,7 +105,7 @@ export function buildObject(h: Hotspot, kit: Kit): ObjectModel {
   const H = h.h / 100
   const M = kit.mats
   const g = new THREE.Group()
-  const floorArts = new Set(['door', 'hatch', 'cabinet', 'showcase', 'statues', 'tanks', 'trash', 'crate', 'desk-under', 'console'])
+  const floorArts = new Set(['door', 'hatch', 'cabinet', 'showcase', 'statues', 'tanks', 'trash', 'crate', 'desk-under', 'console', 'machine', 'ladder'])
   const floor = floorArts.has(h.art) || h.y + h.h >= 520
   let update: ObjectModel['update'] = () => {}
   let height = H
@@ -245,8 +246,108 @@ export function buildObject(h: Hotspot, kit: Kit): ObjectModel {
       g.add(note)
       break
     }
+    case 'radio':
+    case 'typewriter':
+    case 'enigma':
+    case 'phone': {
+      // tabletop objects: a solid body printed with the object's art
+      const D = h.art === 'phone' ? 0.35 : h.art === 'radio' ? 0.4 : 0.55
+      const mat = h.art === 'phone' || h.art === 'typewriter' ? M.darkSteel : M.wood
+      g.add(box(kit, W * 0.96, H * 0.9, D, mat, [0, -H * 0.05, D / 2], 0.04))
+      const f = face(kit, h, W, H, { glow: h.art === 'enigma' || h.art === 'radio' })
+      f.plane.position.z = D + 0.004
+      g.add(f.plane)
+      update = (s) => f.set(s.active)
+      break
+    }
+    case 'machine': {
+      const D = 1.1
+      g.add(box(kit, W, H * 0.8, D, M.gray, [0, -H * 0.1, D / 2], 0.05))
+      g.add(box(kit, W * 0.42, H * 0.22, D * 0.6, M.darkSteel, [0, H / 2 - H * 0.11, D * 0.4], 0.03))
+      const f = face(kit, h, W, H)
+      f.plane.position.z = D + 0.004
+      g.add(f.plane)
+      const lights = [0, 1, 2].map((i) => {
+        const m = mesh(kit, new THREE.SphereGeometry(0.06, 16, 16), kit.track(new THREE.MeshStandardMaterial({ color: 0xe0533f, emissive: 0xe0533f, emissiveIntensity: 1.5 })), [-W * 0.12 + i * W * 0.12, H / 2 - H * 0.1, D * 0.72])
+        g.add(m)
+        return m
+      })
+      const cover = mesh(kit, new THREE.BoxGeometry(W + 0.1, H * 0.82, D + 0.1), kit.track(new THREE.MeshStandardMaterial({ color: 0x6b5a3e, roughness: 0.95 })), [0, -H * 0.1, D / 2])
+      cover.visible = false
+      g.add(cover)
+      let k = 0
+      update = (s, dt, t) => {
+        f.set(s.active)
+        lights.forEach((m, i) => {
+          const mat = m.material as THREE.MeshStandardMaterial
+          const on = s.active ? 0x2ec4b6 : 0xe0533f
+          mat.color.set(on)
+          mat.emissive.set(on)
+          mat.emissiveIntensity = 1 + 0.6 * Math.sin(t * 3 + i)
+        })
+        // a tarp drops over the machine when it is "active" (covered) in the factory; elsewhere it just powers up
+        k = ease(k, s.active && h.id === 'machine' ? 1 : 0, dt, 3)
+        cover.visible = k > 0.02
+        cover.scale.y = Math.max(0.02, k)
+        cover.position.y = -H * 0.1 + (1 - k) * H * 0.4
+      }
+      break
+    }
+    case 'lamp': {
+      if (h.variant === 'signal') {
+        g.add(box(kit, 0.06, H * 0.3, 0.06, M.darkSteel, [0, H / 2 - H * 0.15, 0.25], 0))
+        const bulbMat = kit.track(new THREE.MeshStandardMaterial({ color: 0xff2a2a, emissive: 0xff2a2a, emissiveIntensity: 2.5 }))
+        const bulb = mesh(kit, new THREE.SphereGeometry(W * 0.28, 24, 16), bulbMat, [0, 0, 0.3])
+        g.add(bulb)
+        g.add(mesh(kit, new THREE.CylinderGeometry(W * 0.32, W * 0.36, 0.08, 24), M.darkSteel, [0, -W * 0.3, 0.3]))
+        const light = new THREE.PointLight(0xff2a2a, 4, 5)
+        light.position.set(0, 0, 0.6)
+        g.add(light)
+        update = (s, _dt, t) => {
+          const c = s.active ? 0x3fb36b : 0xff2a2a
+          bulbMat.color.set(c)
+          bulbMat.emissive.set(c)
+          const pulse = s.active ? 1 : 0.5 + 0.5 * Math.sin(t * 5)
+          bulbMat.emissiveIntensity = 1 + 2 * pulse
+          light.color.set(c)
+          light.intensity = 1 + 4 * pulse
+        }
+      } else {
+        g.add(mesh(kit, new THREE.CylinderGeometry(0.03, 0.03, H * 0.75, 12), M.gray, [0, -H * 0.1, 0.4]))
+        g.add(mesh(kit, new THREE.CylinderGeometry(0.22, 0.26, 0.05, 24), M.darkSteel, [0, -H / 2 + 0.03, 0.4]))
+        g.add(mesh(kit, new THREE.ConeGeometry(0.3, 0.35, 24, 1, true), kit.track(new THREE.MeshStandardMaterial({ color: 0xc9d3f0, metalness: 0.6, roughness: 0.3, side: THREE.DoubleSide })), [0, H / 2 - 0.2, 0.4]))
+        const bulbMat = kit.track(new THREE.MeshStandardMaterial({ color: 0x555555, emissive: 0xfff2c4, emissiveIntensity: 0 }))
+        g.add(mesh(kit, new THREE.SphereGeometry(0.1, 16, 12), bulbMat, [0, H / 2 - 0.32, 0.4]))
+        const light = new THREE.SpotLight(0xfff2c4, 0, 7, 0.9, 0.5, 1.2)
+        light.position.set(0, H / 2 - 0.3, 0.4)
+        light.target.position.set(0, -H, 2.5)
+        g.add(light, light.target)
+        update = (s, dt) => {
+          bulbMat.emissiveIntensity = ease(bulbMat.emissiveIntensity, s.active ? 3 : 0, dt, 3)
+          light.intensity = ease(light.intensity, s.active ? 40 : 0, dt, 3)
+        }
+      }
+      break
+    }
+    case 'ladder': {
+      for (const sx of [-1, 1]) g.add(box(kit, 0.08, H, 0.08, M.wood, [sx * W * 0.35, 0, 0.25], 0.02))
+      const rungs = Math.floor(H / 0.4)
+      for (let i = 0; i < rungs; i++) g.add(box(kit, W * 0.7, 0.05, 0.06, M.wood, [0, -H / 2 + 0.3 + i * 0.4, 0.25], 0.01))
+      // a hatch / light at the top
+      const glowMat = kit.track(new THREE.MeshStandardMaterial({ color: 0xfff6d8, emissive: 0xfff6d8, emissiveIntensity: 0 }))
+      g.add(box(kit, W, 0.12, 0.6, M.darkSteel, [0, H / 2 + 0.06, 0.3], 0.02))
+      const glow = mesh(kit, new THREE.PlaneGeometry(W * 0.9, 0.5), glowMat, [0, H / 2 + 0.01, 0.3])
+      glow.rotation.x = Math.PI / 2
+      g.add(glow)
+      update = (s, dt) => {
+        glowMat.emissiveIntensity = ease(glowMat.emissiveIntensity, s.escaped ? 4 : s.active ? 1.2 : 0, dt, 2)
+      }
+      break
+    }
     case 'whiteboard':
     case 'poster':
+    case 'calendar':
+    case 'map':
     case 'manual':
     case 'starmap':
     case 'painting':
@@ -254,7 +355,7 @@ export function buildObject(h: Hotspot, kit: Kit): ObjectModel {
     case 'fusebox':
     case 'switches': {
       const D = h.art === 'painting' ? 0.1 : h.art === 'slot' || h.art === 'fusebox' ? 0.22 : h.art === 'switches' ? 0.14 : 0.05
-      const frameMat = h.art === 'painting' ? M.gold : h.art === 'whiteboard' ? M.white : h.art === 'poster' || h.art === 'manual' ? M.white : M.darkSteel
+      const frameMat = h.art === 'painting' ? M.gold : h.art === 'map' ? M.wood : h.art === 'whiteboard' || h.art === 'calendar' ? M.white : h.art === 'poster' || h.art === 'manual' ? M.white : M.darkSteel
       g.add(box(kit, W + (h.art === 'painting' ? 0.08 : 0.04), H + (h.art === 'painting' ? 0.08 : 0.04), D, frameMat, [0, 0, D / 2], 0.015))
       const glow = h.art === 'starmap' || h.art === 'slot' || h.art === 'switches' || h.art === 'fusebox'
       const f = face(kit, h, W, H, { glow })
@@ -551,4 +652,15 @@ function screenTex(kit: Kit, lines: string[], fg: string, bg: string) {
   const t = new THREE.CanvasTexture(c)
   t.colorSpace = THREE.SRGBColorSpace
   return kit.track(t)
+}
+
+/** A small wooden table for tabletop objects standing on the floor. */
+export function tableUnder(kit: Kit, w: number, objHeight: number): THREE.Group {
+  const t = new THREE.Group()
+  const top = 0.85
+  const W = Math.max(w + 0.3, 0.9)
+  const y0 = -objHeight / 2 - top // floor, relative to the object's centre
+  t.add(box(kit, W, 0.06, 0.9, kit.mats.wood, [0, y0 + top - 0.03, 0.45], 0.02))
+  for (const sx of [-1, 1]) for (const z of [0.1, 0.8]) t.add(box(kit, 0.06, top - 0.06, 0.06, kit.mats.wood, [sx * (W / 2 - 0.08), y0 + (top - 0.06) / 2, z], 0.01))
+  return t
 }

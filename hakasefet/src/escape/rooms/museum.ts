@@ -5,8 +5,8 @@ export const museum: RoomDef = {
   version: 1,
   title: 'המוזיאון בלילה',
   emoji: '🏛️',
-  difficulty: 'קשה',
-  minutes: 30,
+  category: 'מדע ודמיון',
+  length: '20–30 דקות',
   story: 'נשארתם במוזיאון אחרי הסגירה, ומערכת האבטחה נעלה את כל הדלתות. היציאה היחידה עוברת דרך כספת המוזיאון — ורק מי שיפצח אותה ייצא לפני שהשומרים יחזרו.',
   scenes: [
     { id: 'hall', name: 'אולם הציורים', theme: 'museum' },

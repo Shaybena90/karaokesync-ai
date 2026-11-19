@@ -17,6 +17,7 @@ test('co-op: create a room, a friend joins by link, progress is shared, the host
 
   await a.getByRole('link', { name: /משחק עם חברים/ }).click()
   await a.getByRole('link', { name: 'בחירת חדר' }).click()
+  await a.getByRole('tab', { name: /מדע ודמיון/ }).click()
   await a.getByRole('button', { name: 'פתיחת חדר לצוות' }).first().click()
   await expect(a.getByRole('heading', { name: 'חדר ההמתנה' })).toBeVisible()
   const code = (await a.getByTestId('room-code').innerText()).trim()
@@ -30,6 +31,10 @@ test('co-op: create a room, a friend joins by link, progress is shared, the host
   await expect(b.getByRole('heading', { name: 'חדר ההמתנה' })).toBeVisible()
   await expect(a.getByTestId('players').getByRole('listitem')).toHaveCount(2)
   await expect(b.getByText('מחכים שהמארח יתחיל')).toBeVisible()
+  // the host picks the level; the friend sees it but cannot change it
+  await a.getByRole('radio', { name: /קל/ }).click()
+  await expect(b.getByRole('radio', { name: /קל/ })).toHaveAttribute('aria-checked', 'true')
+  await expect(b.getByRole('radio', { name: /קשה/ })).toBeDisabled()
 
   await a.getByRole('button', { name: /מתחילים!/ }).click()
   await expect(a.getByTestId('timer')).toBeVisible()

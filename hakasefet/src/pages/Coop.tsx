@@ -9,6 +9,8 @@ import { EscapeResult } from '../ui/escape/EscapeResult'
 import { ErrorBox, Loading, Toast, TiltCard } from '../ui/kit'
 import { NoNetwork } from './Rooms'
 import { useAfter } from './Solo'
+import { LevelPicker } from '../ui/escape/LevelPicker'
+import { levelOf } from '../escape/engine'
 
 /** Co-op hub: create a room or join with a code. */
 export function CoopHub() {
@@ -92,7 +94,7 @@ export function CoopRoom() {
   return (
     <div className="mx-auto max-w-lg space-y-4 py-2">
       <TiltCard className="card-hero p-6 text-center" max={3}>
-        <p className="text-sm text-dim">{room.emoji} {room.title} · {room.difficulty}</p>
+        <p className="text-sm text-dim">{room.emoji} {room.title} · {room.category}</p>
         <h1 className="title-gold mt-1 text-3xl">חדר ההמתנה</h1>
         <p className="mt-3 text-sm text-mist">קוד החדר</p>
         <p className="font-mono text-5xl font-extrabold tracking-[.25em] text-gold-2" dir="ltr" data-testid="room-code">{code}</p>
@@ -113,6 +115,11 @@ export function CoopRoom() {
           ))}
         </ul>
         <p className="mt-3 text-sm text-mist">{room.story}</p>
+        {room.history && <p className="mt-2 rounded-xl border border-gold/25 bg-gold/5 p-3 text-sm text-mist">📜 {room.history}</p>}
+      </section>
+      <section className="card p-4" aria-label="רמת קושי">
+        <LevelPicker value={levelOf(s)} disabled={!snap.isHost} onChange={(level) => session.dispatch({ type: 'SET_LEVEL', level })} />
+        {!snap.isHost && <p className="mt-1 text-xs text-dim">את הרמה בוחר המארח.</p>}
       </section>
       {snap.isHost ? (
         <button className="btn btn-gold w-full text-lg" onClick={() => session.dispatch({ type: 'START' })}>

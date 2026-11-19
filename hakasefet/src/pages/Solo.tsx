@@ -6,6 +6,8 @@ import { EscapeGame } from '../ui/escape/EscapeGame'
 import { EscapeResult } from '../ui/escape/EscapeResult'
 import { ErrorBox, Loading, Modal, TiltCard } from '../ui/kit'
 import { Vault3D } from '../ui/Vault3D'
+import { LevelPicker } from '../ui/escape/LevelPicker'
+import { levelOf } from '../escape/engine'
 
 /** Solo play. Progress is kept on this device, so a refresh continues the same game. */
 export function Solo() {
@@ -39,8 +41,10 @@ function SoloGame({ roomId, onRestart }: { roomId: string; onRestart: () => void
         <TiltCard className="card-hero p-6 text-center" max={3}>
           <Vault3D className="-my-2 h-52 w-full" />
           <h1 className="title-gold text-4xl">{room.emoji} {room.title}</h1>
-          <p className="mt-1 text-sm text-dim">רמה: {room.difficulty} · {room.minutes} דקות</p>
+          <p className="mt-1 text-sm text-dim">{room.category} · בערך {room.length}</p>
           <p className="mx-auto mt-3 max-w-md text-lg leading-relaxed text-mist">{room.story}</p>
+          {room.history && <p className="mx-auto mt-3 max-w-md rounded-xl border border-gold/25 bg-gold/5 p-3 text-right text-sm text-mist">📜 {room.history}</p>}
+          <div className="mx-auto mt-4 max-w-md"><LevelPicker value={levelOf(s)} onChange={(level) => session.dispatch({ type: 'SET_LEVEL', level })} /></div>
           <ul className="mx-auto mt-4 max-w-md space-y-1 text-right text-sm text-mist">
             <li>👆 לוחצים על חפצים בחדר כדי לבחון אותם.</li>
             <li>🎒 חפצים שמוצאים נכנסים לתיק — משתמשים בהם על חפצים אחרים.</li>

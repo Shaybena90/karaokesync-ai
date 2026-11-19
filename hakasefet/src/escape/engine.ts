@@ -5,7 +5,21 @@ import type { Color, Cond, Dir, Effect, Hotspot, Interaction, LockDef, RoomDef }
  * the same result on every device, which is what lets the co-op host apply
  * actions and broadcast the result.
  */
-export const HINT_PENALTY_MS = 60_000
+export type Level = 'easy' | 'medium' | 'hard'
+
+/** Difficulty: time on the clock, hint cost, hint limit (clue wording also changes per level). */
+export const LEVELS: Record<Level, { label: string; minutes: number; hintPenaltyMs: number; maxHints: number; desc: string }> = {
+  easy: { label: 'קל', minutes: 60, hintPenaltyMs: 30_000, maxHints: Infinity, desc: '60 דקות · רמזים בלי הגבלה (+30 שניות) · רמזים ברורים יותר בחדר' },
+  medium: { label: 'בינוני', minutes: 50, hintPenaltyMs: 60_000, maxHints: Infinity, desc: '50 דקות · רמזים בלי הגבלה (+1 דקה)' },
+  hard: { label: 'קשה', minutes: 40, hintPenaltyMs: 120_000, maxHints: 3, desc: '40 דקות · עד 3 רמזים (+2 דקות) · רמזים מעורפלים יותר' },
+}
+export const LEVEL_IDS: Level[] = ['easy', 'medium', 'hard']
+/** @deprecated kept for old callers: medium penalty */
+export const HINT_PENALTY_MS = LEVELS.medium.hintPenaltyMs
+
+export function levelOf(s: Pick<GameState, 'level'>): Level {
+  return s.level ?? 'medium'
+}
 
 export interface Player {
   id: string
@@ -27,6 +41,8 @@ export interface GameState {
   v: 1
   roomId: string
   roomVersion: number
+  /** Difficulty (older saved games have none → medium). */
+  level?: Level
   phase: Phase
   flags: string[]
   inventory: string[]
@@ -49,6 +65,7 @@ interface Base {
   now: number
 }
 export type Action =
+  | (Base & { type: 'SET_LEVEL'; level: Level })
   | (Base & { type: 'START' })
   | (Base & { type: 'TAKE'; hotspot: string })
   | (Base & { type: 'SOLVE'; hotspot: string; input: string })
@@ -56,7 +73,7 @@ export type Action =
   | (Base & { type: 'HINT' })
 
 export function newGame(room: RoomDef): GameState {
-  return { v: 1, roomId: room.id, roomVersion: room.version, phase: 'lobby', flags: [], inventory: [], penaltyMs: 0, hintsShown: [], wrongAttempts: 0, log: [], results: {}, seq: 0 }
+  return { v: 1, roomId: room.id, roomVersion: room.version, level: 'medium', phase: 'lobby', flags: [], inventory: [], penaltyMs: 0, hintsShown: [], wrongAttempts: 0, log: [], results: {}, seq: 0 }
 }
 
 export function holds(flags: string[] | Set<string>, conds: Cond[] = []): boolean {
@@ -145,17 +162,23 @@ export function reduce(room: RoomDef, s: GameState, a: Action): { state: GameSta
   if (a.id in s.results) return { state: s, outcome: s.results[a.id] }
   const invalid = () => ({ state: withResult(s, a.id, 'invalid'), outcome: 'invalid' as const })
 
+  if (a.type === 'SET_LEVEL') {
+    if (s.phase !== 'lobby' || !LEVELS[a.level]) return invalid()
+    return { state: withResult({ ...s, level: a.level }, a.id, 'ok'), outcome: 'ok' }
+  }
   if (a.type === 'START') {
     if (s.phase !== 'lobby') return invalid()
-    const next = log({ ...s, phase: 'playing', startedAt: a.now }, a, 'השעון התחיל לרוץ!', 'info')
+    const lv = levelOf(s)
+    const next = log({ ...s, level: lv, flags: [...s.flags, `level:${lv}`], phase: 'playing', startedAt: a.now }, a, `השעון התחיל לרוץ! רמה: ${LEVELS[lv].label}`, 'info')
     return { state: withResult(next, a.id, 'ok'), outcome: 'ok' }
   }
   if (s.phase !== 'playing') return invalid()
 
   if (a.type === 'HINT') {
     const idx = nextHintIndex(room, s)
-    if (idx === -1) return invalid()
-    const next = log({ ...s, hintsShown: [...s.hintsShown, idx], penaltyMs: s.penaltyMs + HINT_PENALTY_MS }, a, `נפתח רמז (+1 דקה)`, 'hint')
+    const L = LEVELS[levelOf(s)]
+    if (idx === -1 || s.hintsShown.length >= L.maxHints) return invalid()
+    const next = log({ ...s, hintsShown: [...s.hintsShown, idx], penaltyMs: s.penaltyMs + L.hintPenaltyMs }, a, `נפתח רמז (+${L.hintPenaltyMs / 1000} שניות)`, 'hint')
     return { state: withResult(next, a.id, 'ok'), outcome: 'ok' }
   }
 
@@ -210,15 +233,23 @@ export function elapsedMs(s: GameState, now: number): number {
   return (s.escapedAt ?? now) - s.startedAt + s.penaltyMs
 }
 
-export function remainingMs(room: RoomDef, s: GameState, now: number): number {
-  return room.minutes * 60_000 - elapsedMs(s, now)
+export function limitMs(s: Pick<GameState, 'level'>): number {
+  return LEVELS[levelOf(s)].minutes * 60_000
 }
 
-/** 3★ within a third of the time, 2★ within two thirds, 1★ in time, 0★ overtime. */
-export function stars(room: RoomDef, ms: number): number {
-  const limit = room.minutes * 60_000
-  if (ms <= limit / 3) return 3
-  if (ms <= (2 * limit) / 3) return 2
+export function remainingMs(_room: RoomDef, s: GameState, now: number): number {
+  return limitMs(s) - elapsedMs(s, now)
+}
+
+export function hintsLeft(s: GameState): number {
+  return LEVELS[levelOf(s)].maxHints - s.hintsShown.length
+}
+
+/** 3★ within 60% of the time, 2★ within 85%, 1★ in time, 0★ overtime. */
+export function stars(level: Level, ms: number): number {
+  const limit = LEVELS[level].minutes * 60_000
+  if (ms <= limit * 0.6) return 3
+  if (ms <= limit * 0.85) return 2
   if (ms <= limit) return 1
   return 0
 }

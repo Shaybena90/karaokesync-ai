@@ -6,7 +6,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import { isActive } from '../../../escape/engine'
 import type { RoomDef } from '../../../escape/types'
-import { buildObject, makeMaterials, type Kit, type ObjectModel } from './models'
+import { buildObject, makeMaterials, tableUnder, type Kit, type ObjectModel } from './models'
 import { dotTexture, floorTexture, wallTexture, type Theme } from './textures'
 
 /**
@@ -39,7 +39,7 @@ export interface EscapeSceneHandle {
 const ROOM = 13 // room is 13 × 13 m, 6 m high
 const HALF = ROOM / 2
 const WALL_H = 6
-const FLOOR_LINE: Record<Theme, number> = { lab: 440, station: 540, museum: 420 }
+const FLOOR_LINE: Record<Theme, number> = { lab: 440, station: 540, museum: 420, bunker: 460, hq: 450, hut: 450 }
 const EYE = 2.1 // eye height (m)
 const FOV = 2 * Math.atan(2.9 / HALF) * (180 / Math.PI) // frames the lower 5 m of a wall from the centre
 
@@ -52,16 +52,25 @@ interface Placed {
   out: THREE.Vector3
 }
 
+// Scene 1 = front wall, 2 = right, 3 = back, 4 = left (the camera turns clockwise).
 const WALLS = [
   { origin: new THREE.Vector3(0, 0, -HALF), right: new THREE.Vector3(1, 0, 0), out: new THREE.Vector3(0, 0, 1), yaw: 0 },
   { origin: new THREE.Vector3(HALF, 0, 0), right: new THREE.Vector3(0, 0, 1), out: new THREE.Vector3(-1, 0, 0), yaw: -Math.PI / 2 },
+  { origin: new THREE.Vector3(0, 0, HALF), right: new THREE.Vector3(-1, 0, 0), out: new THREE.Vector3(0, 0, -1), yaw: -Math.PI },
+  { origin: new THREE.Vector3(-HALF, 0, 0), right: new THREE.Vector3(0, 0, -1), out: new THREE.Vector3(1, 0, 0), yaw: -Math.PI * 1.5 },
 ]
+const FLAT = new Set(['painting', 'poster', 'whiteboard', 'calendar', 'map', 'manual', 'starmap', 'clock', 'switches', 'slot', 'fusebox', 'vent'])
+const TABLETOP = new Set(['typewriter', 'enigma', 'phone', 'radio'])
 
 const THEME_LIGHT: Record<Theme, { key: number; accent: number; ambient: number; fog: number }> = {
   lab: { key: 0xdff4ff, accent: 0x2ec4b6, ambient: 0x6f8cff, fog: 0x050b1f },
   station: { key: 0xbfd4ff, accent: 0x2ec4b6, ambient: 0x4a6cff, fog: 0x030716 },
   museum: { key: 0xffe2a8, accent: 0xf2c14e, ambient: 0xff9a7a, fog: 0x120409 },
+  bunker: { key: 0xffd9a0, accent: 0xff9f43, ambient: 0x8a7a6a, fog: 0x0c0a08 },
+  hq: { key: 0xffe7b8, accent: 0xf2c14e, ambient: 0xb8a07a, fog: 0x100c06 },
+  hut: { key: 0xffdca0, accent: 0xf2c14e, ambient: 0x9a7a5a, fog: 0x0e0905 },
 }
+const NEON = new Set<Theme>(['lab', 'station'])
 
 export function createEscapeScene(container: HTMLElement, room: RoomDef, opts: { quality: Quality; reducedMotion: boolean }): EscapeSceneHandle {
   const q = opts.quality
@@ -127,7 +136,7 @@ export function createEscapeScene(container: HTMLElement, room: RoomDef, opts: {
   // glowing accent strips along the floor and the ceiling — the "computerised" look
   const stripMat = track(new THREE.MeshStandardMaterial({ color: L.accent, emissive: L.accent, emissiveIntensity: 0.9 }))
   const stripGeo = track(new THREE.BoxGeometry(ROOM, 0.05, 0.05))
-  for (const [x, z, ry] of [[0, -HALF + 0.03, 0], [HALF - 0.03, 0, Math.PI / 2], [0, HALF - 0.03, 0], [-HALF + 0.03, 0, Math.PI / 2]] as const)
+  for (const [x, z, ry] of NEON.has(theme) ? ([[0, -HALF + 0.03, 0], [HALF - 0.03, 0, Math.PI / 2], [0, HALF - 0.03, 0], [-HALF + 0.03, 0, Math.PI / 2]] as const) : [])
     for (const y of [0.04, WALL_H - 0.04]) {
       const s = new THREE.Mesh(stripGeo, stripMat)
       s.position.set(x, y, z)
@@ -135,14 +144,20 @@ export function createEscapeScene(container: HTMLElement, room: RoomDef, opts: {
       shell.add(s)
     }
   // ceiling light panels
+  // ceiling lights: neon panels in modern rooms, hanging bulbs in period rooms
   const panelMat = track(new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: L.key, emissiveIntensity: 1.2 }))
-  const panelGeo = track(new THREE.BoxGeometry(2.2, 0.05, 0.5))
-  const panels: THREE.Mesh[] = []
-  for (const [x, z] of [[-2.5, -3], [2.5, -3], [3, 2.5], [3, -1]] as const) {
+  const panelGeo = NEON.has(theme) ? track(new THREE.BoxGeometry(2.2, 0.05, 0.5)) : track(new THREE.SphereGeometry(0.12, 16, 12))
+  const cordMat = track(new THREE.MeshStandardMaterial({ color: 0x111111 }))
+  const cordGeo = track(new THREE.CylinderGeometry(0.01, 0.01, 1.2, 6))
+  for (const [x, z] of [[-2.5, -3], [2.5, -3], [3, 2.5], [-3, 2.5], [0, 0]] as const) {
     const p = new THREE.Mesh(panelGeo, panelMat)
-    p.position.set(x, WALL_H - 0.03, z)
+    p.position.set(x, NEON.has(theme) ? WALL_H - 0.03 : WALL_H - 1.25, z)
     shell.add(p)
-    panels.push(p)
+    if (!NEON.has(theme)) {
+      const cord = new THREE.Mesh(cordGeo, cordMat)
+      cord.position.set(x, WALL_H - 0.6, z)
+      shell.add(cord)
+    }
   }
 
   // ── lights ──
@@ -179,9 +194,17 @@ export function createEscapeScene(container: HTMLElement, room: RoomDef, opts: {
     const sceneIdx = Math.max(0, room.scenes.findIndex((s) => s.id === h.scene))
     const wall = WALLS[Math.min(sceneIdx, WALLS.length - 1)]
     const model = buildObject(h, kit)
+    const sceneTheme = (room.scenes[sceneIdx]?.theme ?? theme) as Theme
+    // objects whose bottom reaches the drawn floor stand on the floor; small tabletop items get a table
+    if (!FLAT.has(h.art) && h.y + h.h >= FLOOR_LINE[sceneTheme] - 60) model.floor = true
+    let lift = 0
+    if (model.floor && TABLETOP.has(h.art)) {
+      lift = 0.85
+      model.group.add(tableUnder(kit, h.w / 100, model.height))
+    }
     const u = (h.x + h.w / 2) / 100 - 4
     // the 2D art draws the floor at FLOOR_LINE; heights are measured from there
-    const v = model.floor ? model.height / 2 : Math.max(model.height / 2 + 0.05, (FLOOR_LINE[theme] - (h.y + h.h / 2)) / 100)
+    const v = model.floor ? model.height / 2 + lift : Math.max(model.height / 2 + 0.05, (FLOOR_LINE[sceneTheme] - (h.y + h.h / 2)) / 100)
     const pos = wall.origin.clone().addScaledVector(wall.right, u).addScaledVector(wall.out, 0.01)
     pos.y = v
     model.group.position.copy(pos)
@@ -237,16 +260,15 @@ export function createEscapeScene(container: HTMLElement, room: RoomDef, opts: {
   container.addEventListener('pointermove', onMove)
 
   function aimForWall() {
-    const w = WALLS[wallIdx]
     wantPos.copy(lookFrom)
-    wantTarget.copy(lookFrom).addScaledVector(w.out, -HALF)
+    wantTarget.copy(lookFrom).add(new THREE.Vector3(-Math.sin(-targetYaw), 0, -Math.cos(-targetYaw)).multiplyScalar(HALF))
   }
   aimForWall()
 
   let flags: string[] = []
   let escaped = false
   let escapedAt = -1
-  const powerFlag = room.id === 'lab' ? 'power' : room.id === 'station' ? 'used:slot' : null
+  const powerFlag = room.darkUntil ?? null
 
   const clock = new THREE.Clock()
   let raf = 0
@@ -269,10 +291,14 @@ export function createEscapeScene(container: HTMLElement, room: RoomDef, opts: {
     emergency.intensity = powered ? Math.max(0, emergency.intensity - dt * 20) : 6 + 5 * Math.sin(t * 3)
     accent.intensity = 8 + (opts.reducedMotion ? 0 : 1.5 * Math.sin(t * 1.3))
 
-    // camera: turn between walls, dolly to a focused object, gentle parallax
+    // camera: turn between walls (by angle, so even 180° turns are smooth), dolly to a focused object
     yaw += (targetYaw - yaw) * (1 - Math.exp(-4 * dt))
     camPos.lerp(wantPos, 1 - Math.exp(-4 * dt))
-    camTarget.lerp(wantTarget, 1 - Math.exp(-4 * dt))
+    if (focusId || escaped) camTarget.lerp(wantTarget, 1 - Math.exp(-4 * dt))
+    else {
+      camTarget.set(camPos.x - Math.sin(-yaw) * HALF, EYE, camPos.z - Math.cos(-yaw) * HALF)
+      if (Math.abs(targetYaw - yaw) < 0.002) camTarget.copy(wantTarget)
+    }
     if (!opts.reducedMotion) {
       pointer.x += (pointer.tx - pointer.x) * 0.05
       pointer.y += (pointer.ty - pointer.y) * 0.05
@@ -303,7 +329,7 @@ export function createEscapeScene(container: HTMLElement, room: RoomDef, opts: {
       pa.needsUpdate = true
     }
 
-    const still = camTarget.distanceTo(wantTarget) < 0.02 && camPos.distanceTo(wantPos) < 0.01
+    const still = Math.abs(targetYaw - yaw) < 0.002 && camTarget.distanceTo(wantTarget) < 0.03 && camPos.distanceTo(wantPos) < 0.01
     if (still && !settled) {
       settled = true
       settleCbs.forEach((cb) => cb())
@@ -376,6 +402,7 @@ export function createEscapeScene(container: HTMLElement, room: RoomDef, opts: {
         if (exit) {
           const sceneIdx = room.scenes.findIndex((s) => s.id === exit.scene)
           wallIdx = Math.max(0, sceneIdx)
+          targetYaw = WALLS[wallIdx].yaw
           wantTarget.copy(exit.anchor)
           wantPos.copy(exit.anchor).addScaledVector(exit.out, 1.6)
           wantPos.y = Math.max(1.4, exit.anchor.y)
@@ -386,7 +413,11 @@ export function createEscapeScene(container: HTMLElement, room: RoomDef, opts: {
       const idx = Math.max(0, room.scenes.findIndex((s) => s.id === sceneId))
       if (idx === wallIdx && !focusId) return
       wallIdx = Math.min(idx, WALLS.length - 1)
-      targetYaw = WALLS[wallIdx].yaw
+      // turn the short way round
+      let t = WALLS[wallIdx].yaw
+      while (t - yaw > Math.PI) t -= Math.PI * 2
+      while (yaw - t > Math.PI) t += Math.PI * 2
+      targetYaw = t
       focusId = null
       aimForWall()
       settled = false

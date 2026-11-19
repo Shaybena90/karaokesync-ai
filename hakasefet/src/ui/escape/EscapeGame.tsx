@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { currentInteraction, isActive, nextHintIndex, remainingMs, shownHints, type GameState } from '../../escape/engine'
+import { currentInteraction, hintsLeft, isActive, levelOf, LEVELS, nextHintIndex, remainingMs, shownHints, type GameState, type Level } from '../../escape/engine'
+import { createContext, useContext } from 'react'
 import type { Hotspot, ItemDef, Note, RoomDef } from '../../escape/types'
 import type { GameSession, SessionSnapshot } from '../../net/session'
 import { formatDuration } from '../../engine/date'
@@ -66,7 +67,8 @@ export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap:
   const hotspots = room.hotspots.filter((h) => h.scene === sceneId)
   const left = remainingMs(room, state, now)
   const items = state.inventory.map((id) => room.items.find((i) => i.id === id)!).filter(Boolean)
-  const canHint = nextHintIndex(room, state) !== -1
+  const level = levelOf(state)
+  const canHint = nextHintIndex(room, state) !== -1 && hintsLeft(state) > 0
 
   // Objects in the open dialog follow live state (another player may change them).
   const openInteraction = open ? currentInteraction(open, state.flags) : undefined
@@ -86,11 +88,12 @@ export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap:
   }
 
   return (
+    <LevelCtx.Provider value={level}>
     <div className="mx-auto max-w-3xl">
       {/* top bar */}
       <div className="mb-2 flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-sm text-dim">{room.emoji} {room.title}</p>
+          <p className="truncate text-sm text-dim">{room.emoji} {room.title} · {LEVELS[level].label}</p>
           <p className={`font-mono text-2xl font-extrabold ${left < 0 ? 'text-coral' : left < 5 * 60_000 ? 'text-coral' : 'text-gold-2'}`} role="timer" aria-label={left >= 0 ? `נותרו ${formatDuration(left)}` : `זמן נוסף ${formatDuration(-left)}`} data-testid="timer">
             {left >= 0 ? formatDuration(left) : `+${formatDuration(-left)}`}
           </p>
@@ -214,8 +217,12 @@ export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap:
         <HintsPanel room={room} state={state} canHint={canHint} onHint={() => session.dispatch({ type: 'HINT' })} />
       </Modal>
     </div>
+    </LevelCtx.Provider>
   )
 }
+
+/** The current difficulty, so notes can show their easy / hard wording. */
+const LevelCtx = createContext<Level>('medium')
 
 function Players({ snap }: { snap: SessionSnapshot }) {
   return (
@@ -243,6 +250,8 @@ function Toast({ toast }: { toast: { text: string; kind: string } | null }) {
 }
 
 export function NoteCard({ note }: { note: Note }) {
+  const level = useContext(LevelCtx)
+  const text = (level === 'easy' && note.easy) || (level === 'hard' && note.hard) || note.text
   const style =
     note.style === 'screen'
       ? 'border-teal/50 bg-[#03140f] font-mono text-teal-2'
@@ -256,7 +265,7 @@ export function NoteCard({ note }: { note: Note }) {
   return (
     <div className={`rounded-xl border-2 p-4 text-lg leading-relaxed whitespace-pre-line ${style}`}>
       <p className="mb-1 text-sm font-bold opacity-70">{note.title}</p>
-      <p>{note.text}</p>
+      <p>{text}</p>
     </div>
   )
 }
@@ -371,7 +380,10 @@ function HintsPanel({ room, state, canHint, onHint }: { room: RoomDef; state: Ga
           ))}
         </ol>
       )}
-      <p className="mb-2 text-sm text-dim">כל רמז מוסיף דקה לזמן שלכם.</p>
+      <p className="mb-2 text-sm text-dim">
+        ברמה {LEVELS[levelOf(state)].label} כל רמז מוסיף {LEVELS[levelOf(state)].hintPenaltyMs / 1000} שניות לזמן
+        {Number.isFinite(LEVELS[levelOf(state)].maxHints) && ` · נשארו ${Math.max(0, hintsLeft(state))} מתוך ${LEVELS[levelOf(state)].maxHints} רמזים`}.
+      </p>
       <button
         className="btn btn-gold w-full"
         disabled={!canHint || busy}
@@ -381,7 +393,7 @@ function HintsPanel({ room, state, canHint, onHint }: { room: RoomDef; state: Ga
           setBusy(false)
         }}
       >
-        {canHint ? 'רמז חדש (+1 דקה)' : 'אין כרגע רמז חדש — המשיכו לחקור'}
+        {canHint ? `רמז חדש (+${LEVELS[levelOf(state)].hintPenaltyMs / 1000} שניות)` : hintsLeft(state) <= 0 ? 'נגמרו הרמזים ברמה הזאת' : 'אין כרגע רמז חדש — המשיכו לחקור'}
       </button>
     </div>
   )
