@@ -130,3 +130,23 @@ test('levels and themes: a historical room on the hard level — 40 minutes, vag
   await page.getByRole('button', { name: /רמזים/ }).click()
   await expect(page.getByRole('dialog')).toContainText('נשארו 3 מתוך 3 רמזים')
 })
+
+test('typing a code word: the text field keeps focus while the game timer ticks (phone keyboard stays open)', async ({ page }) => {
+  await page.goto('./')
+  await onboard(page)
+  await page.goto('./#/solo/museum')
+  await page.getByRole('button', { name: /מתחילים/ }).click()
+  await page.getByRole('tab', { name: 'משרד השומר' }).click()
+  await hotspot(page, 'מחשב האבטחה').click()
+  const field = page.getByRole('dialog').getByLabel(/הקלידו תשובה/)
+  await expect(field).toBeFocused()
+  await page.waitForTimeout(1600) // the timer re-renders the game several times
+  await expect(field).toBeFocused()
+  await page.keyboard.type('18', { delay: 150 })
+  await page.waitForTimeout(800)
+  await page.keyboard.type('31', { delay: 150 })
+  await expect(field).toHaveValue('1831')
+  await expect(field).toBeFocused()
+  await page.keyboard.press('Enter')
+  await expect(page.getByText('הלייזרים כבו!').first()).toBeVisible()
+})
