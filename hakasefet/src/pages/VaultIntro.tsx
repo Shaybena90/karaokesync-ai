@@ -9,9 +9,10 @@ import { mysteryForDate } from '../engine/selection'
 import { abandonActive, getActiveAttempt } from '../storage/repo'
 import { useApp } from '../state/AppState'
 import { startAttempt } from '../state/game'
-import { RoomIcon, Vault } from '../ui/art'
+import { RoomIcon } from '../ui/art'
+import { Vault3D } from '../ui/Vault3D'
 import { play } from '../ui/audio'
-import { ErrorBox, Loading, Modal } from '../ui/kit'
+import { ErrorBox, Loading, Modal, TiltCard } from '../ui/kit'
 
 export const ARCHIVE_DAYS = 7
 
@@ -58,11 +59,11 @@ export function VaultIntro({ challenge }: { challenge?: { version: string; date:
 
   return (
     <div className="mx-auto max-w-lg py-4">
-      <article className="card anim-rise overflow-hidden p-6 text-center">
+      <TiltCard className="card-hero anim-rise overflow-hidden p-6 text-center" max={3}>
         {challenge && <p className="mb-2 inline-block rounded-full bg-teal/15 px-3 py-1 text-sm font-bold text-teal-2">🎯 קיבלתם אתגר מחבר</p>}
         <p className="text-sm font-bold text-gold">{isToday ? 'הכספת של היום' : `כספת מ־${formatHebDate(date)}`}</p>
-        <div className="my-3 flex justify-center anim-float"><Vault size={150} /></div>
-        <h1 className="title-gold text-3xl font-extrabold">{mystery.emoji} {mystery.title}</h1>
+        <Vault3D className="-my-2 h-64 w-full" />
+        <h1 className="title-gold text-4xl">{mystery.emoji} {mystery.title}</h1>
         <p className="mx-auto mt-3 max-w-md text-lg leading-relaxed text-mist">{mystery.teaser}</p>
         {challenge && (
           <div className="mt-4 rounded-xl bg-black/25 p-3 text-sm">
@@ -88,7 +89,7 @@ export function VaultIntro({ challenge }: { challenge?: { version: string; date:
           )}
           <p className="text-sm text-dim">{TAGLINE}</p>
         </div>
-      </article>
+      </TiltCard>
       <Modal open={confirm} title="יש משחק פתוח" onClose={() => setConfirm(false)}>
         <p className="mb-4 text-mist">התחלת כספת חדשה תסגור את המשחק השמור, וההתקדמות בו לא תישמר.</p>
         <div className="flex gap-2">

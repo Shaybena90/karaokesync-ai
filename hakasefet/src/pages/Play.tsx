@@ -147,13 +147,13 @@ export function Play() {
 function LevelSelect({ onPick }: { onPick: (l: 'normal' | 'hard') => void }) {
   return (
     <section className="anim-rise space-y-3" aria-labelledby="lvl">
-      <h1 id="lvl" className="text-2xl font-extrabold">בחרו רמה</h1>
+      <h1 id="lvl" className="title-gold text-3xl">בחרו רמה</h1>
       <p className="text-mist">הרמה נשארת קבועה עד סוף המשחק.</p>
       {(['normal', 'hard'] as const).map((l) => (
-        <button key={l} className="card flex w-full items-center gap-4 p-5 text-right transition hover:border-gold/60" onClick={() => { play('tap'); onPick(l) }}>
-          <span className="text-4xl" aria-hidden="true">{l === 'normal' ? '🗝️' : '🔥'}</span>
+        <button key={l} className="card tile flex w-full items-center gap-4 p-5 text-right" onClick={() => { play('tap'); onPick(l) }}>
+          <span className={`grid h-16 w-16 shrink-0 place-items-center rounded-2xl text-4xl shadow-[inset_0_1px_0_rgba(255,255,255,.2),0_6px_14px_-4px_rgba(0,0,0,.8)] ${l === 'normal' ? 'bg-gradient-to-b from-teal/40 to-teal/10' : 'bg-gradient-to-b from-coral/45 to-coral/10'}`} aria-hidden="true">{l === 'normal' ? '🗝️' : '🔥'}</span>
           <span>
-            <span className="block text-xl font-extrabold">{LEVEL_LABEL[l]}</span>
+            <span className="font-display block text-2xl font-bold">{LEVEL_LABEL[l]}</span>
             <span className="block text-mist">{BASE_POINTS[l]} נקודות לתשובה נכונה + בונוס מהירות עד 20</span>
           </span>
         </button>
@@ -166,7 +166,7 @@ function RoomMap({ attempt, onEnter }: { attempt: Attempt; onEnter: (c: Category
   const openable = openableRooms(attempt)
   return (
     <section className="anim-rise" aria-labelledby="map">
-      <h1 id="map" className="mb-1 text-2xl font-extrabold">מפת החדרים</h1>
+      <h1 id="map" className="title-gold mb-1 text-3xl">מפת החדרים</h1>
       <p className="mb-4 text-mist">
         {attempt.fixedRoomOrder ? 'המסלול נקבע לפי האתגר שקיבלתם.' : attempt.roomOrder.length === 0 ? 'בחרו באיזה חדר להתחיל. כל חדר נפתח פעם אחת.' : 'בחרו את החדר הבא.'}
       </p>
@@ -181,11 +181,17 @@ function RoomMap({ attempt, onEnter }: { attempt: Attempt; onEnter: (c: Category
               disabled={!can}
               onClick={() => onEnter(c)}
               aria-label={`${CATEGORY_ROOM[c]}${done ? ' — הושלם' : can ? '' : ' — נעול'}`}
-              className={`card flex items-center gap-4 p-4 text-right transition sm:flex-col sm:text-center ${can ? 'hover:-translate-y-0.5 hover:border-gold/70' : ''} ${done ? 'opacity-70' : ''}`}
+              className={`card flex items-center gap-4 p-4 text-right transition sm:flex-col sm:text-center ${can ? 'door-hover tile' : ''} ${done ? 'door-open' : ''}`}
             >
-              <RoomIcon category={c} size={64} />
+              <span className="door-frame relative block h-28 w-24 shrink-0 rounded-t-2xl bg-[radial-gradient(circle_at_50%_55%,rgba(255,217,122,.45),rgba(5,10,28,.95)_70%)] shadow-[inset_0_0_0_3px_rgba(10,20,48,.9),inset_0_8px_18px_rgba(0,0,0,.8)]" aria-hidden="true">
+                <span className="absolute inset-0 grid place-items-center"><RoomIcon category={c} size={56} /></span>
+                <span className="door-panel">
+                  <span className="door-knob" />
+                  <span className="absolute inset-x-0 top-3 text-center text-xs font-extrabold text-gold-2 engraved">{done ? '✓' : can ? (pos ?? '') : '🔒'}</span>
+                </span>
+              </span>
               <span className="flex-1">
-                <span className="block text-lg font-extrabold">{CATEGORY_ROOM[c]}</span>
+                <span className="font-display block text-xl font-bold">{CATEGORY_ROOM[c]}</span>
                 <span className="block text-sm text-mist">
                   {done ? '✓ הושלם · הרמז נאסף' : can ? 'שתי שאלות · רמז אחד' : '🔒 נעול כרגע'}
                   {pos ? ` · תחנה ${pos}` : ''}
@@ -274,14 +280,14 @@ function QuestionView({ attempt, ctx, dispatch }: { attempt: Attempt; ctx: Ctx; 
       </div>
 
       <div className="card p-5">
-        <h1 id="qtext" className="mb-4 text-xl font-extrabold leading-snug sm:text-2xl">{q.text}</h1>
+        <h1 id="qtext" className="mb-5 text-xl font-extrabold leading-snug sm:text-2xl">{q.text}</h1>
         <div className={`grid gap-2.5 ${shake ? 'anim-shake' : ''}`} onAnimationEnd={() => setShake(false)}>
           {qs.optionOrder.map((id, i) => {
             const opt = q.options.find((o) => o.id === id)!
             const removed = qs.removed?.includes(id)
             const isCorrect = id === q.answerId
             const chosen = answered?.optionId === id
-            let cls = 'border-white/15 bg-white/5 hover:border-gold/60 hover:bg-white/10'
+            let cls = 'border-gold/15 hover:border-gold/60'
             let mark = ''
             if (answered) {
               if (isCorrect) { cls = 'border-teal bg-teal/20 anim-glow'; mark = '✓ התשובה הנכונה' }
@@ -293,7 +299,7 @@ function QuestionView({ attempt, ctx, dispatch }: { attempt: Attempt; ctx: Ctx; 
                 key={id}
                 disabled={!!answered || removed}
                 onClick={() => pick(id)}
-                className={`flex min-h-14 items-center gap-3 rounded-2xl border-2 px-4 py-3 text-right text-lg font-bold transition ${cls} ${removed ? 'invisible' : ''}`}
+                className={`tile flex min-h-14 items-center gap-3 rounded-2xl border-2 px-4 py-3 text-right text-lg font-bold ${cls} ${removed ? 'invisible' : ''}`}
                 aria-label={removed ? undefined : `${i + 1}. ${opt.text}${mark ? ` — ${mark}` : ''}`}
                 aria-hidden={removed || undefined}
               >
@@ -335,15 +341,31 @@ function ClueReveal({ attempt, mystery, onClose }: { attempt: Attempt; mystery: 
   const clue = mystery.clues[cat]
   const n = mystery.readingOrder.indexOf(cat) + 1
   const last = attempt.roomOrder.length === 3
-  useEffect(() => play('clue'), [])
+  const [flipped, setFlipped] = useState(false)
+  useEffect(() => {
+    play('clue')
+    const t = window.setTimeout(() => setFlipped(true), 900)
+    return () => window.clearTimeout(t)
+  }, [])
   return (
     <section className="text-center" aria-labelledby="clue-title">
-      <div className="mb-3 flex justify-center"><KeyArt size={84} className="anim-key" /></div>
+      <div className="mb-3 flex justify-center"><KeyArt size={84} className="anim-key drop-shadow-[0_8px_16px_rgba(242,193,78,.45)]" /></div>
       <p className="text-sm font-bold text-gold">{CATEGORY_ROOM[cat]} הושלם — נחשף רמז!</p>
-      <div className="card anim-flip mx-auto mt-3 max-w-md p-6 text-right">
-        <p className="mb-1 text-sm text-dim">רמז מס׳ {n} בלוח · נאספו {attempt.revealedClues.length} מתוך 3</p>
-        <h1 id="clue-title" className="mb-2 text-2xl font-extrabold">{clue.title}</h1>
-        <p className="text-lg leading-relaxed">{clue.text}</p>
+      <div className={`flip mx-auto mt-3 max-w-md ${flipped ? 'flipped' : ''}`} onClick={() => setFlipped(true)}>
+        <div className="flip-inner">
+          <div className="flip-face card card-hero grid min-h-56 place-items-center p-6" aria-hidden="true">
+            <div className="flex flex-col items-center gap-3">
+              <span className="anim-seal grid h-20 w-20 place-items-center rounded-full bg-[radial-gradient(circle_at_35%_30%,#ff9b8c,#c0392b_55%,#7a1d14)] text-3xl shadow-[0_6px_16px_rgba(0,0,0,.7),inset_0_2px_4px_rgba(255,255,255,.35)]">🔐</span>
+              <span className="font-display text-xl text-gold-2">מעטפה חתומה</span>
+            </div>
+          </div>
+          <div className="flip-face flip-back card card-hero p-6 text-right">
+            <p className="mb-1 text-sm text-dim">רמז מס׳ {n} בלוח · נאספו {attempt.revealedClues.length} מתוך 3</p>
+            <div className="gold-rule mb-3" />
+            <h1 id="clue-title" className="title-gold mb-2 text-3xl">{clue.title}</h1>
+            <p className="text-lg leading-relaxed">{clue.text}</p>
+          </div>
+        </div>
       </div>
       <p className="mt-3 text-sm text-dim">הרמז נשמר בלוח הרמזים.</p>
       <button className="btn btn-gold mt-4 w-full max-w-md" onClick={onClose} autoFocus>
@@ -411,7 +433,7 @@ function Board({ attempt, mystery, dispatch }: { attempt: Attempt; mystery: Myst
       <div className="flex items-center gap-3">
         <Vault size={72} />
         <div>
-          <h1 id="board-title" className="text-2xl font-extrabold">לוח החקירה</h1>
+          <h1 id="board-title" className="title-gold text-3xl">לוח החקירה</h1>
           <p className="text-mist">כל הרמזים אצלכם. חברו אותם לקוד בן ארבע ספרות.</p>
         </div>
       </div>

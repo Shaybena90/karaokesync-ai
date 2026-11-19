@@ -10,7 +10,8 @@ import { mysteryForDate } from '../engine/selection'
 import { shareChallenge, shareText } from '../engine/share'
 import { completeAttempt, getAttempt, type CompletionResult } from '../storage/repo'
 import { useApp } from '../state/AppState'
-import { Coin, Confetti, Vault } from '../ui/art'
+import { Coin, Confetti } from '../ui/art'
+import { Vault3D } from '../ui/Vault3D'
 import { play } from '../ui/audio'
 import { ErrorBox, Loading, Toast } from '../ui/kit'
 
@@ -75,9 +76,9 @@ export function Result() {
   return (
     <div className="relative mx-auto max-w-xl py-4">
       {fresh && <Confetti />}
-      <section className="card relative overflow-hidden p-6 text-center" aria-labelledby="res-title">
-        <div className="flex justify-center"><Vault size={170} opening label="הכספת נפתחה" /></div>
-        <h1 id="res-title" className="title-gold mt-2 text-3xl font-extrabold">הכספת נפתחה!</h1>
+      <section className="card card-hero relative overflow-hidden p-6 text-center" aria-labelledby="res-title">
+        <Vault3D open className="-mt-4 h-72 w-full" label="הכספת נפתחה" />
+        <h1 id="res-title" className="title-gold text-4xl sm:text-5xl">הכספת נפתחה!</h1>
         <p className="text-mist">{mystery.emoji} {mystery.title} · {LEVEL_LABEL[attempt.level!]}</p>
 
         <dl className="mt-5 grid grid-cols-2 gap-3 text-right sm:grid-cols-3">

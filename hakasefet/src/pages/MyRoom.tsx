@@ -35,7 +35,7 @@ export function MyRoom() {
   return (
     <div className="space-y-4 py-2">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-extrabold">🛋️ החדר שלי</h1>
+        <h1 className="title-gold text-3xl">החדר שלי</h1>
         <span className="chip"><Coin /> {profile.coins}</span>
       </div>
       <div className="card overflow-hidden p-2">

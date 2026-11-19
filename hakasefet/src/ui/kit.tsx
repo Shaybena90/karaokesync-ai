@@ -91,3 +91,48 @@ export function ErrorBox({ title, text, action }: { title: string; text: string;
     </div>
   )
 }
+
+/**
+ * Pointer-driven 3D tilt with a soft glare. Respects reduced motion
+ * (the CSS kills the transition and we skip updates).
+ */
+export function useTilt<T extends HTMLElement>(max = 7) {
+  const ref = useRef<T>(null)
+  useEffect(() => {
+    const el = ref.current
+    if (!el) return
+    const reduced = () => document.documentElement.dataset.reducedMotion === 'true' || window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+    const move = (e: PointerEvent) => {
+      if (reduced() || e.pointerType === 'touch') return
+      const r = el.getBoundingClientRect()
+      const x = (e.clientX - r.left) / r.width
+      const y = (e.clientY - r.top) / r.height
+      el.style.setProperty('--ry', `${(x - 0.5) * max}deg`)
+      el.style.setProperty('--rx', `${(0.5 - y) * max}deg`)
+      el.style.setProperty('--gx', `${x * 100}%`)
+      el.style.setProperty('--gy', `${y * 100}%`)
+    }
+    const leave = () => {
+      el.style.setProperty('--ry', '0deg')
+      el.style.setProperty('--rx', '0deg')
+    }
+    el.addEventListener('pointermove', move)
+    el.addEventListener('pointerleave', leave)
+    return () => {
+      el.removeEventListener('pointermove', move)
+      el.removeEventListener('pointerleave', leave)
+    }
+  }, [max])
+  return ref
+}
+
+/** A card that tilts in 3D under the pointer. */
+export function TiltCard({ className = '', children, max = 6, ...rest }: React.HTMLAttributes<HTMLDivElement> & { max?: number }) {
+  const ref = useTilt<HTMLDivElement>(max)
+  return (
+    <div ref={ref} className={`card tilt ${className}`} {...rest}>
+      <div className="tilt-glare" aria-hidden="true" />
+      {children}
+    </div>
+  )
+}

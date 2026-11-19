@@ -51,7 +51,7 @@ export function Profile() {
 
   return (
     <div className="space-y-4 py-2">
-      <h1 className="text-2xl font-extrabold">👤 פרופיל והגדרות</h1>
+      <h1 className="title-gold text-3xl">פרופיל והגדרות</h1>
       <p className="rounded-xl border border-white/10 bg-white/5 p-3 text-mist">💾 ההתקדמות נשמרת במכשיר הזה.</p>
 
       <section className="card space-y-4 p-4" aria-labelledby="me">
