@@ -2,13 +2,20 @@ import { useEffect, useRef, type ReactNode } from 'react'
 
 export function Modal({ open, title, children, onClose, labelledBy = 'modal-title' }: { open: boolean; title: string; children: ReactNode; onClose: () => void; labelledBy?: string }) {
   const ref = useRef<HTMLDivElement>(null)
+  // Keep the latest onClose without re-running the effect: callers pass a new
+  // function on every render (the game re-renders twice a second for its
+  // timer), and re-running would steal focus from text fields — which closed
+  // the phone keyboard while typing.
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
   useEffect(() => {
     if (!open) return
     const prev = document.activeElement as HTMLElement | null
     const el = ref.current
-    el?.querySelector<HTMLElement>('[data-autofocus], button, input')?.focus()
+    // focus once, when the dialog opens; a field that already has focus keeps it
+    if (!el?.contains(document.activeElement)) el?.querySelector<HTMLElement>('[data-autofocus], input, button')?.focus()
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onCloseRef.current()
       if (e.key === 'Tab' && el) {
         const f = [...el.querySelectorAll<HTMLElement>('button:not([disabled]), input, [href], [tabindex]:not([tabindex="-1"])')]
         if (!f.length) return
@@ -28,7 +35,7 @@ export function Modal({ open, title, children, onClose, labelledBy = 'modal-titl
       document.removeEventListener('keydown', onKey)
       prev?.focus?.()
     }
-  }, [open, onClose])
+  }, [open])
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-3 backdrop-blur-sm sm:items-center" onClick={onClose}>
