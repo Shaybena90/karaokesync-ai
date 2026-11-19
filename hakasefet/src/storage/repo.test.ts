@@ -31,7 +31,7 @@ describe('runs and rewards', () => {
     const [a, b] = await Promise.all([completeRun({ runId: 'r1', state: s, mode: 'solo', players: 1 }), completeRun({ runId: 'r1', state: s, mode: 'solo', players: 1 })])
     expect(a.grants.length + (b.alreadyRecorded ? 0 : b.grants.length)).toBe(2)
     const p = (await getProfile())!
-    expect(p.xp).toBe(150)
+    expect(p.xp).toBe(170)
     expect(p.coins).toBe(50)
     expect((await listLedger()).length).toBe(2)
     const again = await completeRun({ runId: 'r1', state: s, mode: 'solo', players: 1 })
@@ -45,11 +45,12 @@ describe('runs and rewards', () => {
     expect(faster.grants).toEqual([])
     expect(faster.isBest).toBe(true)
     expect(faster.run.stars).toBe(3)
+    expect(faster.run.level).toBe('medium')
     expect((await listRuns()).length).toBe(2)
   })
 
   it('buying an item charges once; buying again just equips', async () => {
-    await completeRun({ runId: 'r1', state: escaped('lab'), mode: 'solo', players: 1 }) // 50 coins
+    await completeRun({ runId: 'r1', state: escaped('lab'), mode: 'solo', players: 1 }) // 30 + 20 = 50 coins
     expect(await buyOrEquip('lamp-chandelier', 'lamp', 70)).toEqual({ ok: false, reason: 'coins' })
     const first = await buyOrEquip('rug-royal', 'rug', 50)
     expect(first.ok && first.charged).toBe(50)

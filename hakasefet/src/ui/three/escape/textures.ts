@@ -4,7 +4,7 @@ import * as THREE from 'three'
  * Procedural textures drawn on canvases — no image files to download, sharp
  * at any resolution (the size follows the chosen graphics quality).
  */
-export type Theme = 'lab' | 'station' | 'museum'
+export type Theme = 'lab' | 'station' | 'museum' | 'bunker' | 'hq' | 'hut'
 
 function canvas(w: number, h: number) {
   const c = document.createElement('canvas')
@@ -63,6 +63,50 @@ export function wallTexture(theme: Theme, res: number) {
         }
       }
     noise(g, S, S, 3000 * res)
+  } else if (theme === 'bunker') {
+    // poured concrete with formwork lines
+    g.fillStyle = '#4a4a50'
+    g.fillRect(0, 0, S, S)
+    for (let i = 0; i < 9000 * res; i++) {
+      const v = 60 + Math.random() * 30
+      g.fillStyle = `rgba(${v},${v},${v + 4},.35)`
+      g.fillRect(Math.random() * S, Math.random() * S, 2 * res, 2 * res)
+    }
+    g.strokeStyle = 'rgba(20,20,24,.6)'
+    g.lineWidth = 3 * res
+    for (let y = 0; y <= S; y += S / 4) {
+      g.beginPath()
+      g.moveTo(0, y)
+      g.lineTo(S, y)
+      g.stroke()
+    }
+  } else if (theme === 'hq') {
+    // limestone blocks (Jerusalem stone)
+    g.fillStyle = '#c9b691'
+    g.fillRect(0, 0, S, S)
+    const rows = 6
+    for (let r = 0; r < rows; r++)
+      for (let c = 0; c < 4; c++) {
+        const v = 185 + Math.random() * 25
+        g.fillStyle = `rgb(${v},${v - 18},${v - 50})`
+        const x = c * (S / 4) + (r % 2) * (S / 8)
+        g.fillRect(x + 3 * res, r * (S / rows) + 3 * res, S / 4 - 6 * res, S / rows - 6 * res)
+        g.fillRect(x - S + 3 * res, r * (S / rows) + 3 * res, S / 4 - 6 * res, S / rows - 6 * res)
+      }
+    noise(g, S, S, 9000 * res, 0.07)
+  } else if (theme === 'hut') {
+    // vertical wooden boards
+    for (let x = 0; x < S; x += 32 * res) {
+      const v = 75 + Math.random() * 20
+      g.fillStyle = `rgb(${v + 15},${v - 5},${v - 30})`
+      g.fillRect(x, 0, 31 * res, S)
+      g.fillStyle = 'rgba(0,0,0,.35)'
+      g.fillRect(x + 31 * res, 0, 1 * res, S)
+      for (let y = 0; y < S; y += 3) {
+        g.fillStyle = `rgba(40,20,5,${Math.random() * 0.12})`
+        g.fillRect(x, y, 31 * res, 1)
+      }
+    }
   } else {
     // red velvet with a damask-like repeat
     g.fillStyle = '#3b0f1d'
@@ -89,7 +133,7 @@ export function wallTexture(theme: Theme, res: number) {
 export function floorTexture(theme: Theme, res: number) {
   const S = 512 * res
   const { c, g } = canvas(S, S)
-  if (theme === 'museum') {
+  if (theme === 'museum' || theme === 'hut') {
     for (let y = 0; y < 16; y++)
       for (let x = 0; x < 4; x++) {
         const v = 70 + Math.random() * 25
@@ -97,6 +141,14 @@ export function floorTexture(theme: Theme, res: number) {
         g.fillRect(x * (S / 4) + ((y % 2) * S) / 8, y * (S / 16), S / 4 - 2 * res, S / 16 - 2 * res)
       }
     noise(g, S, S, 6000 * res, 0.05)
+  } else if (theme === 'bunker' || theme === 'hq') {
+    g.fillStyle = theme === 'bunker' ? '#2e2e33' : '#7a6748'
+    g.fillRect(0, 0, S, S)
+    for (let i = 0; i < 12000 * res; i++) {
+      const v = theme === 'bunker' ? 40 + Math.random() * 25 : 100 + Math.random() * 30
+      g.fillStyle = theme === 'bunker' ? `rgba(${v},${v},${v},.4)` : `rgba(${v + 10},${v - 10},${v - 40},.4)`
+      g.fillRect(Math.random() * S, Math.random() * S, 2 * res, 2 * res)
+    }
   } else if (theme === 'station') {
     g.fillStyle = '#0a1430'
     g.fillRect(0, 0, S, S)

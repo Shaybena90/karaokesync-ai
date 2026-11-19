@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
-import type { GameState } from '../../escape/engine'
+import { levelOf, LEVELS, type GameState } from '../../escape/engine'
 import type { RoomDef } from '../../escape/types'
 import { formatDuration } from '../../engine/date'
 import { rankInfo } from '../../engine/rewards'
@@ -29,7 +29,7 @@ export function EscapeResult({ room, state, code, mode, players, onAgain }: { ro
   }, [code, state, mode, players, reload])
 
   const timeMs = res?.run.timeMs ?? 0
-  const text = res ? `ברחנו מ״${room.title}״ ב־${formatDuration(timeMs)} ${'⭐'.repeat(res.run.stars)} — תצליחו מהר יותר? 🔐` : ''
+  const text = res ? `ברחנו מ״${room.title}״ ברמה ${LEVELS[levelOf(state)].label} ב־${formatDuration(timeMs)} ${'⭐'.repeat(res.run.stars)} — תצליחו מהר יותר? 🔐` : ''
 
   async function share() {
     const url = new URL('.', location.href.split('#')[0]).href
@@ -58,7 +58,7 @@ export function EscapeResult({ room, state, code, mode, players, onAgain }: { ro
       <section className="card card-hero relative overflow-hidden p-6 text-center" aria-labelledby="esc-title">
         <Vault3D open className="-mt-4 h-64 w-full" label="הכספת נפתחה" />
         <h1 id="esc-title" className="title-gold text-4xl sm:text-5xl">ברחתם!</h1>
-        <p className="text-mist">{room.emoji} {room.title}{mode === 'coop' && ` · ${players} שחקנים`}</p>
+        <p className="text-mist">{room.emoji} {room.title} · רמה {LEVELS[levelOf(state)].label}{mode === 'coop' && ` · ${players} שחקנים`}</p>
         {error && <p role="alert" className="mt-3 text-coral">לא הצלחנו לשמור את התוצאה במכשיר.</p>}
         {res && (
           <>
@@ -68,7 +68,7 @@ export function EscapeResult({ room, state, code, mode, players, onAgain }: { ro
               <div className="rounded-xl bg-black/25 p-3"><dt className="text-xs text-dim">רמזים</dt><dd className="text-xl font-extrabold">{res.run.hints}</dd></div>
               <div className="rounded-xl bg-black/25 p-3"><dt className="text-xs text-dim">ניסיונות שגויים</dt><dd className="text-xl font-extrabold">{res.run.wrongAttempts}</dd></div>
             </dl>
-            {res.isBest && <p className="mt-3 font-bold text-teal-2">🏅 שיא אישי לחדר הזה{res.prevBestMs !== undefined && ` (קודם: ${formatDuration(res.prevBestMs)})`}</p>}
+            {res.isBest && <p className="mt-3 font-bold text-teal-2">🏅 שיא אישי לחדר הזה ברמה הזאת{res.prevBestMs !== undefined && ` (קודם: ${formatDuration(res.prevBestMs)})`}</p>}
             {res.grants.length > 0 ? (
               <div className="mt-3 flex flex-wrap justify-center gap-2" data-testid="rewards">
                 <span className="chip anim-pop">+{xp} XP</span>

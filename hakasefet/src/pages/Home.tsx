@@ -69,7 +69,7 @@ export function Home() {
               <Link key={room.id} to={`/solo/${room.id}`} className="card tilt block p-4">
                 <span className="text-3xl" aria-hidden="true">{room.emoji}</span>
                 <p className="font-display text-xl font-bold">{room.title}</p>
-                <p className="text-sm text-dim">{room.difficulty}</p>
+                <p className="text-sm text-dim">{room.category} · {room.length}</p>
                 <p className="mt-1 text-sm">{best ? <span className="text-teal-2">{'⭐'.repeat(best.stars)} {formatDuration(best.timeMs)}</span> : <span className="text-dim">🔒 עוד לא ברחתם</span>}</p>
               </Link>
             )

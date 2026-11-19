@@ -18,6 +18,10 @@ export type Dir = 'up' | 'down' | 'left' | 'right'
 export interface Note {
   title: string
   text: string
+  /** Clearer wording on the easy level. */
+  easy?: string
+  /** Vaguer wording on the hard level. */
+  hard?: string
   style?: 'paper' | 'screen' | 'plaque' | 'book'
 }
 
@@ -49,6 +53,7 @@ export type ArtKey =
   | 'door' | 'clock' | 'trash' | 'drawer' | 'terminal' | 'desk-under' | 'whiteboard' | 'mixer' | 'vent' | 'fusebox'
   | 'poster' | 'safe' | 'book' | 'starmap' | 'locker' | 'console' | 'hatch' | 'crate' | 'slot' | 'switches'
   | 'manual' | 'tanks' | 'painting' | 'statues' | 'showcase' | 'owl' | 'cabinet' | 'jewelbox'
+  | 'radio' | 'typewriter' | 'map' | 'machine' | 'phone' | 'lamp' | 'ladder' | 'calendar' | 'enigma'
 
 export interface Hotspot {
   id: string
@@ -83,20 +88,29 @@ export interface Hint {
   text: string
 }
 
+export type Theme = 'lab' | 'station' | 'museum' | 'bunker' | 'hq' | 'hut'
+
 export interface SceneDef {
   id: string
   name: string
-  theme: 'lab' | 'station' | 'museum'
+  theme: Theme
 }
+
+export type Category = 'מדע ודמיון' | 'מחתרות' | 'מלחמות ישראל' | 'מלחמת העולם השנייה'
 
 export interface RoomDef {
   id: string
   version: number
   title: string
   emoji: string
-  difficulty: 'קל' | 'בינוני' | 'קשה'
-  minutes: number
+  category: Category
+  /** Rough playing time on the medium level, e.g. "15–20 דקות". */
+  length: string
   story: string
+  /** Historical background, shown before playing (plot and puzzles are fictional). */
+  history?: string
+  /** The room is in emergency lighting until this flag is set. */
+  darkUntil?: string
   scenes: SceneDef[]
   hotspots: Hotspot[]
   items: ItemDef[]

@@ -12,10 +12,13 @@ test('solo: escape the lab — wrong code, refresh mid-game, hint, rewards, then
   await page.goto('./')
   await onboard(page)
   await page.getByRole('link', { name: /משחק לבד/ }).click()
+  // rooms are grouped by theme; the lab is under "מדע ודמיון"
+  await page.getByRole('tab', { name: /מדע ודמיון/ }).click()
   await page.getByRole('link', { name: 'לבד' }).first().click()
   await expect(page.getByRole('heading', { name: /המעבדה של ד״ר נוי/ })).toBeVisible()
+  await expect(page.getByRole('radio', { name: /בינוני/ })).toHaveAttribute('aria-checked', 'true')
   await page.getByRole('button', { name: /מתחילים/ }).click()
-  await expect(page.getByTestId('timer')).toHaveText(/^(30:00|29:5\d)$/)
+  await expect(page.getByTestId('timer')).toHaveText(/^(50:00|49:5\d)$/)
 
   // a locked computer explains itself
   await hotspot(page, 'המחשב').click()
@@ -44,7 +47,7 @@ test('solo: escape the lab — wrong code, refresh mid-game, hint, rewards, then
 
   for (const s of steps.slice(4)) await doStep(page, 'lab', s)
   await expect(page.getByRole('heading', { name: 'ברחתם!' })).toBeVisible({ timeout: 20_000 })
-  await expect(page.getByTestId('rewards')).toContainText('+150 XP')
+  await expect(page.getByTestId('rewards')).toContainText('+170 XP')
   await expect(page.getByTestId('rewards')).toContainText('+50 מטבעות')
 
   // refreshing the result never grants twice
@@ -79,7 +82,7 @@ test('phone layout fits 360px; offline play works after the first visit', async 
   }
   await page.getByRole('link', { name: /משחק לבד/ }).click()
   await noHorizontalScroll(page)
-  await page.getByRole('link', { name: 'לבד' }).nth(1).click()
+  await page.goto('./#/solo/station')
   await page.getByRole('button', { name: /מתחילים/ }).click()
   await expect(hotspot(page, 'יומן הקברניט')).toBeVisible()
   await noHorizontalScroll(page)
@@ -101,4 +104,29 @@ test('the 3D room renders on high graphics and its objects are clickable', async
   await hotspot(page, 'ציור במסגרת ירוקה').click({ timeout: 60_000 })
   await expect(page.getByRole('dialog', { name: 'ציור במסגרת ירוקה' })).toContainText('1831')
   await ctx.close()
+})
+
+test('levels and themes: a historical room on the hard level — 40 minutes, vaguer clues, 3 hints', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'once')
+  await page.goto('./')
+  await onboard(page)
+  await page.getByRole('link', { name: /משחק לבד/ }).click()
+  await expect(page.getByRole('heading', { name: /מחתרות/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /מלחמות ישראל/ })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /מלחמת העולם השנייה/ })).toBeVisible()
+  await page.goto('./#/solo/ayalon')
+  await expect(page.getByText(/מכון איילון/)).toBeVisible()
+  await page.getByRole('radio', { name: /קשה/ }).click()
+  await expect(page.getByText(/עד 3 רמזים/)).toBeVisible()
+  await page.getByRole('button', { name: /מתחילים/ }).click()
+  await expect(page.getByTestId('timer')).toHaveText(/^(40:00|39:5\d)$/)
+  await expect(page.getByText(/· קשה/)).toBeVisible()
+  // hard wording of a clue
+  await page.getByRole('tab', { name: 'משרד המפעל' }).click()
+  await hotspot(page, 'מכונת הכתיבה').click()
+  await expect(page.getByRole('dialog')).toContainText('בגליל — שורה אחת')
+  await page.getByRole('dialog').getByRole('button', { name: 'סגירה' }).last().click()
+  // the hint counter shows the limit
+  await page.getByRole('button', { name: /רמזים/ }).click()
+  await expect(page.getByRole('dialog')).toContainText('נשארו 3 מתוך 3 רמזים')
 })

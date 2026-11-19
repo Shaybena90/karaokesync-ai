@@ -5,8 +5,9 @@ export const lab: RoomDef = {
   version: 1,
   title: 'המעבדה של ד״ר נוי',
   emoji: '🧪',
-  difficulty: 'קל',
-  minutes: 30,
+  category: 'מדע ודמיון',
+  length: '15–25 דקות',
+  darkUntil: 'power',
   story: 'ד״ר נוי נעלמה, ומחשב המעבדה ״נוי־בוט״ נעל אתכם בפנים. בעוד 30 דקות המעבדה תיאטם לגמרי. מצאו את קוד הכספת — בתוכה כרטיס היציאה.',
   scenes: [
     { id: 'desk', name: 'שולחן העבודה', theme: 'lab' },
@@ -21,7 +22,7 @@ export const lab: RoomDef = {
   hotspots: [
     // ── desk ──
     {
-      id: 'clock', scene: 'desk', name: 'שעון הקיר', art: 'clock', x: 70, y: 50, w: 140, h: 140,
+      id: 'clock', scene: 'desk', name: 'שעון הקיר', art: 'clock', variant: '7:45', x: 70, y: 50, w: 140, h: 140,
       interactions: [{ type: 'note', note: { title: 'שעון הקיר', text: 'השעון עומד. המחוגים מראים בדיוק 7:45.' } }],
     },
     {

@@ -71,6 +71,42 @@ export function SceneBackground({ theme }: { theme: SceneDef['theme'] }) {
         {Array.from({ length: 9 }, (_, i) => <circle key={i} cx={40 + i * 90} cy="560" r="3" fill={TEAL2} opacity=".8" />)}
       </g>
     )
+  if (theme === 'bunker')
+    return (
+      <g>
+        <rect width="800" height="460" fill="#3a3a3f" />
+        {Array.from({ length: 6 }, (_, i) => <path key={i} d={`M0 ${i * 80 + 40}H800`} stroke="#2c2c31" strokeWidth="3" />)}
+        <rect y="460" width="800" height="140" fill="#24242a" />
+        <path d="M0 460H800" stroke="#f2c14e" strokeWidth="2" opacity=".35" />
+        {[160, 400, 640].map((x) => (
+          <g key={x}>
+            <path d={`M${x} 0V40`} stroke="#111" strokeWidth="2" />
+            <circle cx={x} cy="48" r="10" fill="#ffd97a" filter="url(#glow)" />
+            <ellipse cx={x} cy="60" rx="120" ry="200" fill="url(#spot)" />
+          </g>
+        ))}
+      </g>
+    )
+  if (theme === 'hq')
+    return (
+      <g>
+        <rect width="800" height="450" fill="#cbb994" />
+        {Array.from({ length: 10 }, (_, i) => Array.from({ length: 6 }, (_, j) => <rect key={`${i}${j}`} x={i * 80 + (j % 2) * 40} y={j * 75} width="78" height="73" fill="none" stroke="#a8946c" strokeWidth="2" />))}
+        <rect y="450" width="800" height="150" fill="#6b5a3e" />
+        <path d="M0 450H800" stroke="#3e2f1c" strokeWidth="4" />
+        <ellipse cx="400" cy="0" rx="300" ry="300" fill="url(#spot)" />
+      </g>
+    )
+  if (theme === 'hut')
+    return (
+      <g>
+        <rect width="800" height="450" fill="#5a3f26" />
+        {Array.from({ length: 16 }, (_, i) => <rect key={i} x={i * 50} width="49" height="450" fill={i % 2 ? '#5f4329' : '#553a22'} />)}
+        <rect y="450" width="800" height="150" fill="url(#parquet)" />
+        <path d="M0 450H800" stroke="#2a180a" strokeWidth="4" />
+        <ellipse cx="400" cy="0" rx="320" ry="300" fill="url(#spot)" />
+      </g>
+    )
   if (theme === 'museum')
     return (
       <g>
@@ -115,9 +151,18 @@ export function ObjectArt({ art, w, h, active, variant }: { art: ArtKey; w: numb
             const r = Math.min(w, h) / 2 - 14
             return <circle key={i} cx={cx + Math.sin(a) * r} cy={cy - Math.cos(a) * r} r="3" fill={INK} />
           })}
-          {/* 7:45 */}
-          <path d={`M${cx} ${cy}L${cx - 40} ${cy}`} stroke={INK} strokeWidth="4" strokeLinecap="round" />
-          <path d={`M${cx} ${cy}L${cx - 14} ${cy + 22}`} stroke={INK} strokeWidth="6" strokeLinecap="round" />
+          {(() => {
+            const [hh, mm] = (variant ?? '7:45').split(':').map(Number)
+            const r = Math.min(w, h) / 2
+            const ma = (mm / 60) * Math.PI * 2
+            const ha = (((hh % 12) + mm / 60) / 12) * Math.PI * 2
+            return (
+              <>
+                <path d={`M${cx} ${cy}L${cx + Math.sin(ma) * r * 0.62} ${cy - Math.cos(ma) * r * 0.62}`} stroke={INK} strokeWidth="4" strokeLinecap="round" />
+                <path d={`M${cx} ${cy}L${cx + Math.sin(ha) * r * 0.4} ${cy - Math.cos(ha) * r * 0.4}`} stroke={INK} strokeWidth="6" strokeLinecap="round" />
+              </>
+            )
+          })()}
           <circle cx={cx} cy={cy} r="5" fill={GOLD} />
         </g>
       )
@@ -170,7 +215,7 @@ export function ObjectArt({ art, w, h, active, variant }: { art: ArtKey; w: numb
     case 'whiteboard':
       return (
         <g>
-          <rect width={w} height={h} rx="6" fill="#e9ecf8" stroke="#8d9bc4" strokeWidth="6" />
+          <rect width={w} height={h} rx="6" fill={variant === 'dark' ? '#1f2a24' : '#e9ecf8'} stroke={variant === 'dark' ? '#6b4524' : '#8d9bc4'} strokeWidth="6" />
           <g stroke="#3f7be0" strokeWidth="3" strokeLinecap="round" fill="none">
             <path d={`M${w - 30} 34H${w - 140}`} />
             <path d={`M${w - 30} 64H${w - 110}`} stroke="#e0533f" />
@@ -442,6 +487,153 @@ export function ObjectArt({ art, w, h, active, variant }: { art: ArtKey; w: numb
           ))}
           <rect x={cx - 20} y={h * 0.08} width="40" height="18" rx="3" fill={INK} stroke={GOLD} />
           <text x={cx} y={h * 0.08 + 14} textAnchor="middle" fontSize="11" fill={GOLD}>↔↕</text>
+        </g>
+      )
+    case 'radio':
+      return (
+        <g>
+          <rect width={w} height={h} rx="14" fill="url(#wood)" stroke="#2a180a" strokeWidth="3" />
+          <rect x="12" y="12" width={w * 0.5} height={h - 24} rx="8" fill="#c9b37a" />
+          {Array.from({ length: 6 }, (_, i) => <path key={i} d={`M18 ${20 + i * ((h - 40) / 5)}H${w * 0.5 + 6}`} stroke="#8d7a5a" strokeWidth="2" />)}
+          <circle cx={w * 0.78} cy={h * 0.35} r={Math.min(w, h) * 0.16} fill="#1a1208" stroke="url(#goldg)" strokeWidth="3" />
+          <path d={`M${w * 0.78} ${h * 0.35}l${Math.min(w, h) * 0.12} -${Math.min(w, h) * 0.06}`} stroke="#ffd97a" strokeWidth="3" />
+          <circle cx={w * 0.68} cy={h * 0.75} r="8" fill="url(#goldg)" />
+          <circle cx={w * 0.88} cy={h * 0.75} r="8" fill="url(#goldg)" />
+          {active && <circle cx={w * 0.58} cy={h * 0.15} r="5" fill={TEAL} filter="url(#glow)" />}
+        </g>
+      )
+    case 'typewriter':
+      return (
+        <g>
+          <rect x="10" y={h * 0.35} width={w - 20} height={h * 0.62} rx="10" fill="#1a1a22" stroke="#555" strokeWidth="2" />
+          <rect x="30" y={h * 0.12} width={w - 60} height={h * 0.2} rx="8" fill="#2b2b33" />
+          <rect x={w * 0.2} y="0" width={w * 0.6} height={h * 0.25} fill="#f4ecd8" />
+          {[0.06, 0.12, 0.18].map((f) => <path key={f} d={`M${w * 0.25} ${h * f}H${w * 0.75}`} stroke="#8d7a5a" strokeWidth="1.5" />)}
+          {Array.from({ length: 24 }, (_, i) => <circle key={i} cx={30 + (i % 8) * ((w - 60) / 7)} cy={h * 0.5 + Math.floor(i / 8) * (h * 0.13)} r="6" fill="#e9ecf8" stroke="#888" />)}
+        </g>
+      )
+    case 'map': {
+      if (variant === 'sea' || variant === 'world') {
+        const rows = ['א', 'ב', 'ג', 'ד', 'ה']
+        return (
+          <g>
+            <rect width={w} height={h} fill="#cfe3ea" stroke="#6b4524" strokeWidth="6" />
+            <path d={`M${w * 0.78} 0C${w * 0.7} ${h * 0.3} ${w * 0.95} ${h * 0.5} ${w * 0.8} ${h}H${w}V0Z`} fill="#d8c79a" />
+            <path d={`M0 ${h * 0.1}C${w * 0.15} ${h * 0.3} ${w * 0.05} ${h * 0.6} ${w * 0.18} ${h}H0Z`} fill="#d8c79a" />
+            {variant === 'sea' &&
+              rows.map((r, i) => (
+                <g key={r}>
+                  <path d={`M0 ${(i + 1) * (h / 5)}H${w}`} stroke="#5b7f99" strokeWidth="1" opacity=".6" />
+                  <text x={w - 10} y={i * (h / 5) + 18} fontSize="13" fontWeight="800" fill="#2a4a66" textAnchor="end">{r}</text>
+                </g>
+              ))}
+            {variant === 'sea' &&
+              Array.from({ length: 8 }, (_, i) => (
+                <g key={i}>
+                  <path d={`M${w - (i + 1) * (w / 8)} 0V${h}`} stroke="#5b7f99" strokeWidth="1" opacity=".6" />
+                  <text x={w - i * (w / 8) - w / 16} y={h - 6} fontSize="12" fontWeight="800" fill="#2a4a66" textAnchor="middle">{i + 1}</text>
+                </g>
+              ))}
+            {[0.3, 0.45, 0.6].map((f, i) => <circle key={f} cx={w * f} cy={h * (0.35 + i * 0.12)} r="6" fill="#e0533f" stroke="#7a1d14" />)}
+          </g>
+        )
+      }
+      return (
+        <g>
+          <rect width={w} height={h} fill="#e8d9b0" stroke="#6b4524" strokeWidth="6" />
+          <path d={`M10 ${h * 0.7}Q${w * 0.3} ${h * 0.4} ${w * 0.5} ${h * 0.55}T${w - 10} ${h * 0.3}`} fill="none" stroke="#8d7a5a" strokeWidth="2" />
+          <path d={`M${w * 0.1} ${h * 0.2}C${w * 0.3} ${h * 0.3} ${w * 0.4} ${h * 0.1} ${w * 0.6} ${h * 0.25}`} fill="none" stroke="#3f7be0" strokeWidth="3" />
+          {[0.25, 0.5, 0.75].map((f, i) => (
+            <g key={f}>
+              <path d={`M${w * 0.08} ${h * 0.85}Q${w * f} ${h * (0.3 + i * 0.15)} ${w * 0.92} ${h * 0.15}`} fill="none" stroke={['#e0533f', '#c97a2b', '#2f8f5b'][i]} strokeWidth="3" strokeDasharray={i === 2 ? '8 6' : undefined} />
+              <circle cx={w * f} cy={h * (0.45 + i * 0.07)} r="11" fill="#f4ecd8" stroke="#3e2512" />
+              <text x={w * f} y={h * (0.45 + i * 0.07) + 5} textAnchor="middle" fontSize="13" fontWeight="800" fill="#3e2512">{i + 1}</text>
+            </g>
+          ))}
+          {Array.from({ length: 5 }, (_, i) => <path key={i} d={`M0 ${(i + 1) * (h / 6)}H${w}`} stroke="#b9a777" strokeWidth=".8" />)}
+          {Array.from({ length: 7 }, (_, i) => <path key={i} d={`M${(i + 1) * (w / 8)} 0V${h}`} stroke="#b9a777" strokeWidth=".8" />)}
+        </g>
+      )
+    }
+    case 'machine':
+      return (
+        <g>
+          <rect x="10" y={h * 0.2} width={w - 20} height={h * 0.8} rx="10" fill="#4a5a6a" stroke="#22303c" strokeWidth="4" />
+          {Array.from({ length: 9 }, (_, i) => {
+            const c = { x: 50 + (i % 3) * ((w - 100) / 2), y: h * 0.35 + Math.floor(i / 3) * (h * 0.18) }
+            return (
+              <g key={i}>
+                <circle cx={c.x} cy={c.y} r={Math.min(w, h) * 0.07} fill="#2b2b33" stroke="#9aa4b4" strokeWidth="3" />
+                <path d={`M${c.x} ${c.y}l${Math.min(w, h) * 0.05} 0`} stroke={GOLD} strokeWidth="3" />
+              </g>
+            )
+          })}
+          <rect x={w * 0.3} y="0" width={w * 0.4} height={h * 0.22} rx="6" fill="#2b2b33" stroke="#9aa4b4" strokeWidth="2" />
+          {[0, 1, 2].map((i) => <circle key={i} cx={w * 0.38 + i * w * 0.12} cy={h * 0.1} r="7" fill={active ? TEAL : '#e0533f'} filter="url(#glow)" />)}
+          {active && <rect x="10" y={h * 0.2} width={w - 20} height={h * 0.8} rx="10" fill="#6b5a3e" opacity=".85" />}
+        </g>
+      )
+    case 'phone':
+      return (
+        <g>
+          <path d={`M${w * 0.15} ${h * 0.4}H${w * 0.85}L${w * 0.95} ${h}H${w * 0.05}Z`} fill="#141414" stroke="#444" strokeWidth="2" />
+          <circle cx={cx} cy={h * 0.72} r={Math.min(w, h) * 0.18} fill="#e9ecf8" stroke="#444" strokeWidth="2" />
+          {Array.from({ length: 10 }, (_, i) => {
+            const a = (i / 10) * Math.PI * 2
+            return <circle key={i} cx={cx + Math.cos(a) * Math.min(w, h) * 0.12} cy={h * 0.72 + Math.sin(a) * Math.min(w, h) * 0.12} r="3" fill="#141414" />
+          })}
+          <path d={`M${w * 0.08} ${h * 0.32}Q${cx} ${h * 0.05} ${w * 0.92} ${h * 0.32}`} fill="none" stroke="#141414" strokeWidth={h * 0.14} strokeLinecap="round" />
+        </g>
+      )
+    case 'lamp':
+      if (variant === 'signal')
+        return (
+          <g>
+            <rect x={cx - 8} y="0" width="16" height={h * 0.3} fill="#333" />
+            <path d={`M${cx - w * 0.4} ${h * 0.3}H${cx + w * 0.4}L${cx + w * 0.3} ${h}H${cx - w * 0.3}Z`} fill="#222" stroke="#555" strokeWidth="2" />
+            <circle cx={cx} cy={h * 0.65} r={w * 0.28} fill={active ? '#3fb36b' : '#ff2a2a'} filter="url(#glow)" />
+          </g>
+        )
+      return (
+        <g>
+          <rect x={cx - 4} y={h * 0.3} width="8" height={h * 0.65} fill="#9aa4b4" />
+          <ellipse cx={cx} cy={h - 6} rx={w * 0.35} ry="8" fill="#555" />
+          <path d={`M${cx - w * 0.45} ${h * 0.32}L${cx - w * 0.25} 0H${cx + w * 0.25}L${cx + w * 0.45} ${h * 0.32}Z`} fill="#c9d3f0" stroke="#666" strokeWidth="2" />
+          <ellipse cx={cx} cy={h * 0.33} rx={w * 0.3} ry="8" fill={active ? '#fff2c4' : '#555'} filter={active ? 'url(#glow)' : undefined} />
+        </g>
+      )
+    case 'ladder':
+      return (
+        <g>
+          <rect x={w * 0.15} y="0" width="10" height={h} fill="#8a6a3a" />
+          <rect x={w * 0.85 - 10} y="0" width="10" height={h} fill="#8a6a3a" />
+          {Array.from({ length: Math.floor(h / 45) }, (_, i) => <rect key={i} x={w * 0.15} y={20 + i * 45} width={w * 0.7} height="8" fill="#a07d45" />)}
+          <rect x="0" y="0" width={w} height="14" fill="#555" />
+          {active && <rect x={w * 0.1} y="0" width={w * 0.8} height="10" fill={TEAL} filter="url(#glow)" />}
+        </g>
+      )
+    case 'calendar':
+      return (
+        <g>
+          <rect width={w} height={h} fill="#f4f6ff" stroke="#8d9bc4" strokeWidth="3" />
+          <rect width={w} height={h * 0.22} fill="#c0392b" />
+          {Array.from({ length: 28 }, (_, i) => <rect key={i} x={8 + (i % 7) * ((w - 16) / 7)} y={h * 0.3 + Math.floor(i / 7) * ((h * 0.65) / 4)} width={(w - 16) / 7 - 3} height={(h * 0.65) / 4 - 4} fill="#e9ecf8" />)}
+          <circle cx={8 + 3 * ((w - 16) / 7) + (w - 16) / 14} cy={h * 0.3 + ((h * 0.65) / 4) * 1.5} r={(w - 16) / 10} fill="none" stroke="#e0533f" strokeWidth="3" />
+        </g>
+      )
+    case 'enigma':
+      return (
+        <g>
+          <rect y={h * 0.1} width={w} height={h * 0.9} rx="8" fill="url(#wood)" stroke="#2a180a" strokeWidth="3" />
+          <rect x="12" y={h * 0.18} width={w - 24} height={h * 0.25} rx="4" fill="#1a1a22" />
+          {[0.35, 0.5, 0.65].map((f, i) => (
+            <g key={f}>
+              <rect x={w * f - 10} y={h * 0.2} width="20" height={h * 0.2} rx="4" fill="#c9b37a" />
+              <text x={w * f} y={h * 0.34} textAnchor="middle" fontSize="12" fontWeight="800" fill="#1a1208">{active ? ['ד', 'ג', 'ם'][i] : '?'}</text>
+            </g>
+          ))}
+          {Array.from({ length: 18 }, (_, i) => <circle key={i} cx={20 + (i % 9) * ((w - 40) / 8)} cy={h * 0.58 + Math.floor(i / 9) * (h * 0.15)} r="6" fill={active && i % 5 === 0 ? '#ffd97a' : '#2b2b33'} filter={active && i % 5 === 0 ? 'url(#glow)' : undefined} />)}
+          {Array.from({ length: 9 }, (_, i) => <circle key={i} cx={20 + i * ((w - 40) / 8)} cy={h * 0.9} r="5" fill="#e9ecf8" />)}
         </g>
       )
     case 'jewelbox':

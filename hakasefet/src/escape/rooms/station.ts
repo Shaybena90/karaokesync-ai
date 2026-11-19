@@ -5,8 +5,9 @@ export const station: RoomDef = {
   version: 1,
   title: 'תחנת החלל השקטה',
   emoji: '🚀',
-  difficulty: 'בינוני',
-  minutes: 30,
+  category: 'מדע ודמיון',
+  length: '15–25 דקות',
+  darkUntil: 'used:slot',
   story: 'התחנה איבדה קשר עם כדור הארץ, והמחשב הראשי נעל את כל הדלתות. החמצן יספיק ל־30 דקות. החזירו את המתח למנועים, פצחו את המחשב והגיעו לתא המילוט.',
   scenes: [
     { id: 'bridge', name: 'גשר הפיקוד', theme: 'station' },
