@@ -1,32 +1,63 @@
 import { useEffect, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { getActiveAttempt } from '../storage/repo'
 
+const CHECK_EVERY_MS = 30 * 60 * 1000
+
 /**
- * Update policy: a new version is downloaded in the background but only
- * applied when the player agrees AND no game is in progress. Content packs of
- * older versions stay in the bundle, so an attempt always finishes on the
- * content version it started with.
+ * Update policy:
+ * - The app checks for a new version on start, every 30 minutes and whenever
+ *   the tab comes back to the foreground.
+ * - A new version installs itself automatically — but only when no game is in
+ *   progress and the player is not on the game screen. During a game it waits
+ *   and shows a short note; it updates as soon as the game ends.
+ * - Older content packs stay in the bundle, so a game always finishes on the
+ *   content version it started with.
  */
 export function UpdateBanner() {
+  const { pathname } = useLocation()
   const {
-    needRefresh: [needRefresh, setNeedRefresh],
+    needRefresh: [needRefresh],
     offlineReady: [offlineReady, setOfflineReady],
     updateServiceWorker,
-  } = useRegisterSW()
+  } = useRegisterSW({
+    onRegisteredSW(_url, registration) {
+      if (!registration) return
+      const check = () => {
+        if (!navigator.onLine || registration.installing) return
+        registration.update().catch(() => {})
+      }
+      window.setInterval(check, CHECK_EVERY_MS)
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') check()
+      })
+    },
+  })
   const [busy, setBusy] = useState(false)
+  const [updating, setUpdating] = useState(false)
+  const inGame = pathname.startsWith('/play')
 
   useEffect(() => {
-    if (!needRefresh) return
+    if (!needRefresh || updating) return
     let alive = true
-    const check = () => getActiveAttempt().then((a) => alive && setBusy(!!a)).catch(() => {})
-    check()
-    const id = window.setInterval(check, 5000)
+    const tryUpdate = async () => {
+      const active = await getActiveAttempt().catch(() => undefined)
+      if (!alive) return
+      setBusy(!!active || inGame)
+      if (!active && !inGame) {
+        setUpdating(true)
+        // Give the note a moment to show, then switch to the new version.
+        window.setTimeout(() => void updateServiceWorker(true), 900)
+      }
+    }
+    void tryUpdate()
+    const id = window.setInterval(tryUpdate, 5000)
     return () => {
       alive = false
       window.clearInterval(id)
     }
-  }, [needRefresh])
+  }, [needRefresh, inGame, updating, updateServiceWorker])
 
   useEffect(() => {
     if (!offlineReady) return
@@ -34,26 +65,23 @@ export function UpdateBanner() {
     return () => window.clearTimeout(id)
   }, [offlineReady, setOfflineReady])
 
+  if (updating)
+    return (
+      <div role="status" className="mx-4 mb-2 rounded-xl border border-gold/40 bg-gold/10 px-4 py-2 text-sm text-gold-2">
+        ✨ מעדכנים לגרסה החדשה…
+      </div>
+    )
+  if (needRefresh && busy && !inGame)
+    return (
+      <div role="status" className="mx-4 mb-2 rounded-xl border border-gold/40 bg-gold/10 px-4 py-2 text-sm">
+        יש גרסה חדשה. היא תותקן לבד אחרי שתסיימו את המשחק הפתוח.
+      </div>
+    )
   if (offlineReady)
     return (
       <div role="status" className="mx-4 mb-2 rounded-xl border border-teal/40 bg-teal/10 px-4 py-2 text-sm text-teal-2">
         ✓ המשחק מוכן לשימוש גם בלי חיבור לרשת
       </div>
     )
-  if (!needRefresh) return null
-  return (
-    <div role="status" className="mx-4 mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-gold/40 bg-gold/10 px-4 py-2 text-sm">
-      {busy ? <span>יש גרסה חדשה. היא תותקן אחרי שתסיימו את המשחק הפתוח.</span> : <span>יש גרסה חדשה של המשחק.</span>}
-      <div className="flex gap-2">
-        {!busy && (
-          <button className="btn btn-gold !min-h-9 !px-4 !text-sm" onClick={() => updateServiceWorker(true)}>
-            לעדכן עכשיו
-          </button>
-        )}
-        <button className="btn btn-ghost !min-h-9 !px-4 !text-sm" onClick={() => setNeedRefresh(false)}>
-          אחר כך
-        </button>
-      </div>
-    </div>
-  )
+  return null
 }
