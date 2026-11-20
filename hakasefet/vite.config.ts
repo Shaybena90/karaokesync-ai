@@ -38,7 +38,7 @@ export default defineConfig(({ mode }) => {
         },
         workbox: {
           // The whole game (code, content, fonts, art) is precached → works offline after the first visit.
-          globPatterns: ['**/*.{js,css,html,svg,png,woff,woff2}'],
+          globPatterns: ['**/*.{js,css,html,svg,png,webp,woff,woff2}'],
           cleanupOutdatedCaches: true,
         },
       }),

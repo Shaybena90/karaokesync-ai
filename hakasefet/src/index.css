@@ -208,6 +208,20 @@
 @keyframes fly-in { 0% { transform: translate(-50%, -50%) scale(.4); opacity: 0 } 25% { transform: translate(-50%, -50%) scale(1.6); opacity: 1 } 100% { transform: translate(-50%, 220px) scale(.6); opacity: 0 } }
 .item-fly { position: absolute; left: 50%; top: 45%; font-size: 3rem; pointer-events: none; animation: fly-in 1.3s cubic-bezier(.3,.7,.4,1) forwards; filter: drop-shadow(0 0 12px #f2c14e); z-index: 5; }
 
+/* ── photo scenes ── */
+.photo-drift { animation: photo-drift 40s ease-in-out infinite alternate; transform-origin: 50% 55%; }
+@keyframes photo-drift { from { transform: scale(1.02) translate(0, 0) } to { transform: scale(1.06) translate(-1%, -.6%) } }
+.photo-light { background: radial-gradient(ellipse at 45% 8%, rgb(255 214 140 / .16), transparent 55%), radial-gradient(ellipse at center, transparent 55%, rgb(0 0 0 / .55) 100%); animation: lamp-flicker 9s steps(1) infinite; }
+@keyframes lamp-flicker { 0%, 100% { opacity: 1 } 61% { opacity: .82 } 62% { opacity: 1 } 63% { opacity: .9 } 64% { opacity: 1 } }
+.photo-hotspot { border-radius: 12px; background: transparent; outline: none; --c: 255 217 122; }
+.photo-hotspot::before { content: ''; position: absolute; inset: 0; border-radius: inherit; border: 2px solid rgb(var(--c) / .0); box-shadow: 0 0 0 0 rgb(var(--c) / 0); transition: all .25s; pointer-events: none; }
+.photo-hotspot:hover::before, .photo-hotspot:focus-visible::before { border-color: rgb(var(--c) / .9); box-shadow: 0 0 22px 2px rgb(var(--c) / .45), inset 0 0 30px rgb(var(--c) / .18); }
+.photo-hotspot-using::before { border-color: rgb(var(--c) / .75); border-style: dashed; animation: bracket-pulse 1s ease-in-out infinite; }
+.photo-hotspot-label { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); white-space: nowrap; font-size: .8rem; font-weight: 800; padding: .15rem .55rem; border-radius: 8px; background: rgb(20 12 4 / .85); color: #ffe7a8; border: 1px solid rgb(255 217 122 / .5); opacity: 0; transition: opacity .2s; pointer-events: none; }
+.photo-hotspot:hover .photo-hotspot-label, .photo-hotspot:focus-visible .photo-hotspot-label { opacity: 1; }
+.photo-hotspot-done { position: absolute; top: 4px; left: 4px; display: grid; place-items: center; width: 22px; height: 22px; border-radius: 999px; background: #2ec4b6; color: #08122c; font-size: .8rem; font-weight: 900; box-shadow: 0 0 10px #2ec4b6; }
+@media (hover: none) { .photo-hotspot::before { border-color: rgb(var(--c) / .28); } }
+
 /* ── reveal lens (UV / magnifier / light) ── */
 .reveal-box { position: relative; width: 100%; max-height: 60vh; margin: 0 auto; overflow: hidden; border-radius: 12px; touch-action: none; cursor: none; background: #0a1430; outline: none; }
 .reveal-box:focus-visible { box-shadow: 0 0 0 3px #ffd97a; }

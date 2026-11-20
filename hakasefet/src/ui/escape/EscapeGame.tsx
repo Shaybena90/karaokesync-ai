@@ -9,6 +9,7 @@ import { Modal } from '../kit'
 import { LockPanel } from './LockPanel'
 import { ObjectArt, SceneBackground, SceneDefs } from './sceneArt'
 import { Scene3D } from './Scene3D'
+import { PhotoScene } from './PhotoScene'
 import { useApp } from '../../state/AppState'
 import { RevealViewer } from './RevealViewer'
 import { VoicePlayer } from './VoicePlayer'
@@ -178,7 +179,9 @@ export function EscapeGame({ room, snap, session, coop, onRestart }: { room: Roo
         <BoardView room={room} hotspots={hotspots} flags={flags} onOpen={tapHotspot} />
       ) : (
       <div className="card relative overflow-hidden p-1.5">
-        {use2D ? (
+        {scene.photo ? (
+          <PhotoScene room={room} sceneId={scene.id} hotspots={hotspots} flags={flags} using={!!using} dark={!!room.darkUntil && !flags.includes(room.darkUntil)} reducedMotion={prefs.reducedMotion} onTap={(id) => tapHotspot(room.hotspots.find((h) => h.id === id)!)} />
+        ) : use2D ? (
           <Scene2D room={visibleRoom} sceneId={scene.id} flags={flags} using={!!using} onTap={(id) => tapHotspot(room.hotspots.find((h) => h.id === id)!)} />
         ) : (
           <Scene3D

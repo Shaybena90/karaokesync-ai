@@ -85,7 +85,7 @@ export async function doStep(page: Page, roomId: string, step: WalkStep, opts: {
       for (const ch of step.input) await dlg.getByRole('button', { name: ch, exact: true }).click()
       await dlg.getByRole('button', { name: 'אישור' }).click()
     } else if (lock.kind === 'letters') {
-      for (const ch of step.input.replace(/ם/g, 'מ')) await dlg.getByRole('button', { name: ch, exact: true }).click()
+      for (const ch of step.input.replace(/[ךםןףץ]/g, (c) => ({ 'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ' })[c]!)) await dlg.getByRole('button', { name: ch, exact: true }).click()
       await dlg.getByRole('button', { name: 'פתיחה' }).click()
     } else if (lock.kind === 'colors' || lock.kind === 'arrows') {
       const label: Record<string, string> = { red: 'אדום', green: 'ירוק', blue: 'כחול', yellow: 'צהוב', up: 'למעלה', down: 'למטה', left: 'שמאלה', right: 'ימינה' }
