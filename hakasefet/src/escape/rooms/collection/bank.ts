@@ -1,6 +1,9 @@
+import { placeOnPhoto } from './kit'
 import type { RoomDef } from '../../types'
 
 /** "הכספת האחרונה" — a timed bank-vault room (20 minutes), with an untimed practice mode. */
+const PHOTO = { src: 'rooms/bank.webp', size: [1672, 941] as [number, number] }
+
 export const bank: RoomDef = {
   id: 'bank',
   version: 1,
@@ -17,10 +20,10 @@ export const bank: RoomDef = {
   darkUntil: 'solved:breakers',
   illustration: { art: 'safe', theme: 'bank' },
   scenes: [
-    { id: 'guard', name: 'עמדת השומר', theme: 'bank' },
-    { id: 'security', name: 'מסוף האבטחה', theme: 'bank' },
-    { id: 'power', name: 'חדר החשמל', theme: 'bank' },
-    { id: 'vault', name: 'חדר הכספות', theme: 'bank' },
+    { id: 'guard', name: 'עמדת השומר', theme: 'bank', photo: { ...PHOTO, crop: [900, 40, 772, 760] } },
+    { id: 'security', name: 'מסוף האבטחה', theme: 'bank', photo: { ...PHOTO, crop: [0, 330, 760, 611] } },
+    { id: 'power', name: 'חדר החשמל', theme: 'bank', photo: { ...PHOTO, crop: [1000, 60, 672, 560] } },
+    { id: 'vault', name: 'חדר הכספות', theme: 'bank', photo: { ...PHOTO, crop: [0, 0, 1672, 941] } },
   ],
   items: [
     { id: 'badge', name: 'כרטיס עובד', icon: '🪪', note: { title: 'כרטיס עובד', text: 'כרטיס מגנטי של הבנק. אין עליו שם או מספר — רק פס מגנטי.' } },
@@ -133,3 +136,12 @@ export const bank: RoomDef = {
     { solve: 'mainvault', input: '5839' },
   ],
 }
+
+// where each object is in the room's image (pixels of the 1672×941 image)
+placeOnPhoto(bank.hotspots, {
+  locker: [1465, 290, 207, 280], guardlog: [1395, 580, 235, 105], rules: [1000, 300, 110, 150],
+  secterm: [150, 400, 245, 215], cam1: [168, 418, 108, 92], cam2: [278, 418, 108, 92], cam3: [168, 512, 108, 92], cam4: [278, 512, 108, 92],
+  timeline: [385, 530, 125, 135], diagram: [0, 700, 320, 241], boxlist: [312, 355, 135, 62], staff: [270, 685, 210, 60],
+  breakers: [1262, 318, 190, 110], warning: [1030, 140, 70, 75],
+  keycab: [1465, 115, 207, 170], boxes: [15, 20, 290, 365], verify: [1065, 515, 390, 140], mainvault: [560, 110, 430, 450],
+}, ['rules'])

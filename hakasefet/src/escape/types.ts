@@ -230,6 +230,12 @@ export interface RoomDef {
   timer?: { minutes: number }
   /** Time loop: everything except knowledge resets every N minutes. */
   loop?: { minutes: number; persist: string[] }
+  /**
+   * A realistic image of the whole room for the virtual tour, used when the areas
+   * have no photo of their own (phone / board rooms): `views` frame each area,
+   * `enter` is the object that opens the room's own screen (the phone, the board).
+   */
+  photo?: { src: string; size: [number, number]; views?: Record<string, [number, number, number, number]>; enter?: { label: string; rect: [number, number, number, number] } }
   /** Catalog illustration. */
   illustration?: { art: ArtKey; theme: Theme; variant?: string }
   scenes: SceneDef[]

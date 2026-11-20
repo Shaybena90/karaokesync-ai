@@ -1,3 +1,4 @@
+import { placeOnPhoto } from './kit'
 import type { RoomDef } from '../../types'
 
 const SYM = [
@@ -8,6 +9,8 @@ const SYM = [
 ]
 
 /** "תחנת החלל השקטה" — a silent station, a helpful computer, and one instruction you must not follow. */
+const PHOTO = { src: 'rooms/orbit.webp', size: [1672, 941] as [number, number] }
+
 export const orbit: RoomDef = {
   id: 'orbit',
   version: 1,
@@ -23,10 +26,10 @@ export const orbit: RoomDef = {
   darkUntil: 'solved:power',
   illustration: { art: 'pod', theme: 'station' },
   scenes: [
-    { id: 'quarters', name: 'תא המגורים', theme: 'station' },
-    { id: 'control', name: 'חדר הבקרה', theme: 'station', visibleWhen: ['solved:hatch'] },
-    { id: 'life', name: 'מערכות חיים', theme: 'station', visibleWhen: ['solved:hatch'] },
-    { id: 'pod', name: 'תא המילוט', theme: 'station', visibleWhen: ['solved:comms'] },
+    { id: 'quarters', name: 'תא המגורים', theme: 'station', photo: { ...PHOTO, crop: [0, 0, 1672, 941] } },
+    { id: 'control', name: 'חדר הבקרה', theme: 'station', photo: { ...PHOTO, crop: [0, 0, 1672, 941] }, visibleWhen: ['solved:hatch'] },
+    { id: 'life', name: 'מערכות חיים', theme: 'station', photo: { ...PHOTO, crop: [300, 40, 800, 520] }, visibleWhen: ['solved:hatch'] },
+    { id: 'pod', name: 'תא המילוט', theme: 'station', photo: { ...PHOTO, crop: [250, 150, 900, 560] }, visibleWhen: ['solved:comms'] },
   ],
   items: [
     { id: 'half1', name: 'חצי תג (עליון)', icon: '🪪', note: { title: 'חצי תג', text: 'החצי העליון של תג גישה שבור. בגבו: ◆1 · ●2.' } },
@@ -156,3 +159,10 @@ export const orbit: RoomDef = {
     { solve: 'launch', input: 'door,pressure,detach,ignite' },
   ],
 }
+
+// where each object is in the room's image (pixels of the 1672×941 image)
+placeOnPhoto(orbit.hotspots, {
+  manual: [0, 575, 450, 170], power: [0, 445, 345, 135], bunk: [1300, 455, 195, 190], toolbox: [0, 0, 245, 135], homecard: [1500, 385, 110, 90], hatch: [800, 165, 385, 390],
+  mata: [0, 190, 285, 250], starmap: [1415, 40, 257, 250], comms: [1505, 580, 135, 135],
+  gauges: [335, 170, 230, 125], air: [340, 295, 225, 170], lifemanual: [570, 165, 135, 300], radsensor: [955, 75, 70, 95], launch: [345, 470, 215, 105],
+})

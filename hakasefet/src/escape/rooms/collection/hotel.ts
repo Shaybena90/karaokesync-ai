@@ -1,6 +1,9 @@
+import { placeOnPhoto } from './kit'
 import type { RoomDef } from '../../types'
 
 /** "חדר 404" — a hotel room that changes every time you walk back in. */
+const PHOTO = { src: 'rooms/hotel.webp', size: [1672, 941] as [number, number] }
+
 export const hotel: RoomDef = {
   id: 'hotel',
   version: 1,
@@ -15,11 +18,11 @@ export const hotel: RoomDef = {
   goal: 'לגלות מה משתנה בחדר, לפענח את הסימנים ולהגיע לחדר 404 — שם נמצאת היציאה.',
   illustration: { art: 'door', theme: 'hotel', variant: '404' },
   scenes: [
-    { id: 'lobby', name: 'הלובי', theme: 'hotel' },
-    { id: 'corridor', name: 'מסדרון קומה 3', theme: 'hotel', visibleWhen: ['solved:elevator'] },
-    { id: 'room401', name: 'חדר 401', theme: 'hotel', visibleWhen: ['solved:elevator'] },
-    { id: 'room402', name: 'חדר 402', theme: 'hotel', visibleWhen: ['solved:doors'] },
-    { id: 'room404', name: 'חדר 404', theme: 'hotel', visibleWhen: ['solved:servicepanel'] },
+    { id: 'lobby', name: 'הלובי', theme: 'hotel', photo: { ...PHOTO, crop: [0, 200, 900, 741] } },
+    { id: 'corridor', name: 'מסדרון קומה 3', theme: 'hotel', photo: { ...PHOTO, crop: [0, 100, 900, 800] }, visibleWhen: ['solved:elevator'] },
+    { id: 'room401', name: 'חדר 401', theme: 'hotel', photo: { ...PHOTO, crop: [0, 0, 1000, 700] }, visibleWhen: ['solved:elevator'] },
+    { id: 'room402', name: 'חדר 402', theme: 'hotel', photo: { ...PHOTO, crop: [1000, 0, 672, 760] }, visibleWhen: ['solved:doors'] },
+    { id: 'room404', name: 'חדר 404', theme: 'hotel', photo: { ...PHOTO, crop: [880, 120, 560, 620] }, visibleWhen: ['solved:servicepanel'] },
   ],
   items: [
     { id: 'keys', name: 'צרור מפתחות', icon: '🗝️', note: { title: 'צרור מפתחות', text: 'שלושה מפתחות עם סמלים: ירח, כוכב ושמש. על התג: ״המפתח של הציור״.' } },
@@ -150,3 +153,11 @@ export const hotel: RoomDef = {
     { solve: 'exit', input: '321' },
   ],
 }
+
+// where each object is in the room's image (pixels of the 1672×941 image)
+placeOnPhoto(hotel.hotspots, {
+  guestbook: [255, 525, 450, 185], desk: [705, 555, 140, 95],
+  corridorsign: [0, 712, 400, 175], doors: [300, 160, 300, 330], exitdoor: [645, 225, 105, 270],
+  painting: [775, 185, 120, 255], clock: [295, 0, 130, 125], lamp: [55, 330, 235, 190],
+  mirror: [1385, 30, 287, 555], servicepanel: [1405, 585, 225, 95], exit: [1060, 230, 180, 395],
+})
