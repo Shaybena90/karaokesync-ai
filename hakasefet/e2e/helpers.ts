@@ -17,14 +17,22 @@ async function openHotspot(page: Page, roomId: string, id: string) {
   const room = getRoom(roomId)!
   const h = room.hotspots.find((x) => x.id === id)!
   const scene = room.scenes.find((s) => s.id === h.scene)!
-  await page.getByRole('tab', { name: new RegExp(scene.name) }).click()
+  if (room.presentation === 'phone') {
+    // go to the app: back to the home screen first, then the app icon (a lone lock screen has neither)
+    const home = page.getByRole('button', { name: 'חזרה למסך הבית' })
+    if (await home.isVisible()) await home.click()
+    const app = page.getByRole('button', { name: new RegExp(`^${scene.name}( —|$)`) })
+    if (await app.isVisible()) await app.click()
+  } else {
+    await page.getByRole('tab', { name: new RegExp(scene.name) }).click()
+  }
   await hotspot(page, h.name).click()
   await expect(page.getByRole('dialog', { name: h.name })).toBeVisible()
   return h
 }
 
 /** Perform one walkthrough step through the real UI. */
-export async function doStep(page: Page, roomId: string, step: WalkStep) {
+export async function doStep(page: Page, roomId: string, step: WalkStep, opts: { wrong?: boolean } = {}) {
   const room = getRoom(roomId)!
   if ('reveal' in step) {
     const h = await openHotspot(page, roomId, step.reveal)
@@ -35,6 +43,31 @@ export async function doStep(page: Page, roomId: string, step: WalkStep) {
     const at = it.at ?? { x: 50, y: 60 }
     await page.mouse.move(b.x + 5, b.y + 5)
     await page.mouse.move(b.x + (b.width * at.x) / 100, b.y + (b.height * at.y) / 100, { steps: 8 })
+  } else if ('read' in step) {
+    await openHotspot(page, roomId, step.read)
+    await page.getByRole('dialog').getByRole('button', { name: 'סגירה' }).last().click()
+    return
+  } else if ('act' in step) {
+    const h = await openHotspot(page, roomId, step.act)
+    const it = h.interactions.find((i) => i.type === 'action')!
+    if (it.type !== 'action') throw new Error('no action')
+    await page.getByRole('dialog').getByRole('button', { name: it.label }).click()
+  } else if ('combine' in step) {
+    const [a, b] = step.combine.map((id) => room.items.find((i) => i.id === id)!)
+    await page.getByLabel('התיק').getByRole('button', { name: a.name }).click()
+    await page.getByRole('dialog').getByRole('button', { name: new RegExp(b.name.replace(/[()]/g, '.')) }).click()
+    return
+  } else if ('waitUntil' in step) {
+    // press "wait" until the loop clock shows the wanted minute
+    for (let i = 0; i < 8; i++) {
+      const txt = (await page.getByTestId('loop-banner').getByRole('timer').getAttribute('aria-label')) ?? ''
+      const minute = Number(/דקה (\d+)/.exec(txt)?.[1])
+      const loop = Number(/לולאה (\d+)/.exec(txt)?.[1])
+      if (minute === step.waitUntil) break
+      await page.getByRole('button', { name: /המתנה לדקה הבאה/ }).click()
+      await expect(page.getByTestId('loop-banner').getByRole('timer')).not.toHaveAttribute('aria-label', new RegExp(`לולאה ${loop}, דקה ${minute},`))
+    }
+    return
   } else if ('take' in step) {
     await openHotspot(page, roomId, step.take)
     await page.getByRole('button', { name: /לקחת:/ }).click()
@@ -67,6 +100,20 @@ export async function doStep(page: Page, roomId: string, step: WalkStep) {
         input.dispatchEvent(new Event('input', { bubbles: true }))
       }, Number(step.input))
       await dlg.getByRole('button', { name: /קליטה/ }).click()
+    } else if (lock.kind === 'choice') {
+      const opt = lock.options.find((o) => o.id === step.input)!
+      await dlg.getByRole('button', { name: opt.label, exact: true }).click()
+    } else if (lock.kind === 'sequence') {
+      for (const v of step.input.split(',')) await dlg.getByRole('button', { name: lock.options.find((o) => o.id === v)!.label, exact: true }).click()
+      await dlg.getByRole('button', { name: 'פתיחה' }).click()
+    } else if (lock.kind === 'multi') {
+      for (const v of step.input.split(',')) await dlg.getByRole('checkbox', { name: lock.options.find((o) => o.id === v)!.label }).click()
+      await dlg.getByRole('button', { name: /אישור/ }).click()
+    } else if (lock.kind === 'accuse') {
+      const [who, ev] = step.input.split('|')
+      await dlg.getByRole('radio', { name: lock.suspects.find((o) => o.id === who)!.label }).click()
+      for (const v of ev.split(',')) await dlg.getByRole('button', { name: `לצרף: ${lock.evidence.find((o) => o.id === v)!.label}` }).click()
+      await dlg.getByRole('button', { name: /הגשה/ }).click()
     } else if (lock.kind === 'switches') {
       for (let i = 0; i < step.input.length; i++) if (step.input[i] === '1') await dlg.getByRole('switch', { name: `מתג ${i + 1}` }).click()
       await dlg.getByRole('button', { name: 'הפעלה' }).click()
@@ -75,6 +122,7 @@ export async function doStep(page: Page, roomId: string, step: WalkStep) {
       await dlg.getByLabel(/הקלידו תשובה/).press('Enter')
     }
   }
+  if (opts.wrong) return
   // success message, then close (unless the room was escaped and the screen changed)
   const cont = page.getByRole('button', { name: 'ממשיכים', exact: true })
   const escaped = page.getByRole('heading', { name: 'ברחתם!' })

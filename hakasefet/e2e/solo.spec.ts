@@ -11,7 +11,7 @@ test('solo: escape the lab — wrong code, refresh mid-game, hint, rewards, then
   const lab = getRoom('lab')!
   await page.goto('./')
   await onboard(page)
-  await page.getByRole('link', { name: /משחק לבד/ }).click()
+  await page.goto('./#/rooms')
   // rooms are grouped by theme; the lab is under "מדע ודמיון"
   await page.getByRole('tab', { name: /מדע ודמיון/ }).click()
   await page.getByRole('link', { name: 'לבד' }).first().click()
@@ -80,7 +80,7 @@ test('phone layout fits 360px; offline play works after the first visit', async 
     await context.setOffline(true)
     await page.reload()
   }
-  await page.getByRole('link', { name: /משחק לבד/ }).click()
+  await page.goto('./#/rooms')
   await noHorizontalScroll(page)
   await page.goto('./#/solo/station')
   await page.getByRole('button', { name: /מתחילים/ }).click()
@@ -110,7 +110,7 @@ test('levels and themes: a historical room on the hard level — 40 minutes, vag
   test.skip(info.project.name !== 'desktop', 'once')
   await page.goto('./')
   await onboard(page)
-  await page.getByRole('link', { name: /משחק לבד/ }).click()
+  await page.goto('./#/rooms')
   await expect(page.getByRole('heading', { name: /מחתרות/ })).toBeVisible()
   await expect(page.getByRole('heading', { name: /מלחמות ישראל/ })).toBeVisible()
   await expect(page.getByRole('heading', { name: /מלחמת העולם השנייה/ })).toBeVisible()

@@ -6,7 +6,7 @@ import { UpdateBanner } from './UpdateBanner'
 
 const NAV = [
   { to: '/', label: 'בית', icon: '🏠' },
-  { to: '/rooms', label: 'חדרים', icon: '🔐' },
+  { to: '/escape', label: 'חדרי בריחה', icon: '🗝️' },
   { to: '/coop', label: 'חברים', icon: '👥' },
   { to: '/room', label: 'החדר שלי', icon: '🛋️' },
   { to: '/profile', label: 'פרופיל', icon: '👤' },
@@ -15,7 +15,7 @@ const NAV = [
 export function Layout() {
   const { profile } = useApp()
   const { pathname } = useLocation()
-  const inGame = pathname.startsWith('/solo') || /^\/coop\/./.test(pathname)
+  const inGame = pathname.startsWith('/solo') || /^\/coop\/./.test(pathname) || /^\/pair(\/.|-practice)/.test(pathname)
   return (
     <div className="flex min-h-dvh w-full flex-col">
       <div className="stage" aria-hidden="true"><div className="stage-floor" /></div>

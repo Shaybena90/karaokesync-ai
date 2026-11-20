@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import type { RoomDef } from '../../escape/types'
+import { isVisible } from '../../escape/engine'
 import type { EscapeSceneHandle, Quality, Rect } from '../three/escape/escapeScene'
 
 /**
@@ -71,7 +72,7 @@ export function Scene3D(p: {
   }, [p.focusId, ready])
 
   const scene = p.room.scenes.find((s) => s.id === p.sceneId)!
-  const hotspots = p.room.hotspots.filter((h) => h.scene === p.sceneId)
+  const hotspots = p.room.hotspots.filter((h) => h.scene === p.sceneId && isVisible(h, p.flags))
   return (
     <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-ink" role="group" aria-label={scene.name}>
       <div ref={ref} className="absolute inset-0" data-testid="scene-3d" data-ready={ready} />

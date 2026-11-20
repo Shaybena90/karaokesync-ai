@@ -8,6 +8,8 @@ export const FIRST_ESCAPE: Record<Level, { xp: number; coins: number }> = {
   medium: { xp: 120, coins: 30 },
   hard: { xp: 180, coins: 45 },
 }
+/** First completion of an escape-collection room (once per player and room, whatever the mode). */
+export const FIRST_ROOM = { xp: 150, coins: 40 }
 export const DAILY_XP = 50
 export const DAILY_COINS = 20
 export const XP_PER_RANK = 300
@@ -15,7 +17,7 @@ export const XP_PER_RANK = 300
 export interface Grant {
   /** Unique ledger key — the same key can never be granted twice. */
   key: string
-  kind: 'first-escape' | 'daily'
+  kind: 'first-escape' | 'first-room' | 'daily'
   xp: number
   coins: number
   date: string
@@ -30,13 +32,20 @@ export function rankInfo(xp: number) {
 /**
  * Rewards for escaping a room:
  * - first escape from each room on each level: easy 80 XP + 20 coins, medium 120 + 30, hard 180 + 45
+ * - escape-collection rooms instead: one first-completion reward per room (150 XP + 40 coins)
  * - first escape of each Israel calendar day: 50 XP + 20 coins (once per day)
  */
-export function decideEscapeGrants(p: { roomId: string; level: Level; date: string; ledgerKeys: Set<string> }): Grant[] {
+export function decideEscapeGrants(p: { roomId: string; level: Level; date: string; ledgerKeys: Set<string>; collection?: boolean }): Grant[] {
   const out: Grant[] = []
-  const first = `escape:${p.roomId}:${p.level}`
-  const r = FIRST_ESCAPE[p.level]
-  if (!p.ledgerKeys.has(first)) out.push({ key: first, kind: 'first-escape', xp: r.xp, coins: r.coins, date: p.date })
+  if (p.collection) {
+    // escape collection: one first-completion reward per room
+    const key = `room:${p.roomId}`
+    if (!p.ledgerKeys.has(key)) out.push({ key, kind: 'first-room', xp: FIRST_ROOM.xp, coins: FIRST_ROOM.coins, date: p.date })
+  } else {
+    const first = `escape:${p.roomId}:${p.level}`
+    const r = FIRST_ESCAPE[p.level]
+    if (!p.ledgerKeys.has(first)) out.push({ key: first, kind: 'first-escape', xp: r.xp, coins: r.coins, date: p.date })
+  }
   const daily = `daily:${p.date}`
   if (!p.ledgerKeys.has(daily)) out.push({ key: daily, kind: 'daily', xp: DAILY_XP, coins: DAILY_COINS, date: p.date })
   return out

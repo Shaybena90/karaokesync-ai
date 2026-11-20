@@ -6,7 +6,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
 import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js'
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
-import { isActive } from '../../../escape/engine'
+import { isActive, isVisible } from '../../../escape/engine'
 import type { RoomDef } from '../../../escape/types'
 import { buildObject, makeMaterials, tableUnder, type Kit, type ObjectModel } from './models'
 import { dotTexture, floorTexture, wallTexture, type Theme } from './textures'
@@ -41,7 +41,7 @@ export interface EscapeSceneHandle {
 const ROOM = 13 // room is 13 × 13 m, 6 m high
 const HALF = ROOM / 2
 const WALL_H = 6
-const FLOOR_LINE: Record<Theme, number> = { lab: 440, station: 540, museum: 420, bunker: 460, hq: 450, hut: 450 }
+const FLOOR_LINE: Record<Theme, number> = { lab: 440, station: 540, museum: 420, bunker: 460, hq: 450, hut: 450, bank: 460, hotel: 440, office: 450 }
 const EYE = 2.1 // eye height (m)
 const FOV = 2 * Math.atan(2.9 / HALF) * (180 / Math.PI) // frames the lower 5 m of a wall from the centre
 
@@ -71,6 +71,9 @@ const THEME_LIGHT: Record<Theme, { key: number; accent: number; ambient: number;
   bunker: { key: 0xffd9a0, accent: 0xff9f43, ambient: 0x8a7a6a, fog: 0x0c0a08 },
   hq: { key: 0xffe7b8, accent: 0xf2c14e, ambient: 0xb8a07a, fog: 0x100c06 },
   hut: { key: 0xffdca0, accent: 0xf2c14e, ambient: 0x9a7a5a, fog: 0x0e0905 },
+  bank: { key: 0xfff0d0, accent: 0xf2c14e, ambient: 0x8a8f9a, fog: 0x08090b },
+  hotel: { key: 0xffd8a0, accent: 0xf2c14e, ambient: 0xa05a6a, fog: 0x100508 },
+  office: { key: 0xf4f8ff, accent: 0x2ec4b6, ambient: 0x9aa4b4, fog: 0x0c0e12 },
 }
 const NEON = new Set<Theme>(['lab', 'station'])
 
@@ -295,6 +298,20 @@ export function createEscapeScene(container: HTMLElement, room: RoomDef, opts: {
   aimForWall()
 
   let flags: string[] = []
+  let currentScene = room.scenes[0]?.id
+  // rooms with more areas than walls: areas past the 4th share the last wall, showing only their own objects
+  const sharedWall = room.scenes.length > WALLS.length
+  const shown = (p: Placed) => {
+    const h = room.hotspots.find((x) => x.id === p.id)!
+    if (!isVisible(h, flags)) return false
+    if (!sharedWall) return true
+    const last = WALLS.length - 1
+    const idx = room.scenes.findIndex((s) => s.id === p.scene)
+    if (idx < last) return true
+    const cur = room.scenes.findIndex((s) => s.id === currentScene)
+    // looking at the shared wall: only the current area; elsewhere it shows its first area
+    return cur >= last ? p.scene === currentScene : idx === last
+  }
   let escaped = false
   let escapedAt = -1
   const powerFlag = room.darkUntil ?? null
@@ -309,6 +326,7 @@ export function createEscapeScene(container: HTMLElement, room: RoomDef, opts: {
     const powered = !powerFlag || flags.includes(powerFlag)
     for (const p of placed) {
       const h = room.hotspots.find((x) => x.id === p.id)!
+      p.model.group.visible = shown(p)
       p.model.update({ active: isActive(h, flags), escaped, powered }, dt, t)
     }
     // lighting mood: emergency red until the power is back
@@ -444,7 +462,12 @@ export function createEscapeScene(container: HTMLElement, room: RoomDef, opts: {
     },
     setScene(sceneId) {
       const idx = Math.max(0, room.scenes.findIndex((s) => s.id === sceneId))
-      if (idx === wallIdx && !focusId) return
+      const prevScene = currentScene
+      currentScene = room.scenes[idx]?.id
+      if (Math.min(idx, WALLS.length - 1) === wallIdx && !focusId) {
+        if (prevScene !== currentScene) settled = false
+        return
+      }
       wallIdx = Math.min(idx, WALLS.length - 1)
       // turn the short way round
       let t = WALLS[wallIdx].yaw
@@ -473,9 +496,8 @@ export function createEscapeScene(container: HTMLElement, room: RoomDef, opts: {
       const cw = container.clientWidth
       const ch = container.clientHeight
       camera.updateMatrixWorld()
-      const sceneId = room.scenes[wallIdx]?.id
       for (const p of placed) {
-        if (p.scene !== sceneId) continue
+        if (p.scene !== currentScene || !shown(p)) continue
         let minX = Infinity
         let minY = Infinity
         let maxX = -Infinity

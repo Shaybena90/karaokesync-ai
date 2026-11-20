@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { getRoom } from '../escape/rooms'
 import { newGame, reduce, type Action, type GameState } from '../escape/engine'
 import type { WalkStep } from '../escape/types'
+import { walkAction } from '../escape/walk'
 import { closeDb, DB_NAME, openDb } from './db'
 import { buyOrEquip, completeRun, createProfile, getProfile, listLedger, listRuns, resetAll } from './repo'
 
@@ -14,7 +15,7 @@ function escaped(roomId: string, start = T0, stepMs = 20_000): GameState {
   let t = start
   for (const w of room.walkthrough as WalkStep[]) {
     t += stepMs
-    const x = 'take' in w ? { type: 'TAKE', hotspot: w.take } : 'solve' in w ? { type: 'SOLVE', hotspot: w.solve, input: w.input } : 'reveal' in w ? { type: 'REVEAL', hotspot: w.reveal } : { type: 'USE', hotspot: w.use, item: w.item }
+    const x = walkAction(w)
     s = reduce(room, s, a(x, t)).state
   }
   return s

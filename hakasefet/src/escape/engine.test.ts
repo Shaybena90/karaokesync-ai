@@ -2,18 +2,12 @@ import { describe, expect, it } from 'vitest'
 import { ROOMS, getRoom } from './rooms'
 import { currentInteraction, elapsedMs, hintsLeft, LEVEL_IDS, LEVELS, nextHintIndex, newGame, normalizeText, reduce, remainingMs, stars, type Action, type GameState, type Level } from './engine'
 import type { RoomDef, WalkStep } from './types'
+import { walkAction } from './walk'
 
 const who = { nick: 'דנה', avatar: '🦊' }
 let n = 0
 const act = (a: Record<string, unknown>, now = 1000): Action => ({ id: `a${++n}`, by: who, now, ...a }) as Action
-const stepToAction = (s: WalkStep, now: number): Action =>
-  'take' in s
-    ? act({ type: 'TAKE', hotspot: s.take }, now)
-    : 'solve' in s
-      ? act({ type: 'SOLVE', hotspot: s.solve, input: s.input }, now)
-      : 'reveal' in s
-        ? act({ type: 'REVEAL', hotspot: s.reveal }, now)
-        : act({ type: 'USE', hotspot: s.use, item: s.item }, now)
+const stepToAction = (s: WalkStep, now: number): Action => act(walkAction(s), now)
 
 function started(room: RoomDef, level: Level = 'medium'): GameState {
   const lobby = reduce(room, newGame(room), act({ type: 'SET_LEVEL', level }, 0)).state

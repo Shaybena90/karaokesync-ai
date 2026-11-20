@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { currentInteraction, hintsLeft, isActive, levelOf, LEVELS, nextHintIndex, remainingMs, shownHints, type GameState, type Level } from '../../escape/engine'
+import { currentInteraction, flagsAt, hintsLeft, holds, isActive, isVisible, levelOf, LEVELS, nextHintIndex, remainingMs, shownHints, syncLoop, type GameState, type Level } from '../../escape/engine'
 import { createContext, useContext } from 'react'
 import type { Hotspot, ItemDef, Note, RoomDef } from '../../escape/types'
 import type { GameSession, SessionSnapshot } from '../../net/session'
@@ -13,18 +13,25 @@ import { useApp } from '../../state/AppState'
 import { RevealViewer } from './RevealViewer'
 import { VoicePlayer } from './VoicePlayer'
 import { Music } from '../music'
+import { BoardView, CollectionClock, NotebookPanel, PhoneView, Pressure, PuzzleHints, TimeoutModal } from './collection'
 
 /** The playing screen: scenes, objects, inventory, hints, timer and the team feed. */
-export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap: SessionSnapshot; session: GameSession; coop: boolean }) {
-  const state = snap.state as GameState
+export function EscapeGame({ room, snap, session, coop, onRestart }: { room: RoomDef; snap: SessionSnapshot; session: GameSession; coop: boolean; onRestart?: () => void }) {
+  const raw = snap.state as GameState
   const [sceneId, setSceneId] = useState(room.scenes[0].id)
   const [open, setOpen] = useState<Hotspot | null>(null)
   const [item, setItem] = useState<ItemDef | null>(null)
   const [using, setUsing] = useState<ItemDef | null>(null)
   const [hintsOpen, setHintsOpen] = useState(false)
+  const [notebookOpen, setNotebookOpen] = useState(false)
+  const [phoneApp, setPhoneApp] = useState<string | null>(null)
   const [toast, setToast] = useState<{ id: number; text: string; kind: string } | null>(null)
   const [now, setNow] = useState(() => session.hostNow())
-  const lastLog = useRef(state.log.at(-1)?.id ?? 0)
+  // loop rooms: show the loop that is running now, even before the next action syncs it
+  const state = useMemo(() => syncLoop(room, raw, now), [room, raw, now])
+  const flags = useMemo(() => flagsAt(room, state, now), [room, state, now])
+  const collection = !!room.puzzles
+  const lastLog = useRef(raw.log.at(-1)?.id ?? 0)
   const { prefs } = useApp()
   const [use2D, setUse2D] = useState(prefs.graphics === '2d')
   useEffect(() => setUse2D(prefs.graphics === '2d'), [prefs.graphics])
@@ -56,7 +63,7 @@ export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap:
 
   // Team feed: show new log entries as toasts (with a sound for progress).
   useEffect(() => {
-    const fresh = state.log.filter((l) => l.id > lastLog.current)
+    const fresh = raw.log.filter((l) => l.id > lastLog.current)
     if (!fresh.length) return
     lastLog.current = fresh[fresh.length - 1].id
     const l = fresh[fresh.length - 1]
@@ -64,10 +71,17 @@ export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap:
     if (l.kind === 'good') play('clue')
     const t = window.setTimeout(() => setToast((x) => (x?.id === l.id ? null : x)), 3800)
     return () => window.clearTimeout(t)
-  }, [state.log])
+  }, [raw.log])
 
-  const scene = room.scenes.find((s) => s.id === sceneId)!
-  const hotspots = room.hotspots.filter((h) => h.scene === sceneId)
+  const scenes = room.scenes.filter((sc) => !sc.visibleWhen || holds(flags, sc.visibleWhen))
+  const flagKey = flags.join('|')
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const visibleRoom = useMemo(() => ({ ...room, hotspots: room.hotspots.filter((h) => isVisible(h, flags)) }), [room, flagKey])
+  useEffect(() => {
+    if (!scenes.some((sc) => sc.id === sceneId)) setSceneId(scenes[0]?.id ?? room.scenes[0].id)
+  }, [scenes, sceneId, room])
+  const scene = scenes.find((s) => s.id === sceneId) ?? scenes[0] ?? room.scenes[0]
+  const hotspots = visibleRoom.hotspots.filter((h) => h.scene === scene.id)
   const left = remainingMs(room, state, now)
   const items = state.inventory.map((id) => room.items.find((i) => i.id === id)!).filter(Boolean)
   const level = levelOf(state)
@@ -88,15 +102,23 @@ export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap:
     }
   }, [prefs.music, room])
   useEffect(() => {
-    music.current?.setTension(left < 5 * 60_000 ? 1 - Math.max(0, left) / (5 * 60_000) : 0)
+    music.current?.setTension(Number.isFinite(left) && left < 5 * 60_000 ? 1 - Math.max(0, left) / (5 * 60_000) : 0)
   }, [left])
+  const timedOut = !!room.timer && state.mode !== 'practice' && state.phase === 'playing' && left <= 0
   useEffect(() => {
     if (state.phase === 'escaped') music.current?.stop(2)
   }, [state.phase])
   const canHint = nextHintIndex(room, state) !== -1 && hintsLeft(state) > 0
 
   // Objects in the open dialog follow live state (another player may change them).
-  const openInteraction = open ? currentInteraction(open, state.flags) : undefined
+  const openInteraction = open ? currentInteraction(open, flags) : undefined
+  // looking at something is free; it marks it as seen and records any notebook entry
+  useEffect(() => {
+    if (!open || !openInteraction) return
+    const entry = 'note' in openInteraction ? openInteraction.note.notebook : undefined
+    if (!flags.includes(`seen:${open.id}`) || (entry && !(state.notebook ?? []).includes(entry))) void session.dispatch({ type: 'READ', hotspot: open.id })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open?.id, openInteraction])
 
   function tapHotspot(h: Hotspot) {
     play('tap')
@@ -118,43 +140,51 @@ export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap:
       {/* top bar */}
       <div className="mb-2 flex items-center justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-sm text-dim">{room.emoji} {room.title} · {LEVELS[level].label}</p>
-          <p className={`font-mono text-2xl font-extrabold ${left < 0 ? 'text-coral' : left < 5 * 60_000 ? 'text-coral' : 'text-gold-2'}`} role="timer" aria-label={left >= 0 ? `נותרו ${formatDuration(left)}` : `זמן נוסף ${formatDuration(-left)}`} data-testid="timer">
+          <p className="truncate text-sm text-dim">{room.emoji} {room.title}{!collection && ` · ${LEVELS[level].label}`}</p>
+          {collection ? <CollectionClock room={room} state={state} now={now} session={session} /> : <p className={`font-mono text-2xl font-extrabold ${left < 0 ? 'text-coral' : left < 5 * 60_000 ? 'text-coral' : 'text-gold-2'}`} role="timer" aria-label={left >= 0 ? `נותרו ${formatDuration(left)}` : `זמן נוסף ${formatDuration(-left)}`} data-testid="timer">
             {left >= 0 ? formatDuration(left) : `+${formatDuration(-left)}`}
-          </p>
+          </p>}
         </div>
         <div className="flex items-center gap-2">
           {coop && <Players snap={snap} />}
           {musicBlocked && (
             <button className="btn btn-ghost !min-h-11 !px-3" onClick={() => { music.current?.start(); setMusicBlocked(!(music.current?.isRunning() ?? true)) }} aria-label="הפעלת מוזיקה">🎵</button>
           )}
-          <button className="btn btn-ghost !min-h-11 !px-4" onClick={() => setHintsOpen(true)}>💡 רמזים {state.hintsShown.length > 0 && `(${state.hintsShown.length})`}</button>
+          {collection && <button className="btn btn-ghost !min-h-11 !px-3" onClick={() => setNotebookOpen(true)} aria-label={`מחברת ראיות, ${(state.notebook ?? []).length} רשומות`}>📓 {(state.notebook ?? []).length}</button>}
+          <button className="btn btn-ghost !min-h-11 !px-4" onClick={() => setHintsOpen(true)}>💡 רמזים {!collection && state.hintsShown.length > 0 && `(${state.hintsShown.length})`}</button>
         </div>
       </div>
-      {left < 0 && <p className="mb-2 rounded-xl border border-coral/40 bg-coral/10 px-3 py-2 text-sm">⏰ הזמן נגמר — אפשר להמשיך ולברוח, אבל בלי כוכבים.</p>}
+      {!collection && left < 0 && <p className="mb-2 rounded-xl border border-coral/40 bg-coral/10 px-3 py-2 text-sm">⏰ הזמן נגמר — אפשר להמשיך ולברוח, אבל בלי כוכבים.</p>}
+
+      <Pressure room={room} state={state} now={now} reduced={prefs.reducedMotion} />
 
       {/* scene tabs */}
-      <div role="tablist" aria-label="אזורים בחדר" className="mb-2 grid grid-cols-2 gap-2">
-        {room.scenes.map((s) => {
+      {room.presentation !== 'phone' && <div role="tablist" aria-label="אזורים בחדר" className={`mb-2 grid gap-2 ${scenes.length > 4 ? 'grid-cols-3' : 'grid-cols-2'}`}>
+        {scenes.map((s) => {
           const here = snap.players.filter((p) => p.id !== snap.me.id && (p.scene ?? room.scenes[0].id) === s.id)
           return (
-            <button key={s.id} role="tab" aria-selected={s.id === sceneId} onClick={() => setSceneId(s.id)} className={`btn ${s.id === sceneId ? 'btn-gold' : 'btn-ghost'} !min-h-11`}>
-              {s.name}
+            <button key={s.id} role="tab" aria-selected={s.id === scene.id} onClick={() => setSceneId(s.id)} className={`btn ${s.id === scene.id ? 'btn-gold' : 'btn-ghost'} !min-h-11`}>
+              {s.icon && <span aria-hidden="true">{s.icon}</span>} {s.name}
               {coop && here.length > 0 && <span aria-label={`כאן: ${here.map((p) => p.nick).join(', ')}`}>{here.map((p) => p.avatar).join('')}</span>}
             </button>
           )
         })}
-      </div>
+      </div>}
 
       {/* the scene */}
+      {room.presentation === 'phone' ? (
+        <PhoneView room={room} scenes={scenes} sceneId={phoneApp} setSceneId={setPhoneApp} flags={flags} onOpen={tapHotspot} />
+      ) : room.presentation === 'board' ? (
+        <BoardView room={room} hotspots={hotspots} flags={flags} onOpen={tapHotspot} />
+      ) : (
       <div className="card relative overflow-hidden p-1.5">
         {use2D ? (
-          <Scene2D room={room} sceneId={sceneId} flags={state.flags} using={!!using} onTap={(id) => tapHotspot(room.hotspots.find((h) => h.id === id)!)} />
+          <Scene2D room={visibleRoom} sceneId={scene.id} flags={flags} using={!!using} onTap={(id) => tapHotspot(room.hotspots.find((h) => h.id === id)!)} />
         ) : (
           <Scene3D
             room={room}
-            sceneId={sceneId}
-            flags={state.flags}
+            sceneId={scene.id}
+            flags={flags}
             escaped={state.phase === 'escaped'}
             focusId={open?.id ?? null}
             using={!!using}
@@ -166,6 +196,7 @@ export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap:
         )}
         {flying && <span key={flying.key} className="item-fly" aria-hidden="true" onAnimationEnd={() => setFlying(null)}>{flying.icon}</span>}
       </div>
+      )}
 
       {using && (
         <div className="mt-2 flex items-center justify-between gap-2 rounded-xl border border-teal/50 bg-teal/10 px-3 py-2" role="status">
@@ -177,7 +208,7 @@ export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap:
       )}
 
       {/* objects list — also the accessible way to reach every object */}
-      <details className="mt-2 rounded-xl bg-black/20 px-3 py-2">
+      {!room.presentation || room.presentation === 'scene' ? <details className="mt-2 rounded-xl bg-black/20 px-3 py-2">
         <summary className="cursor-pointer text-sm font-bold text-mist">רשימת החפצים ב{scene.name}</summary>
         <div className="mt-2 flex flex-wrap gap-2">
           {hotspots.map((h) => (
@@ -186,10 +217,10 @@ export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap:
             </button>
           ))}
         </div>
-      </details>
+      </details> : null}
 
       {/* inventory */}
-      <section className="card mt-3 p-3" aria-label="התיק">
+      {room.items.length > 0 && <section className="card mt-3 p-3" aria-label="התיק">
         <h2 className="mb-2 text-sm font-bold text-mist">🎒 התיק {coop && <span className="text-dim">(משותף לכל הצוות)</span>}</h2>
         {items.length === 0 ? (
           <p className="text-sm text-dim">עדיין ריק. חפשו חפצים בחדר.</p>
@@ -203,7 +234,7 @@ export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap:
             ))}
           </div>
         )}
-      </section>
+      </section>}
 
       <Toast toast={toast} />
 
@@ -215,6 +246,7 @@ export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap:
             hotspot={open}
             interaction={openInteraction}
             room={room}
+            flags={flags}
             inventory={items}
             session={session}
             onClose={() => setOpen(null)}
@@ -227,6 +259,29 @@ export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap:
         {item && (
           <div>
             <NoteCard note={item.note} />
+            {(room.combos?.length ?? 0) > 0 && items.length > 1 && (
+              <div className="mt-3">
+                <p className="mb-2 text-sm font-bold text-mist">לשלב עם:</p>
+                <div className="flex flex-wrap gap-2">
+                  {items.filter((x) => x.id !== item.id).map((other) => (
+                    <button
+                      key={other.id}
+                      className="tile flex min-h-12 items-center gap-2 rounded-xl border border-teal/40 px-3 font-bold"
+                      onClick={async () => {
+                        const r = await session.dispatch({ type: 'COMBINE', a: item.id, b: other.id })
+                        if (r === 'wrong') {
+                          play('wrong')
+                          alertShake(`${item.name} ו${other.name} לא מתחברים.`)
+                        } else if (r === 'ok') play('unlock')
+                        setItem(null)
+                      }}
+                    >
+                      <span aria-hidden="true">{other.icon}</span> {other.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             <button
               className="btn btn-gold mt-3 w-full"
               onClick={() => {
@@ -242,8 +297,15 @@ export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap:
 
       {/* hints */}
       <Modal open={hintsOpen} title="💡 רמזים" onClose={() => setHintsOpen(false)}>
-        <HintsPanel room={room} state={state} canHint={canHint} onHint={() => session.dispatch({ type: 'HINT' })} />
+        {collection ? <PuzzleHints room={room} state={state} session={session} /> : <HintsPanel room={room} state={state} canHint={canHint} onHint={() => session.dispatch({ type: 'HINT' })} />}
       </Modal>
+
+      <Modal open={notebookOpen} title="📓 מחברת הראיות" onClose={() => setNotebookOpen(false)}>
+        <NotebookPanel room={room} state={state} />
+        <button className="btn btn-ghost mt-3 w-full" onClick={() => setNotebookOpen(false)}>חזרה לחדר</button>
+      </Modal>
+
+      <TimeoutModal open={timedOut} onRestart={onRestart} onPractice={() => void session.dispatch({ type: 'SET_MODE', mode: 'practice' })} />
     </div>
     </LevelCtx.Provider>
   )
@@ -280,6 +342,8 @@ function Toast({ toast }: { toast: { text: string; kind: string } | null }) {
 export function NoteCard({ note }: { note: Note }) {
   const level = useContext(LevelCtx)
   const text = (level === 'easy' && note.easy) || (level === 'hard' && note.hard) || note.text
+  const [straight, setStraight] = useState(false)
+  const [big, setBig] = useState(false)
   const style =
     note.style === 'screen'
       ? 'border-teal/50 bg-[#03140f] font-mono text-teal-2'
@@ -291,14 +355,29 @@ export function NoteCard({ note }: { note: Note }) {
             ? 'border-gold/60 bg-gradient-to-b from-[#3a2a0a] to-[#1f1605] text-gold-2'
             : 'border-white/15 bg-black/30'
   return (
-    <div className={`rounded-xl border-2 p-4 text-lg leading-relaxed whitespace-pre-line ${style}`}>
-      <p className="mb-1 text-sm font-bold opacity-70">{note.title}</p>
-      {note.voice ? <VoicePlayer voice={note.voice} transcript={text} /> : <p>{text}</p>}
+    <div className={`rounded-xl border-2 p-4 leading-relaxed whitespace-pre-line ${big ? 'text-2xl' : 'text-lg'} ${style}`}>
+      <div className="mb-1 flex items-center justify-between gap-2">
+        <p className="text-sm font-bold opacity-70">{note.title}</p>
+        <span className="flex gap-1">
+          {note.mirror && <button type="button" className="rounded-lg border border-current/30 px-2 py-1 text-xs font-bold" aria-pressed={straight} onClick={() => setStraight(!straight)}>{straight ? '🪞 כמו במראה' : '↔ קריאה ישרה'}</button>}
+          {note.zoom && <button type="button" className="rounded-lg border border-current/30 px-2 py-1 text-xs font-bold" aria-pressed={big} onClick={() => setBig(!big)}>{big ? '➖ הקטנה' : '🔍 הגדלה'}</button>}
+        </span>
+      </div>
+      {note.voice ? (
+        <VoicePlayer voice={note.voice} transcript={text} />
+      ) : note.mirror && !straight ? (
+        <>
+          <p aria-hidden="true" className="select-none bg-gradient-to-b from-[#bcd0df] to-[#8fa8bb] p-3 text-center text-[#1d2c3a] rounded-lg" style={{ transform: 'scaleX(-1)' }} data-testid="mirror-text">{text}</p>
+          <p className="sr-only">{text}</p>
+        </>
+      ) : (
+        <p>{text}</p>
+      )}
     </div>
   )
 }
 
-function ObjectPanel({ hotspot, interaction, room, inventory, session, onClose }: { hotspot: Hotspot; interaction: NonNullable<ReturnType<typeof currentInteraction>>; room: RoomDef; inventory: ItemDef[]; session: GameSession; onClose: () => void }) {
+function ObjectPanel({ hotspot, interaction, room, flags, inventory, session, onClose }: { hotspot: Hotspot; interaction: NonNullable<ReturnType<typeof currentInteraction>>; room: RoomDef; flags: string[]; inventory: ItemDef[]; session: GameSession; onClose: () => void }) {
   const [msg, setMsg] = useState<string | null>(null)
   if (msg)
     return (
@@ -394,6 +473,25 @@ function ObjectPanel({ hotspot, interaction, room, inventory, session, onClose }
         ) : (
           <p className="mt-3 text-sm text-dim">נראה שצריך כאן חפץ. התיק שלכם עדיין ריק.</p>
         )}
+      </div>
+    )
+  if (interaction.type === 'action')
+    return (
+      <div>
+        <NoteCard note={interaction.note} />
+        <button
+          className="btn btn-gold mt-3 w-full"
+          disabled={!interaction.repeatable && flags.includes(`acted:${hotspot.id}`)}
+          onClick={async () => {
+            const r = await session.dispatch({ type: 'ACT', hotspot: hotspot.id })
+            if (r === 'ok') {
+              play('unlock')
+              setMsg(interaction.onAct.message)
+            } else onClose()
+          }}
+        >
+          {interaction.label}
+        </button>
       </div>
     )
   // lock

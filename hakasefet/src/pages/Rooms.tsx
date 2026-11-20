@@ -8,7 +8,7 @@ import { netMode, newRoomCode } from '../net/config'
 import { listRuns, type Run } from '../storage/repo'
 import { TiltCard } from '../ui/kit'
 
-const CATEGORY_ICON: Record<Category, string> = { 'מחתרות': '🕯️', 'מלחמות ישראל': '🇮🇱', 'מלחמת העולם השנייה': '📻', 'מדע ודמיון': '🧪' }
+const CATEGORY_ICON: Record<Category, string> = { 'חדרי בריחה': '🔐', 'מחתרות': '🕯️', 'מלחמות ישראל': '🇮🇱', 'מלחמת העולם השנייה': '📻', 'מדע ודמיון': '🧪' }
 
 /** Room picker, grouped by theme. ?mode=coop creates a co-op room for the chosen escape room. */
 export function Rooms() {
