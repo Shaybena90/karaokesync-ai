@@ -15,7 +15,7 @@ const NAV = [
 export function Layout() {
   const { profile } = useApp()
   const { pathname } = useLocation()
-  const inGame = pathname.startsWith('/solo') || /^\/coop\/./.test(pathname) || /^\/pair\/./.test(pathname)
+  const inGame = pathname.startsWith('/solo') || /^\/coop\/./.test(pathname) || /^\/pair(\/.|-practice)/.test(pathname)
   return (
     <div className="flex min-h-dvh w-full flex-col">
       <div className="stage" aria-hidden="true"><div className="stage-floor" /></div>

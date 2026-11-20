@@ -6,6 +6,7 @@ import { Onboarding } from './pages/Onboarding'
 import { Home } from './pages/Home'
 import { Rooms } from './pages/Rooms'
 import { Escape } from './pages/Escape'
+import { PairGame, PairHub, PairPractice } from './pages/Pair'
 import { Solo } from './pages/Solo'
 import { CoopHub, CoopRoom } from './pages/Coop'
 import { MyRoom } from './pages/MyRoom'
@@ -31,6 +32,9 @@ export default function App() {
             <Route path="/welcome" element={<Onboarding />} />
             <Route path="/" element={<Guarded><Home /></Guarded>} />
             <Route path="/escape" element={<Guarded><Escape /></Guarded>} />
+            <Route path="/pair" element={<Guarded><PairHub /></Guarded>} />
+            <Route path="/pair/:code" element={<Guarded><PairGame /></Guarded>} />
+            <Route path="/pair-practice" element={<Guarded><PairPractice /></Guarded>} />
             <Route path="/rooms" element={<Guarded><Rooms /></Guarded>} />
             <Route path="/solo/:roomId" element={<Guarded><Solo /></Guarded>} />
             <Route path="/coop" element={<Guarded><CoopHub /></Guarded>} />

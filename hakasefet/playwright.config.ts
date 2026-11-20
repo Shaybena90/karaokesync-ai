@@ -14,10 +14,14 @@ export default defineConfig({
     { name: 'desktop', use: { ...devices['Desktop Chrome'], viewport: { width: 1280, height: 860 } } },
     { name: 'phone-360', use: { ...devices['Desktop Chrome'], viewport: { width: 360, height: 740 }, isMobile: true, hasTouch: true, deviceScaleFactor: 1 } },
   ],
-  webServer: {
-    command: `npm run build && npx vite preview --port ${PORT} --strictPort`,
-    url: `http://localhost:${PORT}`,
-    reuseExistingServer: !process.env.CI,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      command: `npm run build && npx vite preview --port ${PORT} --strictPort`,
+      url: `http://localhost:${PORT}`,
+      reuseExistingServer: !process.env.CI,
+      timeout: 120_000,
+    },
+    // the realtime service for the two-player room
+    { command: 'npm run pair-server', url: 'http://localhost:8787/health', reuseExistingServer: !process.env.CI, timeout: 30_000 },
+  ],
 })

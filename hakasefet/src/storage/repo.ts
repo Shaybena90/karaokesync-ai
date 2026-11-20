@@ -129,6 +129,37 @@ export async function completeRun(p: { runId: string; state: GameState; mode: Ru
   })
 }
 
+/**
+ * Record a finished two-player room (or its same-device practice). The first
+ * real two-device completion earns the room reward once; practice earns none.
+ */
+export async function completePairRun(p: { runId: string; points: number; timeMs: number; hints: number; wrong: number; practice: boolean; finishedAt: number }): Promise<RunResult> {
+  const date = israelDate(p.finishedAt)
+  const run: Run = { runId: p.runId, roomId: 'pair', mode: p.practice ? 'solo' : 'coop', players: p.practice ? 1 : 2, timeMs: p.timeMs, stars: p.points >= 900 ? 3 : p.points >= 700 ? 2 : 1, hints: p.hints, hintTiers: p.hints, wrongAttempts: p.wrong, date, finishedAt: p.finishedAt, points: p.points, runMode: p.practice ? 'practice' : 'timed' }
+  return withTx(['kv', 'ledger', 'runs'], 'readwrite', async (tx) => {
+    const kv = tx.objectStore('kv')
+    const ledger = tx.objectStore('ledger')
+    const runs = tx.objectStore('runs')
+    const profile: Profile | undefined = await req(kv.get('profile'))
+    if (!profile) throw new Error('no-profile')
+    const allRuns = (await req(runs.getAll())) as Run[]
+    const same = allRuns.filter((r) => r.roomId === 'pair' && r.runMode === run.runMode && r.runId !== p.runId)
+    const prevBestMs = same.length ? Math.min(...same.map((r) => r.timeMs)) : undefined
+    const all = (await req(ledger.getAll())) as LedgerEntry[]
+    const existing = allRuns.find((r) => r.runId === p.runId)
+    if (existing) {
+      const grants = all.filter((g) => g.runId === p.runId)
+      return { run: existing, grants, prevXp: profile.xp - grants.reduce((a, g) => a + g.xp, 0), profile, isBest: false, prevBestMs, alreadyRecorded: true }
+    }
+    const grants = p.practice ? [] : decideEscapeGrants({ roomId: 'pair', level: 'medium', date, ledgerKeys: new Set(all.map((g) => g.key)), collection: true })
+    for (const g of grants) await req(ledger.add({ ...g, grantedAt: p.finishedAt, runId: p.runId } satisfies LedgerEntry))
+    const next: Profile = { ...profile, xp: profile.xp + grants.reduce((a, g) => a + g.xp, 0), coins: profile.coins + grants.reduce((a, g) => a + g.coins, 0) }
+    await req(kv.put(next, 'profile'))
+    await req(runs.put(run))
+    return { run, grants, prevXp: profile.xp, profile: next, isBest: prevBestMs === undefined || run.timeMs < prevBestMs, prevBestMs, alreadyRecorded: false }
+  })
+}
+
 export const listRuns = () => withTx(['runs'], 'readonly', (tx) => req(tx.objectStore('runs').getAll())) as Promise<Run[]>
 export const listLedger = () => withTx(['ledger'], 'readonly', (tx) => req(tx.objectStore('ledger').getAll())) as Promise<LedgerEntry[]>
 
