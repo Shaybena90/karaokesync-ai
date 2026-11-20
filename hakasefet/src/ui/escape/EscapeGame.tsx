@@ -220,7 +220,7 @@ export function EscapeGame({ room, snap, session, coop, onRestart }: { room: Roo
       </details> : null}
 
       {/* inventory */}
-      <section className="card mt-3 p-3" aria-label="התיק">
+      {room.items.length > 0 && <section className="card mt-3 p-3" aria-label="התיק">
         <h2 className="mb-2 text-sm font-bold text-mist">🎒 התיק {coop && <span className="text-dim">(משותף לכל הצוות)</span>}</h2>
         {items.length === 0 ? (
           <p className="text-sm text-dim">עדיין ריק. חפשו חפצים בחדר.</p>
@@ -234,7 +234,7 @@ export function EscapeGame({ room, snap, session, coop, onRestart }: { room: Roo
             ))}
           </div>
         )}
-      </section>
+      </section>}
 
       <Toast toast={toast} />
 

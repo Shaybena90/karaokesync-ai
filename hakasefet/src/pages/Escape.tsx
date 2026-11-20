@@ -50,7 +50,7 @@ export function Escape() {
           )
         })}
         <li className="card overflow-hidden p-0" data-room="pair">
-          <svg viewBox="0 0 800 600" className="block h-36 w-full" aria-hidden="true">
+          <svg viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice" className="block h-36 w-full" aria-hidden="true">
             <SceneDefs />
             <SceneBackground theme="hotel" />
             <g transform="translate(150 140)"><ObjectArt art="door" w={200} h={320} active={false} /></g>

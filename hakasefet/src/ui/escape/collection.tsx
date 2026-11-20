@@ -14,7 +14,7 @@ export const isUnseen = (h: Hotspot, flags: string[]) => !flags.includes(`seen:$
 export function RoomIllustration({ room, className = '' }: { room: RoomDef; className?: string }) {
   const il = room.illustration ?? { art: 'door' as const, theme: room.scenes[0].theme }
   return (
-    <svg viewBox="0 0 800 600" className={`block ${className}`} aria-hidden="true">
+    <svg viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice" className={`block ${className}`} aria-hidden="true">
       <SceneDefs />
       <SceneBackground theme={il.theme} />
       <g transform="translate(270 140)">

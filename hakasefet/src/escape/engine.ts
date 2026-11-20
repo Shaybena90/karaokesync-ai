@@ -301,7 +301,7 @@ export function reduce(room: RoomDef, s: GameState, a: Action): { state: GameSta
   if (a.type === 'PHINT') {
     const st = puzzleStatus(room, s).find((x) => x.p.id === a.puzzle)
     if (!st || st.done || !st.available || st.tiers >= 3) return invalid()
-    const next = log({ ...s, hintTiers: { ...(s.hintTiers ?? {}), [a.puzzle]: st.tiers + 1 } }, a, `נפתח רמז ${st.tiers + 1} מתוך 3 (−50 נקודות)`, 'hint')
+    const next = log({ ...s, hintTiers: { ...s.hintTiers, [a.puzzle]: st.tiers + 1 } }, a, `נפתח רמז ${st.tiers + 1} מתוך 3 (−50 נקודות)`, 'hint')
     return { state: withResult(next, a.id, 'ok'), outcome: 'ok' }
   }
 

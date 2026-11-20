@@ -127,6 +127,11 @@ export const loop: RoomDef = {
     { waitUntil: 4 },
     { solve: 'router', input: '31415' },
     { solve: 'terminal', input: 'drawer,router,door' },
+    // the plan is known — now one clean loop: drawer, router, door
+    { waitUntil: 2 },
+    { act: 'drawer' },
+    { waitUntil: 4 },
+    { solve: 'router', input: '31415' },
     { waitUntil: 5 },
     { use: 'door', item: 'fuse' },
   ],
