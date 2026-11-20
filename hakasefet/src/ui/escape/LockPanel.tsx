@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Color, Dir, LockDef } from '../../escape/types'
 import type { SessionOutcome } from '../../net/session'
-import { play } from '../audio'
+import { getAudioCtx, isSoundEnabled, noiseBuffer, play } from '../audio'
 
 const HEB = 'אבגדהוזחטיכלמנסעפצקרשת'.split('')
 const COLOR_STYLE: Record<Color, { label: string; bg: string }> = {
@@ -50,6 +50,7 @@ export function LockPanel({ lock, onSubmit }: { lock: LockDef; onSubmit: (input:
       {lock.kind === 'arrows' && <Sequence key={resetKey} length={lock.answer.length} busy={busy} onDone={(v) => submit(v.join(','))} options={DIRS.map((d) => ({ value: d.d, node: <span className="text-2xl leading-none">{d.arrow}</span>, label: DIR_LABEL[d.d] }))} />}
       {lock.kind === 'switches' && <Switches key={resetKey} count={lock.count} busy={busy} onDone={(v) => submit(v.map((b) => (b ? '1' : '0')).join(''))} />}
       {lock.kind === 'terminal' && <Terminal key={resetKey} numeric={lock.numeric} busy={busy} onDone={submit} />}
+      {lock.kind === 'tuner' && <Tuner key={resetKey} min={lock.min} max={lock.max} answer={lock.answer} busy={busy} onDone={(v) => submit(String(v))} />}
       <p role="alert" aria-live="assertive" className="mt-2 min-h-6 text-center font-bold text-coral">{error ? `✗ ${error}` : busy ? <span className="text-mist">בודק…</span> : ''}</p>
     </div>
   )
@@ -222,5 +223,93 @@ function Terminal({ numeric, busy, onDone }: { numeric?: boolean; busy: boolean;
         <button className="btn btn-gold shrink-0" disabled={busy || !v.trim()}>Enter</button>
       </div>
     </form>
+  )
+}
+
+/**
+ * A radio dial. Static is loud far from the station and fades as you get close;
+ * a faint carrier tone appears near it. The answer is never shown — you tune by ear
+ * (and by the signal meter, for players without sound).
+ */
+function Tuner({ min, max, answer, busy, onDone }: { min: number; max: number; answer: number; busy: boolean; onDone: (v: number) => void }) {
+  const [v, setV] = useState(Math.round(min + (max - min) * 0.15))
+  const audio = useRef<{ noise: GainNode; tone: GainNode; stop(): void } | null>(null)
+  const dist = Math.abs(v - answer)
+  const signal = Math.max(0, 1 - dist / 25) // 0..1, for the meter
+
+  useEffect(() => {
+    if (!isSoundEnabled()) return
+    const ac = getAudioCtx()
+    if (!ac) return
+    const src = ac.createBufferSource()
+    src.buffer = noiseBuffer(ac)
+    src.loop = true
+    const band = ac.createBiquadFilter()
+    band.type = 'bandpass'
+    band.frequency.value = 2000
+    band.Q.value = 0.6
+    const noise = ac.createGain()
+    noise.gain.value = 0
+    src.connect(band).connect(noise).connect(ac.destination)
+    src.start()
+    const osc = ac.createOscillator()
+    osc.frequency.value = 660
+    const tone = ac.createGain()
+    tone.gain.value = 0
+    osc.connect(tone).connect(ac.destination)
+    osc.start()
+    audio.current = {
+      noise,
+      tone,
+      stop() {
+        const n = ac.currentTime
+        noise.gain.setTargetAtTime(0, n, 0.05)
+        tone.gain.setTargetAtTime(0, n, 0.05)
+        src.stop(n + 0.3)
+        osc.stop(n + 0.3)
+      },
+    }
+    return () => audio.current?.stop()
+  }, [])
+
+  useEffect(() => {
+    const a = audio.current
+    const ac = getAudioCtx()
+    if (!a || !ac) return
+    a.noise.gain.setTargetAtTime(0.012 + 0.11 * (1 - signal), ac.currentTime, 0.05)
+    a.tone.gain.setTargetAtTime(dist === 0 ? 0.05 : dist < 6 ? 0.015 * (1 - dist / 6) : 0, ac.currentTime, 0.05)
+  }, [signal, dist])
+
+  const angle = ((v - min) / (max - min)) * 270 - 135
+  const set = (n: number) => setV(Math.min(max, Math.max(min, n)))
+  return (
+    <div className="mx-auto max-w-sm text-center">
+      <div className="tuner-face mb-3">
+        <div className="tuner-scale" aria-hidden="true">
+          {Array.from({ length: 11 }, (_, i) => (
+            <span key={i} style={{ right: `${i * 10}%` }}>{Math.round(min + ((max - min) * (10 - i)) / 10)}</span>
+          ))}
+          <i className="tuner-needle" style={{ right: `${100 - ((v - min) / (max - min)) * 100}%` }} />
+        </div>
+        <p className="font-mono text-4xl font-extrabold text-gold-2" dir="ltr" aria-live="polite">{v}</p>
+        <div className="mx-auto mt-2 flex h-3 w-40 items-end gap-0.5" aria-label={`עוצמת קליטה ${Math.round(signal * 100)}%`} role="meter" aria-valuenow={Math.round(signal * 100)} aria-valuemin={0} aria-valuemax={100}>
+          {Array.from({ length: 10 }, (_, i) => (
+            <span key={i} className="flex-1 rounded-sm" style={{ height: `${30 + i * 7}%`, background: signal * 10 > i ? (i > 7 ? '#2ec4b6' : '#f2c14e') : 'rgb(255 255 255 / .12)' }} />
+          ))}
+        </div>
+      </div>
+      <div className="tuner-knob mx-auto mb-3" style={{ transform: `rotate(${angle}deg)` }} aria-hidden="true">
+        <span />
+      </div>
+      <label htmlFor="tuner" className="sr-only">חוגת התדר</label>
+      <input id="tuner" type="range" min={min} max={max} step={1} value={v} disabled={busy} onChange={(e) => set(Number(e.target.value))} className="tuner-range w-full" dir="ltr" />
+      <div className="mt-2 grid grid-cols-4 gap-2" dir="ltr">
+        <button type="button" className="btn btn-ghost !min-h-10 !px-2" onClick={() => set(v - 10)} disabled={busy} aria-label="מינוס 10">−10</button>
+        <button type="button" className="btn btn-ghost !min-h-10 !px-2" onClick={() => set(v - 1)} disabled={busy} aria-label="מינוס 1">−1</button>
+        <button type="button" className="btn btn-ghost !min-h-10 !px-2" onClick={() => set(v + 1)} disabled={busy} aria-label="פלוס 1">+1</button>
+        <button type="button" className="btn btn-ghost !min-h-10 !px-2" onClick={() => set(v + 10)} disabled={busy} aria-label="פלוס 10">+10</button>
+      </div>
+      <button type="button" className="btn btn-gold mt-3 w-full" onClick={() => onDone(v)} disabled={busy}>📻 קליטה</button>
+    </div>
   )
 }

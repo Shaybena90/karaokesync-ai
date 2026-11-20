@@ -34,7 +34,7 @@ export const lab: RoomDef = {
       interactions: [
         { type: 'blocked', when: ['!power'], note: { title: 'המחשב כבוי', text: 'המסך שחור. נראה שאין חשמל במעבדה.', style: 'screen' } },
         { type: 'lock', when: ['!solved:terminal'], title: 'נוי־בוט', prompt: 'נוי־בוט: ״הזינו את שם הפרויקט הסודי.״', lock: { kind: 'terminal', answers: ['אורה', 'פרויקט אורה'] }, onSolve: { message: 'המחשב נפרץ!' } },
-        { type: 'note', note: { title: 'נוי־בוט', text: '״גישה אושרה. קוד הכספת מתחיל ב־19. את שתי הספרות האחרונות הדבקתי מתחת לשולחן.״', style: 'screen' } },
+        { type: 'note', note: { title: 'נוי־בוט', text: '״גישה אושרה. קוד הכספת מתחיל ב־19. את שתי הספרות האחרונות הדבקתי מתחת לשולחן.״', style: 'screen', voice: { effect: 'computer', pitch: 0.7, lines: ['גישה אושרה.', 'קוד הכספת מתחיל בתשע־עשרה.', 'את שתי הספרות האחרונות הדבקתי מתחת לשולחן.'] } } },
       ],
     },
     {
@@ -82,9 +82,9 @@ export const lab: RoomDef = {
       ],
     },
     {
-      id: 'poster', scene: 'shelves', name: 'הפוסטר', art: 'poster', x: 360, y: 40, w: 200, h: 170, activeWhen: ['used:poster'],
+      id: 'poster', scene: 'shelves', name: 'הפוסטר', art: 'poster', x: 360, y: 40, w: 200, h: 170, activeWhen: ['revealed:poster'],
       interactions: [
-        { type: 'needItem', when: ['!used:poster'], item: 'uv', note: { title: 'פוסטר הטבלה המחזורית', text: 'פוסטר רגיל של הטבלה המחזורית. נראה שמישהו נגע בו הרבה.' }, onUse: { message: 'אור UV על הפוסטר — הופיע כתב סמוי!' } },
+        { type: 'reveal', when: ['!revealed:poster'], item: 'uv', tool: 'uv', note: { title: 'פוסטר הטבלה המחזורית', text: 'פוסטר רגיל של הטבלה המחזורית. נראה שמישהו נגע בו הרבה.' }, hidden: 'פרויקט אורה', at: { x: 62, y: 70 }, onReveal: { message: 'פנס ה־UV חשף כתב סמוי על הפוסטר!' } },
         { type: 'note', note: { title: 'כתב סמוי', text: 'באור UV מופיע כתב יד: ״פרויקט אורה״.', style: 'paper' } },
       ],
     },
@@ -101,7 +101,7 @@ export const lab: RoomDef = {
     { until: 'solved:mixer', text: 'הלוח הלבן במדפים אומר באיזה סדר ללחוץ על הצבעים: מ־1 עד 4.' },
     { until: 'used:vent', after: ['took:screwdriver'], text: 'יש לכם מברג. חפשו משהו שסגור בברגים.' },
     { until: 'power', after: ['took:fuse'], text: 'הנתיך שייך לארון החשמל.' },
-    { until: 'used:poster', after: ['took:uv'], text: 'פנס UV חושף כתב סמוי. נסו אותו על הפוסטר.' },
+    { until: 'revealed:poster', after: ['took:uv'], text: 'פנס UV חושף כתב סמוי. פתחו את הפוסטר והעבירו עליו את הפנס.' },
     { until: 'solved:terminal', after: ['power'], text: 'שם הפרויקט הסודי כתוב על הפוסטר באור UV.' },
     { until: 'solved:vault', after: ['solved:terminal'], text: 'המחשב נתן את תחילת הקוד (19). את הסוף תמצאו מתחת לשולחן.' },
     { until: 'escaped', after: ['took:keycard'], text: 'כרטיס היציאה פותח את הדלת בשולחן העבודה.' },
@@ -112,7 +112,7 @@ export const lab: RoomDef = {
     { solve: 'mixer', input: 'red,green,blue,yellow' },
     { use: 'vent', item: 'screwdriver' },
     { use: 'fusebox', item: 'fuse' },
-    { use: 'poster', item: 'uv' },
+    { reveal: 'poster' },
     { solve: 'terminal', input: 'אורה' },
     { solve: 'vault', input: '1942' },
     { use: 'door', item: 'keycard' },

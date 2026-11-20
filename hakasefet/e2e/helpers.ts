@@ -26,7 +26,16 @@ async function openHotspot(page: Page, roomId: string, id: string) {
 /** Perform one walkthrough step through the real UI. */
 export async function doStep(page: Page, roomId: string, step: WalkStep) {
   const room = getRoom(roomId)!
-  if ('take' in step) {
+  if ('reveal' in step) {
+    const h = await openHotspot(page, roomId, step.reveal)
+    const it = h.interactions.find((i) => i.type === 'reveal')!
+    if (it.type !== 'reveal') throw new Error('no reveal')
+    const area = page.getByTestId('reveal')
+    const b = (await area.boundingBox())!
+    const at = it.at ?? { x: 50, y: 60 }
+    await page.mouse.move(b.x + 5, b.y + 5)
+    await page.mouse.move(b.x + (b.width * at.x) / 100, b.y + (b.height * at.y) / 100, { steps: 8 })
+  } else if ('take' in step) {
     await openHotspot(page, roomId, step.take)
     await page.getByRole('button', { name: /לקחת:/ }).click()
   } else if ('use' in step) {
@@ -47,8 +56,17 @@ export async function doStep(page: Page, roomId: string, step: WalkStep) {
       await dlg.getByRole('button', { name: 'פתיחה' }).click()
     } else if (lock.kind === 'colors' || lock.kind === 'arrows') {
       const label: Record<string, string> = { red: 'אדום', green: 'ירוק', blue: 'כחול', yellow: 'צהוב', up: 'למעלה', down: 'למטה', left: 'שמאלה', right: 'ימינה' }
-      for (const v of step.input.split(',')) await dlg.getByRole('button', { name: label[v], exact: true }).click()
+      // colour buttons are named by colour; arrow buttons are "↑ למעלה" etc.
+      for (const v of step.input.split(',')) await dlg.getByRole('button', { name: new RegExp(`^(\\S+ )?${label[v]}$`) }).click()
       await dlg.getByRole('button', { name: 'פתיחה' }).click()
+    } else if (lock.kind === 'tuner') {
+      const range = dlg.locator('input[type=range]')
+      await range.evaluate((el, v) => {
+        const input = el as HTMLInputElement
+        Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')!.set!.call(input, String(v))
+        input.dispatchEvent(new Event('input', { bubbles: true }))
+      }, Number(step.input))
+      await dlg.getByRole('button', { name: /קליטה/ }).click()
     } else if (lock.kind === 'switches') {
       for (let i = 0; i < step.input.length; i++) if (step.input[i] === '1') await dlg.getByRole('switch', { name: `מתג ${i + 1}` }).click()
       await dlg.getByRole('button', { name: 'הפעלה' }).click()

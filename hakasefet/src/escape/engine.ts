@@ -71,6 +71,7 @@ export type Action =
   | (Base & { type: 'SOLVE'; hotspot: string; input: string })
   | (Base & { type: 'USE'; hotspot: string; item: string })
   | (Base & { type: 'HINT' })
+  | (Base & { type: 'REVEAL'; hotspot: string })
 
 export function newGame(room: RoomDef): GameState {
   return { v: 1, roomId: room.id, roomVersion: room.version, level: 'medium', phase: 'lobby', flags: [], inventory: [], penaltyMs: 0, hintsShown: [], wrongAttempts: 0, log: [], results: {}, seq: 0 }
@@ -121,6 +122,8 @@ export function checkLock(lock: LockDef, input: string): boolean {
       return input === lock.answer.map((b) => (b ? '1' : '0')).join('')
     case 'terminal':
       return lock.answers.some((a) => normalizeText(a) === normalizeText(input))
+    case 'tuner':
+      return Number(input) === lock.answer
   }
 }
 
@@ -202,6 +205,12 @@ export function reduce(room: RoomDef, s: GameState, a: Action): { state: GameSta
     }
     const solved = { ...s, flags: [...s.flags, `solved:${h.id}`] }
     return { state: withResult(applyEffect(solved, it.onSolve, a), a.id, 'ok'), outcome: 'ok' }
+  }
+
+  if (a.type === 'REVEAL') {
+    if (it.type !== 'reveal' || (it.item && !s.inventory.includes(it.item))) return invalid()
+    const revealed = { ...s, flags: [...s.flags, `revealed:${h.id}`] }
+    return { state: withResult(applyEffect(revealed, it.onReveal, a), a.id, 'ok'), outcome: 'ok' }
   }
 
   if (a.type === 'USE') {

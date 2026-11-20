@@ -7,7 +7,13 @@ const who = { nick: 'דנה', avatar: '🦊' }
 let n = 0
 const act = (a: Record<string, unknown>, now = 1000): Action => ({ id: `a${++n}`, by: who, now, ...a }) as Action
 const stepToAction = (s: WalkStep, now: number): Action =>
-  'take' in s ? act({ type: 'TAKE', hotspot: s.take }, now) : 'solve' in s ? act({ type: 'SOLVE', hotspot: s.solve, input: s.input }, now) : act({ type: 'USE', hotspot: s.use, item: s.item }, now)
+  'take' in s
+    ? act({ type: 'TAKE', hotspot: s.take }, now)
+    : 'solve' in s
+      ? act({ type: 'SOLVE', hotspot: s.solve, input: s.input }, now)
+      : 'reveal' in s
+        ? act({ type: 'REVEAL', hotspot: s.reveal }, now)
+        : act({ type: 'USE', hotspot: s.use, item: s.item }, now)
 
 function started(room: RoomDef, level: Level = 'medium'): GameState {
   const lobby = reduce(room, newGame(room), act({ type: 'SET_LEVEL', level }, 0)).state
@@ -28,12 +34,17 @@ describe.each(ROOMS.map((r) => [r.id, r] as const))('room %s', (_id, room) => {
       expect(h.interactions.length).toBeGreaterThan(0)
       for (const it of h.interactions) {
         if (it.type === 'take' || it.type === 'needItem') expect(items.has(it.item), `${h.id} item ${it.item}`).toBe(true)
+        if (it.type === 'reveal') {
+          if (it.item) expect(items.has(it.item), `${h.id} reveal tool ${it.item}`).toBe(true)
+          expect(it.hidden.trim().length).toBeGreaterThan(1)
+        }
         if (it.type === 'lock') {
           const l = it.lock
           if (l.kind === 'digits') expect(l.answer).toMatch(new RegExp(`^\\d{${l.length}}$`))
           if (l.kind === 'letters') expect(normalizeText(l.answer).length).toBe(l.length)
           if (l.kind === 'colors') for (const c of l.answer) expect(l.options).toContain(c)
           if (l.kind === 'switches') expect(l.answer.length).toBe(l.count)
+          if (l.kind === 'tuner') expect(l.answer >= l.min && l.answer <= l.max).toBe(true)
           for (const e of [it.onSolve]) for (const i of [...(e.giveItems ?? []), ...(e.removeItems ?? [])]) expect(items.has(i)).toBe(true)
         }
         if (it.type === 'needItem') for (const i of [...(it.onUse.giveItems ?? []), ...(it.onUse.removeItems ?? [])]) expect(items.has(i)).toBe(true)

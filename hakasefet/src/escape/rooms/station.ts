@@ -39,7 +39,7 @@ export const station: RoomDef = {
       interactions: [
         { type: 'blocked', when: ['!solved:switches'], note: { title: 'מחשב התחנה', text: 'על המסך מהבהב: ״אין מתח מהמנועים. כוונו את לוח המתגים בחדר המנועים.״', style: 'screen' } },
         { type: 'lock', when: ['!solved:console'], title: 'מחשב התחנה', prompt: 'מחשב התחנה: ״שאלת אבטחה — מהו סכום הלחצים בשלושת מכלי החמצן?״', lock: { kind: 'terminal', numeric: true, answers: ['42'] }, onSolve: { message: 'מחשב התחנה נפרץ!' } },
-        { type: 'note', note: { title: 'מחשב התחנה', text: '״קוד תא המילוט: מספר האותיות בשם כוכב הלכת, אחריו התשובה שהזנתם כאן, ובסוף מספר המתגים הדולקים בחדר המנועים.״', style: 'screen' } },
+        { type: 'note', note: { title: 'מחשב התחנה', text: '״קוד תא המילוט: מספר האותיות בשם כוכב הלכת, אחריו התשובה שהזנתם כאן, ובסוף מספר המתגים הדולקים בחדר המנועים.״', style: 'screen', voice: { effect: 'computer', pitch: 0.6, lines: ['קוד תא המילוט:', 'מספר האותיות בשם כוכב הלכת,', 'אחריו התשובה שהזנתם כאן,', 'ובסוף — מספר המתגים הדולקים בחדר המנועים.'] } } },
       ],
     },
     {

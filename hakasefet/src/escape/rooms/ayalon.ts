@@ -84,17 +84,18 @@ export const ayalon: RoomDef = {
       ],
     },
     {
-      id: 'oldposter', scene: 'rest', name: 'כרזה דהויה', art: 'poster', x: 40, y: 300, w: 180, h: 200, activeWhen: ['used:sunlamp'],
+      id: 'oldposter', scene: 'rest', name: 'כרזה דהויה', art: 'poster', x: 40, y: 300, w: 180, h: 200, activeWhen: ['revealed:oldposter'],
       interactions: [
         { type: 'note', when: ['!used:sunlamp'], note: { title: 'כרזה דהויה', text: 'כרזה ישנה של פרדסים. בפינה שרבוט דק שכמעט אי אפשר לראות באור הזה.' } },
+        { type: 'reveal', when: ['!revealed:oldposter'], tool: 'light', note: { title: 'כרזה דהויה', text: 'מנורת השיזוף דולקת. העבירו את האור שלה על הכרזה — אולי השרבוט ייראה.' }, hidden: 'רדיו — 385', at: { x: 28, y: 78 }, onReveal: { message: 'באור המנורה נחשף כתב בעיפרון!' } },
         { type: 'note', note: { title: 'כרזה דהויה', text: 'באור החזק של המנורה רואים ספרות בעיפרון דק: ״רדיו — 385״.', hard: 'באור החזק מופיעות ספרות בעיפרון דק: 385.', style: 'paper' } },
       ],
     },
     {
       id: 'radio', scene: 'rest', name: 'הרדיו', art: 'radio', x: 230, y: 420, w: 140, h: 110, activeWhen: ['solved:radio'],
       interactions: [
-        { type: 'lock', when: ['!solved:radio'], title: 'הרדיו', prompt: 'מכוונים את חוגת התדר — 3 ספרות.', lock: { kind: 'digits', length: 3, answer: '385' }, onSolve: { giveItems: ['telegram'], message: 'הרדיו קלט מברק מוצפן מהמפקדה!' } },
-        { type: 'note', note: { title: 'הרדיו', text: 'הרדיו מרשרש בשקט על תדר 385.' } },
+        { type: 'lock', when: ['!solved:radio'], title: 'הרדיו', prompt: 'סובבו את חוגת התדר עד שהרעש נעלם, ולחצו ״קליטה״.', lock: { kind: 'tuner', min: 300, max: 500, answer: 385 }, onSolve: { giveItems: ['telegram'], message: 'הרדיו קלט מברק מהמפקדה!' } },
+        { type: 'note', note: { title: 'הרדיו — תדר 385', text: '״כאן המפקדה. מברק דחוף: הסיסמה לכספת המשרד — מוצפנת: נון, יוד, סמך.״ (רשמתם את המברק — הוא בתיק.)', style: 'screen', voice: { effect: 'radio', pitch: 0.9, lines: ['כאן המפקדה. מברק דחוף.', 'הסיסמה לכספת המשרד, מוצפנת:', 'נון. יוד. סמך.', 'חוזר: נון, יוד, סמך. סוף.'] } } },
       ],
     },
     // ── משרד המפעל ──
@@ -169,7 +170,8 @@ export const ayalon: RoomDef = {
     { until: 'solved:cabinet', text: 'מכונת הכתיבה במשרד אומרת באיזה סדר צבעים פותחים את ארון התיקים.' },
     { until: 'solved:crate', after: ['took:prodlog'], text: 'ביומן הייצור: כל יום 150 כדורים יותר. היום יום רביעי — 750.' },
     { until: 'used:sunlamp', after: ['took:bulb'], text: 'הנורה מתאימה למנורת השיזוף בחדר המנוחה.' },
-    { until: 'solved:radio', after: ['used:sunlamp'], text: 'באור המנורה מופיע מספר על הכרזה הדהויה — זה התדר של הרדיו.' },
+    { until: 'revealed:oldposter', after: ['used:sunlamp'], text: 'פתחו את הכרזה הדהויה והעבירו עליה את אור המנורה — חפשו בפינה השמאלית התחתונה.' },
+    { until: 'solved:radio', after: ['revealed:oldposter'], text: 'המספר על הכרזה הוא התדר: סובבו את חוגת הרדיו ל־385.' },
     { until: 'solved:workbench', text: 'החיצים שחרוטים על מכונת הייצור פותחים את שולחן העבודה.' },
     { until: 'used:pipes', after: ['took:wrench'], text: 'בפיר יש צינור עם ברגים תפוסים.' },
     { until: 'used:desk', after: ['took:key'], text: 'המפתח הקטן פותח את המגירה בשולחן המשרד.' },
@@ -183,6 +185,7 @@ export const ayalon: RoomDef = {
     { solve: 'cabinet', input: 'red,yellow,blue,green' },
     { solve: 'crate', input: '750' },
     { use: 'sunlamp', item: 'bulb' },
+    { reveal: 'oldposter' },
     { solve: 'radio', input: '385' },
     { solve: 'workbench', input: 'up,up,right,down' },
     { use: 'pipes', item: 'wrench' },

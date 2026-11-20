@@ -90,6 +90,7 @@ export function Profile() {
       <section className="card space-y-3 p-4" aria-labelledby="set">
         <h2 id="set" className="font-extrabold">הגדרות</h2>
         <Toggle label="צלילים" checked={prefs.sound} onChange={(v) => { setPrefs({ ...prefs, sound: v }); if (v) play('tap') }} />
+        <Toggle label="מוזיקת רקע בחדרים" checked={prefs.music} onChange={(v) => setPrefs({ ...prefs, music: v })} />
         <Toggle label="הפחתת אנימציות" checked={prefs.reducedMotion} onChange={(v) => setPrefs({ ...prefs, reducedMotion: v })} />
         <fieldset className="rounded-xl bg-black/20 p-3">
           <legend className="px-1 font-bold">איכות גרפיקה</legend>

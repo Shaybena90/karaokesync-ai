@@ -23,7 +23,19 @@ export interface Note {
   /** Vaguer wording on the hard level. */
   hard?: string
   style?: 'paper' | 'screen' | 'plaque' | 'book'
+  /** Spoken aloud when the note opens (radio / phone / computer voice); the text is the transcript. */
+  voice?: Voice
 }
+
+export interface Voice {
+  lines: string[]
+  effect: 'radio' | 'phone' | 'computer'
+  /** Lower / higher voice. */
+  pitch?: number
+}
+
+/** A tool that reveals hidden writing when moved over a document. */
+export type RevealTool = 'uv' | 'magnifier' | 'light'
 
 export type LockDef =
   | { kind: 'digits'; length: number; answer: string }
@@ -32,6 +44,8 @@ export type LockDef =
   | { kind: 'arrows'; answer: Dir[] }
   | { kind: 'switches'; count: number; answer: boolean[] }
   | { kind: 'terminal'; numeric?: boolean; answers: string[] }
+  /** A radio dial: static fades as you approach the answer. */
+  | { kind: 'tuner'; min: number; max: number; answer: number }
 
 export interface Effect {
   setFlags?: string[]
@@ -48,6 +62,12 @@ export type Interaction =
   | { type: 'take'; when?: Cond[]; item: string; note: Note }
   | { type: 'lock'; when?: Cond[]; title: string; prompt: string; lock: LockDef; onSolve: Effect }
   | { type: 'needItem'; when?: Cond[]; item: string; note: Note; onUse: Effect }
+  /**
+   * Hidden writing on a document. With the tool (an item in the bag, or none
+   * when `item` is omitted) the player sweeps a lens over the page; finding the
+   * spot sets `revealed:<hotspotId>` and applies onReveal.
+   */
+  | { type: 'reveal'; when?: Cond[]; item?: string; tool: RevealTool; note: Note; hidden: string; at?: { x: number; y: number }; onReveal: Effect }
 
 export type ArtKey =
   | 'door' | 'clock' | 'trash' | 'drawer' | 'terminal' | 'desk-under' | 'whiteboard' | 'mixer' | 'vent' | 'fusebox'
@@ -123,3 +143,4 @@ export type WalkStep =
   | { take: string }
   | { solve: string; input: string }
   | { use: string; item: string }
+  | { reveal: string }
