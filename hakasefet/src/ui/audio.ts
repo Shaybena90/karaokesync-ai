@@ -12,6 +12,34 @@ export function setSoundEnabled(v: boolean) {
   enabled = v
 }
 
+export function isSoundEnabled(): boolean {
+  return enabled
+}
+
+/** The one shared AudioContext (sound effects, voices, radio static, music). */
+export function getAudioCtx(): AudioContext | null {
+  if (typeof window === 'undefined') return null
+  try {
+    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    if (!AC) return null
+    ctx ??= new AC()
+    if (ctx.state === 'suspended') void ctx.resume()
+    return ctx
+  } catch {
+    return null
+  }
+}
+
+let noise: AudioBuffer | null = null
+/** Two seconds of white noise, reused for static, crackle and percussion. */
+export function noiseBuffer(ac: AudioContext): AudioBuffer {
+  if (noise && noise.sampleRate === ac.sampleRate) return noise
+  noise = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate)
+  const d = noise.getChannelData(0)
+  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1
+  return noise
+}
+
 function tone(ac: AudioContext, freq: number, start: number, dur: number, type: OscillatorType = 'sine', gain = 0.12) {
   const o = ac.createOscillator()
   const g = ac.createGain()
@@ -38,10 +66,8 @@ const SEQ: Record<Sfx, [number, number, number, OscillatorType?][]> = {
 export function play(s: Sfx) {
   if (!enabled || typeof window === 'undefined') return
   try {
-    const AC = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
-    if (!AC) return
-    ctx ??= new AC()
-    if (ctx.state === 'suspended') void ctx.resume()
+    const ctx = getAudioCtx()
+    if (!ctx) return
     const t = ctx.currentTime + 0.01
     for (const [f, at, d, type] of SEQ[s]) tone(ctx, f, t + at, d, type ?? 'sine', s === 'wrong' ? 0.06 : 0.12)
   } catch {

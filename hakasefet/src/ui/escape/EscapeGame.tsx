@@ -10,6 +10,9 @@ import { LockPanel } from './LockPanel'
 import { ObjectArt, SceneBackground, SceneDefs } from './sceneArt'
 import { Scene3D } from './Scene3D'
 import { useApp } from '../../state/AppState'
+import { RevealViewer } from './RevealViewer'
+import { VoicePlayer } from './VoicePlayer'
+import { Music } from '../music'
 
 /** The playing screen: scenes, objects, inventory, hints, timer and the team feed. */
 export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap: SessionSnapshot; session: GameSession; coop: boolean }) {
@@ -68,6 +71,28 @@ export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap:
   const left = remainingMs(room, state, now)
   const items = state.inventory.map((id) => room.items.find((i) => i.id === id)!).filter(Boolean)
   const level = levelOf(state)
+
+  // background music for the room (generated live); tension rises in the last 5 minutes
+  const music = useRef<Music | null>(null)
+  const [musicBlocked, setMusicBlocked] = useState(false)
+  useEffect(() => {
+    if (!prefs.music) return
+    const m = new Music(room.scenes[0].theme)
+    music.current = m
+    m.start()
+    const t = window.setTimeout(() => setMusicBlocked(!m.isRunning()), 600)
+    return () => {
+      window.clearTimeout(t)
+      m.stop(0.8)
+      music.current = null
+    }
+  }, [prefs.music, room])
+  useEffect(() => {
+    music.current?.setTension(left < 5 * 60_000 ? 1 - Math.max(0, left) / (5 * 60_000) : 0)
+  }, [left])
+  useEffect(() => {
+    if (state.phase === 'escaped') music.current?.stop(2)
+  }, [state.phase])
   const canHint = nextHintIndex(room, state) !== -1 && hintsLeft(state) > 0
 
   // Objects in the open dialog follow live state (another player may change them).
@@ -100,6 +125,9 @@ export function EscapeGame({ room, snap, session, coop }: { room: RoomDef; snap:
         </div>
         <div className="flex items-center gap-2">
           {coop && <Players snap={snap} />}
+          {musicBlocked && (
+            <button className="btn btn-ghost !min-h-11 !px-3" onClick={() => { music.current?.start(); setMusicBlocked(!(music.current?.isRunning() ?? true)) }} aria-label="הפעלת מוזיקה">🎵</button>
+          )}
           <button className="btn btn-ghost !min-h-11 !px-4" onClick={() => setHintsOpen(true)}>💡 רמזים {state.hintsShown.length > 0 && `(${state.hintsShown.length})`}</button>
         </div>
       </div>
@@ -265,7 +293,7 @@ export function NoteCard({ note }: { note: Note }) {
   return (
     <div className={`rounded-xl border-2 p-4 text-lg leading-relaxed whitespace-pre-line ${style}`}>
       <p className="mb-1 text-sm font-bold opacity-70">{note.title}</p>
-      <p>{text}</p>
+      {note.voice ? <VoicePlayer voice={note.voice} transcript={text} /> : <p>{text}</p>}
     </div>
   )
 }
@@ -304,6 +332,33 @@ function ObjectPanel({ hotspot, interaction, room, inventory, session, onClose }
         >
           {it.icon} לקחת: {it.name}
         </button>
+      </div>
+    )
+  }
+  if (interaction.type === 'reveal') {
+    const tool = interaction.item ? inventory.find((i) => i.id === interaction.item) : undefined
+    if (interaction.item && !tool)
+      return (
+        <div>
+          <NoteCard note={interaction.note} />
+          <p className="mt-3 text-sm text-dim">משהו כאן לא נראה בעין רגילה. אולי כלי מתאים יעזור.</p>
+          <button className="btn btn-ghost mt-3 w-full" onClick={onClose}>סגירה</button>
+        </div>
+      )
+    return (
+      <div>
+        <p className="mb-2 text-mist">{interaction.note.text}</p>
+        <RevealViewer
+          hotspot={hotspot}
+          tool={interaction.tool}
+          hidden={interaction.hidden}
+          at={interaction.at}
+          onFound={() => {
+            void session.dispatch({ type: 'REVEAL', hotspot: hotspot.id }).then((r) => {
+              if (r === 'ok') window.setTimeout(() => setMsg(interaction.onReveal.message), 900)
+            })
+          }}
+        />
       </div>
     )
   }

@@ -5,10 +5,12 @@ export interface Prefs {
   sound: boolean
   reducedMotion: boolean
   graphics: Graphics
+  /** Generated background music in the rooms. */
+  music: boolean
 }
 
 const KEY = 'hakasefet:prefs'
-const DEFAULTS: Prefs = { sound: true, reducedMotion: false, graphics: 'high' }
+const DEFAULTS: Prefs = { sound: true, reducedMotion: false, graphics: 'high', music: true }
 
 export function loadPrefs(): Prefs {
   try {

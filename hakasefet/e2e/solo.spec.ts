@@ -150,3 +150,46 @@ test('typing a code word: the text field keeps focus while the game timer ticks 
   await page.keyboard.press('Enter')
   await expect(page.getByText('הלייזרים כבו!').first()).toBeVisible()
 })
+
+test('immersive puzzles: UV lens finds hidden ink; the whole factory room — light beam, radio dial, voice message — can be escaped', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'once')
+  test.setTimeout(180_000)
+  await page.goto('./')
+  await onboard(page)
+
+  // UV lens in the lab: nothing until you sweep the lens over the right spot
+  const lab = getRoom('lab')!
+  await page.goto('./#/solo/lab')
+  await page.getByRole('button', { name: /מתחילים/ }).click()
+  await doStep(page, 'lab', lab.walkthrough[0])
+  await doStep(page, 'lab', lab.walkthrough[1])
+  await page.getByRole('tab', { name: /מדפי הדגימות/ }).click()
+  await hotspot(page, 'הפוסטר').click()
+  const area = page.getByTestId('reveal')
+  await expect(area).toBeVisible()
+  const b = (await area.boundingBox())!
+  await page.mouse.move(b.x + 8, b.y + 8)
+  await page.waitForTimeout(900)
+  await expect(page.getByText('פנס ה־UV חשף')).toHaveCount(0) // wrong spot: nothing yet
+  await page.mouse.move(b.x + b.width * 0.62, b.y + b.height * 0.7, { steps: 6 })
+  await expect(page.getByText('פנס ה־UV חשף כתב סמוי על הפוסטר!').first()).toBeVisible()
+
+  // the underground factory, end to end
+  const ayalon = getRoom('ayalon')!
+  await page.goto('./#/')
+  await page.goto('./#/solo/ayalon')
+  await page.getByRole('button', { name: /מתחילים/ }).click()
+  for (const s of ayalon.walkthrough) {
+    await doStep(page, 'ayalon', s)
+    if ('solve' in s && s.solve === 'radio') {
+      // the radio now plays the message; the transcript is available
+      await hotspot(page, 'הרדיו').click()
+      await expect(page.getByTestId('voice')).toContainText('שידור נכנס')
+      // sound is off in tests, so the transcript is shown straight away
+      await expect(page.getByTestId('voice')).toContainText('נון. יוד. סמך.')
+      await expect(page.getByRole('dialog').getByRole('button', { name: /השמעה/ })).toBeVisible()
+      await page.getByRole('dialog').getByRole('button', { name: 'סגירה' }).last().click()
+    }
+  }
+  await expect(page.getByRole('heading', { name: 'ברחתם!' })).toBeVisible({ timeout: 20_000 })
+})

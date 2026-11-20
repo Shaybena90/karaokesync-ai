@@ -4,6 +4,8 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js'
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js'
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js'
+import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js'
+import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js'
 import { isActive } from '../../../escape/engine'
 import type { RoomDef } from '../../../escape/types'
 import { buildObject, makeMaterials, tableUnder, type Kit, type ObjectModel } from './models'
@@ -71,6 +73,21 @@ const THEME_LIGHT: Record<Theme, { key: number; accent: number; ambient: number;
   hut: { key: 0xffdca0, accent: 0xf2c14e, ambient: 0x9a7a5a, fog: 0x0e0905 },
 }
 const NEON = new Set<Theme>(['lab', 'station'])
+
+/** Vignette + film grain, applied last. */
+const GRADE_SHADER = {
+  uniforms: { tDiffuse: { value: null }, time: { value: 0 }, amount: { value: 0.04 } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0); }',
+  fragmentShader: `uniform sampler2D tDiffuse; uniform float time; uniform float amount; varying vec2 vUv;
+    float rand(vec2 co){ return fract(sin(dot(co, vec2(12.9898, 78.233)) + time) * 43758.5453); }
+    void main(){
+      vec4 c = texture2D(tDiffuse, vUv);
+      float v = smoothstep(0.95, 0.35, distance(vUv, vec2(0.5)));
+      c.rgb *= mix(0.62, 1.0, v);
+      c.rgb += (rand(vUv * 1000.0) - 0.5) * amount;
+      gl_FragColor = c;
+    }`,
+}
 
 export function createEscapeScene(container: HTMLElement, room: RoomDef, opts: { quality: Quality; reducedMotion: boolean }): EscapeSceneHandle {
   const q = opts.quality
@@ -231,12 +248,24 @@ export function createEscapeScene(container: HTMLElement, room: RoomDef, opts: {
 
   // ── post-processing ──
   let composer: EffectComposer | null = null
+  let grade: ShaderPass | null = null
   if (q !== 'normal') {
     const rt = new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: q === 'ultra' ? 4 : 0 })
     composer = new EffectComposer(renderer, rt)
     composer.addPass(new RenderPass(scene, camera))
+    // ambient occlusion: soft contact shadows in corners and under objects (ultra only — it is costly)
+    if (q === 'ultra') {
+      const ao = new GTAOPass(scene, camera, 1, 1)
+      ao.updateGtaoMaterial({ radius: 0.35, distanceExponent: 1.5, thickness: 1, scale: 1.2 })
+      ao.blendIntensity = 0.85
+      composer.addPass(ao)
+    }
     composer.addPass(new UnrealBloomPass(new THREE.Vector2(1, 1), q === 'ultra' ? 0.45 : 0.38, 0.35, 0.92))
     composer.addPass(new OutputPass())
+    // cinematic finish: vignette + fine film grain (after tone mapping)
+    grade = new ShaderPass(GRADE_SHADER)
+    grade.uniforms.amount.value = theme === 'bunker' || theme === 'hq' || theme === 'hut' ? 0.06 : 0.035
+    composer.addPass(grade)
   }
 
   // ── camera rig ──
@@ -287,7 +316,11 @@ export function createEscapeScene(container: HTMLElement, room: RoomDef, opts: {
     hemi.intensity += ((powered ? 0.3 : 0.08) - hemi.intensity) * k
     keyLight.intensity += ((powered ? 70 : 14) - keyLight.intensity) * k
     scene.environmentIntensity += ((powered ? 0.35 : 0.12) - scene.environmentIntensity) * k
-    panelMat.emissiveIntensity += ((powered ? 0.9 : 0.03) - panelMat.emissiveIntensity) * k
+    // period rooms: bare bulbs that flicker now and then
+    const flicker = NEON.has(theme) || opts.reducedMotion ? 1 : Math.sin(t * 13) > 0.97 || Math.sin(t * 7.3 + 1) > 0.985 ? 0.55 : 1
+    panelMat.emissiveIntensity += ((powered ? 0.9 * flicker : 0.03) - panelMat.emissiveIntensity) * Math.min(1, k * 4)
+    if (!NEON.has(theme)) keyLight.intensity *= 0.85 + 0.15 * flicker
+    if (grade) grade.uniforms.time.value = t
     emergency.intensity = powered ? Math.max(0, emergency.intensity - dt * 20) : 6 + 5 * Math.sin(t * 3)
     accent.intensity = 8 + (opts.reducedMotion ? 0 : 1.5 * Math.sin(t * 1.3))
 

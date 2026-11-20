@@ -63,9 +63,9 @@ export const museum: RoomDef = {
       interactions: [{ type: 'note', note: { title: 'מחברת השומר', text: '״הקוד של תיבת התצוגה: צבעי המסגרות, מהציור החדש ביותר אל הישן ביותר.״', style: 'book' } }],
     },
     {
-      id: 'owl', scene: 'office', name: 'פסלון הינשוף', art: 'owl', x: 520, y: 330, w: 110, h: 170, activeWhen: ['used:owl'],
+      id: 'owl', scene: 'office', name: 'פסלון הינשוף', art: 'owl', x: 520, y: 330, w: 110, h: 170, activeWhen: ['revealed:owl'],
       interactions: [
-        { type: 'needItem', when: ['!used:owl'], item: 'magnifier', note: { title: 'פסלון ינשוף', text: 'פסלון ינשוף על השולחן. בבסיס שלו יש חריטה זעירה מדי לקריאה.' }, onUse: { message: 'החריטה בבסיס הינשוף נחשפה!' } },
+        { type: 'reveal', when: ['!revealed:owl'], item: 'magnifier', tool: 'magnifier', note: { title: 'פסלון ינשוף', text: 'פסלון ינשוף על השולחן. בבסיס שלו יש חריטה זעירה מדי לקריאה בעין.' }, hidden: 'שמאלה · למעלה · שמאלה · למטה', at: { x: 50, y: 82 }, onReveal: { message: 'החריטה בבסיס הינשוף נחשפה!' } },
         { type: 'note', note: { title: 'החריטה בבסיס', text: 'בזכוכית המגדלת רואים חיצים: שמאלה, למעלה, שמאלה, למטה.', style: 'plaque' } },
       ],
     },
@@ -94,8 +94,8 @@ export const museum: RoomDef = {
   hints: [
     { until: 'solved:terminal', text: 'קראו את השלטים של שלושת הציורים ומצאו את השנה הקטנה ביותר.' },
     { until: 'solved:showcase', after: ['solved:terminal'], text: 'מחברת השומר: מסדרים את המסגרות לפי השנים — 1889, 1876, 1831.' },
-    { until: 'used:owl', after: ['took:magnifier'], text: 'בבסיס פסלון הינשוף יש חריטה. השתמשו בזכוכית המגדלת.' },
-    { until: 'solved:cabinet', after: ['used:owl'], text: 'החיצים מהינשוף פותחים את ארון התיקים.' },
+    { until: 'revealed:owl', after: ['took:magnifier'], text: 'בבסיס פסלון הינשוף יש חריטה. פתחו אותו והעבירו עליו את הזכוכית המגדלת.' },
+    { until: 'solved:cabinet', after: ['revealed:owl'], text: 'החיצים מהינשוף פותחים את ארון התיקים.' },
     { until: 'used:desk', after: ['took:bronzekey'], text: 'מפתח הארד פותח את מגירת השומר.' },
     { until: 'solved:jewelbox', after: ['took:curatornote'], text: 'אריה, ורד, רקדנית — קחו את האות הראשונה של כל אחד.' },
     { until: 'escaped', after: ['took:letter'], text: 'הציור הישן ביותר מ־1831 והחדש ביותר מ־1889.' },
@@ -103,7 +103,7 @@ export const museum: RoomDef = {
   walkthrough: [
     { solve: 'terminal', input: '1831' },
     { solve: 'showcase', input: 'red,blue,green' },
-    { use: 'owl', item: 'magnifier' },
+    { reveal: 'owl' },
     { solve: 'cabinet', input: 'left,up,left,down' },
     { use: 'desk', item: 'bronzekey' },
     { solve: 'jewelbox', input: 'אור' },

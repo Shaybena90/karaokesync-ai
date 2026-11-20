@@ -64,9 +64,9 @@ export const jerusalem: RoomDef = {
       id: 'radio', scene: 'comms', name: 'מכשיר הקשר', art: 'radio', x: 260, y: 300, w: 260, h: 160, activeWhen: ['solved:radio'],
       interactions: [
         { type: 'blocked', when: ['!used:mast'], note: { title: 'מכשיר הקשר', text: 'מהרמקול נשמע רק רעש. נראה שחוט האנטנה בחוץ קרוע.' } },
-        { type: 'lock', when: ['!solved:radio'], title: 'מכשיר הקשר', prompt: 'מכוונים תדר — 3 ספרות.', lock: { kind: 'digits', length: 3, answer: '367' }, onSolve: { message: 'יש קשר עם ירושלים!' } },
+        { type: 'lock', when: ['!solved:radio'], title: 'מכשיר הקשר', prompt: 'סובבו את חוגת התדר עד שהרעש נעלם, ולחצו ״קליטה״.', lock: { kind: 'tuner', min: 100, max: 400, answer: 367 }, onSolve: { message: 'יש קשר עם ירושלים!' } },
         { type: 'needItem', when: ['!used:radio'], item: 'headphones', note: { title: 'מכשיר הקשר', text: 'מישהו עונה מירושלים, אבל ברעש של המחולל אי אפשר לשמוע מילה בלי אוזניות.' }, onUse: { message: 'שומעים את ירושלים בבירור!' } },
-        { type: 'note', note: { title: 'ירושלים על הקו', text: '״שלחו במכשיר המברקים את מילת הקוד של הדרך הבטוחה. מילות הקוד — בכרטיס הקודים שבארון הקשר.״', style: 'screen' } },
+        { type: 'note', note: { title: 'ירושלים על הקו', text: '״כאן ירושלים. שלחו במכשיר המברקים את מילת הקוד של הדרך הבטוחה. מילות הקוד — בכרטיס הקודים שבארון הקשר.״', style: 'screen', voice: { effect: 'radio', pitch: 0.85, lines: ['כאן ירושלים. שומעים אתכם.', 'שלחו במכשיר המברקים את מילת הקוד של הדרך הבטוחה.', 'מילות הקוד — בכרטיס הקודים שבארון הקשר.', 'עבור.'] } } },
       ],
     },
     {
