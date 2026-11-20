@@ -4,6 +4,8 @@ import type { RoomDef } from '../types'
  * Inspired by the 1948 "Burma Road", a bypass track built to bring supplies to
  * besieged Jerusalem. Plot, characters and puzzles are fictional.
  */
+const PALMACH = { src: 'rooms/palmach.webp', size: [1672, 941] as [number, number] }
+
 export const jerusalem: RoomDef = {
   id: 'jerusalem',
   version: 1,
@@ -14,9 +16,10 @@ export const jerusalem: RoomDef = {
   story: 'מאי 1948. ירושלים נצורה והשיירות לא עוברות. במפקדה שבהרים מחכה שיירת אספקה לפקודה — אבל הקשר עם ירושלים נותק. החזירו את הקשר, גלו איזו דרך בטוחה, ושדרו את מילת הקוד לפני שהשיירה יוצאת לדרך הלא נכונה.',
   history: 'בהשראת ״דרך בורמה״ — דרך עפר עוקפת שנסללה בהרים ב־1948, כדי להעביר מזון ואספקה לירושלים הנצורה. העלילה, הדמויות והחידות בחדר בדויות.',
   scenes: [
-    { id: 'hq', name: 'חדר המפקדה', theme: 'hq' },
-    { id: 'comms', name: 'חדר הקשר', theme: 'hq' },
-    { id: 'store', name: 'המחסן', theme: 'hq' },
+    // one photo of the Palmach HQ room; each area is a view into part of it
+    { id: 'hq', name: 'חדר המפקדה', theme: 'hq', photo: { ...PALMACH, crop: [0, 30, 830, 911] } },
+    { id: 'comms', name: 'חדר הקשר', theme: 'hq', photo: { ...PALMACH, crop: [150, 120, 760, 830] } },
+    { id: 'store', name: 'המחסן', theme: 'hq', photo: { ...PALMACH, crop: [800, 30, 872, 911] } },
     { id: 'post', name: 'העמדה', theme: 'hq' },
   ],
   items: [
@@ -30,26 +33,26 @@ export const jerusalem: RoomDef = {
   hotspots: [
     // ── חדר המפקדה ──
     {
-      id: 'clock', scene: 'hq', name: 'שעון הקיר', art: 'clock', variant: '4:10', x: 60, y: 50, w: 140, h: 140,
+      id: 'clock', photo: [600, 70, 90, 90], photoArt: true, scene: 'hq', name: 'שעון הקיר', art: 'clock', variant: '4:10', x: 60, y: 50, w: 140, h: 140,
       interactions: [{ type: 'note', note: { title: 'שעון הקיר', text: 'השעון עצר. המחוגים מראים 4:10.' } }],
     },
     {
-      id: 'logbook', scene: 'hq', name: 'יומן המבצעים', art: 'book', x: 240, y: 430, w: 180, h: 110,
+      id: 'logbook', photo: [430, 540, 300, 85], scene: 'hq', name: 'יומן המבצעים', art: 'book', x: 240, y: 430, w: 180, h: 110,
       interactions: [{ type: 'note', note: { title: 'יומן המבצעים', text: '״את מגירת המפקד נועלים בשעה שבה יצאה השיירה האחרונה — השעה שבה נעצר השעון. ארבע ספרות.״', easy: '״את מגירת המפקד נועלים בשעה שבה יצאה השיירה האחרונה — השעה שבה נעצר השעון. ארבע ספרות (למשל 9:05 נכתב 0905).״', hard: '״המגירה — בשעה שבה הכול נעצר.״', style: 'book' } }],
     },
     {
-      id: 'desk', scene: 'hq', name: 'מגירת המפקד', art: 'drawer', x: 470, y: 380, w: 200, h: 90, activeWhen: ['solved:desk'],
+      id: 'desk', photo: [385, 655, 385, 270], scene: 'hq', name: 'מגירת המפקד', art: 'drawer', x: 470, y: 380, w: 200, h: 90, activeWhen: ['solved:desk'],
       interactions: [
         { type: 'lock', when: ['!solved:desk'], title: 'מגירת המפקד', prompt: 'מנעול של 4 ספרות.', lock: { kind: 'digits', length: 4, answer: '0410' }, onSolve: { giveItems: ['flashlight'], message: 'מגירת המפקד נפתחה — בפנים פנס!' } },
         { type: 'note', note: { title: 'מגירת המפקד', text: 'המגירה ריקה.' } },
       ],
     },
     {
-      id: 'map', scene: 'hq', name: 'מפת הדרכים', art: 'map', x: 240, y: 60, w: 340, h: 230,
+      id: 'map', photo: [35, 65, 510, 390], scene: 'hq', name: 'מפת הדרכים', art: 'map', x: 240, y: 60, w: 340, h: 230,
       interactions: [{ type: 'note', note: { title: 'מפת הדרכים לירושלים', text: 'שלוש דרכים ממוספרות: דרך 1 — הכביש הראשי ליד לטרון. דרך 2 — דרך שער הגיא. דרך 3 — שביל חדש בין ההרים, שסוללים אותו בלילות.' } }],
     },
     {
-      id: 'bag', scene: 'hq', name: 'תרמיל הקשר', art: 'jewelbox', x: 640, y: 470, w: 130, h: 80, activeWhen: ['took:headphones'],
+      id: 'bag', photo: [80, 625, 290, 175], scene: 'hq', name: 'תרמיל הקשר', art: 'jewelbox', x: 640, y: 470, w: 130, h: 80, activeWhen: ['took:headphones'],
       interactions: [
         { type: 'take', when: ['!took:headphones'], item: 'headphones', note: { title: 'תרמיל הקשר', text: 'תרמיל של קשר. בתוכו זוג אוזניות.' } },
         { type: 'note', note: { title: 'תרמיל הקשר', text: 'התרמיל ריק.' } },
@@ -57,11 +60,11 @@ export const jerusalem: RoomDef = {
     },
     // ── חדר הקשר ──
     {
-      id: 'freqboard', scene: 'comms', name: 'לוח התדרים', art: 'whiteboard', x: 40, y: 60, w: 260, h: 180,
+      id: 'freqboard', photo: [805, 200, 85, 92], scene: 'comms', name: 'לוח התדרים', art: 'whiteboard', x: 40, y: 60, w: 260, h: 180,
       interactions: [{ type: 'note', note: { title: 'לוח התדרים', text: 'מפקדה — 214 · ירושלים — 367 · תל אביב — 152.' } }],
     },
     {
-      id: 'radio', scene: 'comms', name: 'מכשיר הקשר', art: 'radio', x: 260, y: 300, w: 260, h: 160, activeWhen: ['solved:radio'],
+      id: 'radio', photo: [205, 418, 365, 180], scene: 'comms', name: 'מכשיר הקשר', art: 'radio', x: 260, y: 300, w: 260, h: 160, activeWhen: ['solved:radio'],
       interactions: [
         { type: 'blocked', when: ['!used:mast'], note: { title: 'מכשיר הקשר', text: 'מהרמקול נשמע רק רעש. נראה שחוט האנטנה בחוץ קרוע.' } },
         { type: 'lock', when: ['!solved:radio'], title: 'מכשיר הקשר', prompt: 'סובבו את חוגת התדר עד שהרעש נעלם, ולחצו ״קליטה״.', lock: { kind: 'tuner', min: 100, max: 400, answer: 367 }, onSolve: { message: 'יש קשר עם ירושלים!' } },
@@ -70,14 +73,14 @@ export const jerusalem: RoomDef = {
       ],
     },
     {
-      id: 'codelocker', scene: 'comms', name: 'ארון הקודים', art: 'locker', x: 600, y: 150, w: 140, h: 300, activeWhen: ['solved:codelocker'],
+      id: 'codelocker', photo: [583, 180, 195, 250], scene: 'comms', name: 'ארון הקודים', art: 'locker', x: 600, y: 150, w: 140, h: 300, activeWhen: ['solved:codelocker'],
       interactions: [
         { type: 'lock', when: ['!solved:codelocker'], title: 'ארון הקודים', prompt: 'מנעול אותיות — 5 אותיות. מדבקה: ״שם המבצע״.', lock: { kind: 'letters', length: 5, answer: 'נחשון' }, onSolve: { giveItems: ['codecard'], message: 'ארון הקודים נפתח — כרטיס הקודים אצלכם!' } },
         { type: 'note', note: { title: 'ארון הקודים', text: 'הארון ריק.' } },
       ],
     },
     {
-      id: 'morse', scene: 'comms', name: 'מכשיר המברקים', art: 'typewriter', x: 50, y: 360, w: 180, h: 120,
+      id: 'morse', photo: [395, 600, 145, 70], scene: 'comms', name: 'מכשיר המברקים', art: 'typewriter', x: 50, y: 360, w: 180, h: 120,
       interactions: [
         { type: 'blocked', when: ['!used:radio'], note: { title: 'מכשיר המברקים', text: 'אין עם מי לדבר — קודם צריך קשר ברור עם ירושלים.' } },
         { type: 'lock', title: 'מכשיר המברקים', prompt: 'מקלידים את מילת הקוד של הדרך הבטוחה.', lock: { kind: 'terminal', answers: ['גפן'] }, onSolve: { message: 'מילת הקוד שודרה — השיירה יוצאת לירושלים בדרך הבטוחה!', escape: true } },
@@ -85,22 +88,22 @@ export const jerusalem: RoomDef = {
     },
     // ── המחסן ──
     {
-      id: 'supplies', scene: 'store', name: 'ארגזי האספקה', art: 'crate', x: 40, y: 380, w: 220, h: 150,
+      id: 'supplies', photo: [1035, 455, 225, 225], scene: 'store', name: 'ארגזי האספקה', art: 'crate', x: 40, y: 380, w: 220, h: 150,
       interactions: [{ type: 'note', note: { title: 'ארגזי האספקה', text: 'חמישה ארגזים, ועל כל אחד מספר ואות: 3 — ש · 1 — נ · 5 — ן · 2 — ח · 4 — ו.', easy: 'חמישה ארגזים, ועל כל אחד מספר ואות: 3 — ש · 1 — נ · 5 — ן · 2 — ח · 4 — ו. (מסדרים את האותיות לפי המספרים)' } }],
     },
     {
-      id: 'sign', scene: 'store', name: 'שלט מסלול הסיור', art: 'poster', x: 300, y: 60, w: 200, h: 200,
+      id: 'sign', photo: [930, 122, 178, 146], scene: 'store', name: 'שלט מסלול הסיור', art: 'poster', x: 300, y: 60, w: 200, h: 200,
       interactions: [{ type: 'note', note: { title: 'שלט', text: '״מסלול הסיור: ימינה, למעלה, למעלה, שמאלה.״', easy: '״מסלול הסיור: ימינה, למעלה, למעלה, שמאלה.״ — אותו מסלול כמו בארגז הכלים.', style: 'paper' } }],
     },
     {
-      id: 'toolbox', scene: 'store', name: 'ארגז הכלים', art: 'crate', x: 510, y: 420, w: 120, h: 110, activeWhen: ['solved:toolbox'],
+      id: 'toolbox', photo: [870, 262, 160, 62], scene: 'store', name: 'ארגז הכלים', art: 'crate', x: 510, y: 420, w: 120, h: 110, activeWhen: ['solved:toolbox'],
       interactions: [
         { type: 'lock', when: ['!solved:toolbox'], title: 'ארגז הכלים', prompt: 'מנעול חיצים. ארבעה צעדים.', lock: { kind: 'arrows', answer: ['right', 'up', 'up', 'left'] }, onSolve: { giveItems: ['battery'], message: 'ארגז הכלים נפתח — בפנים סוללה!' } },
         { type: 'note', note: { title: 'ארגז הכלים', text: 'הארגז ריק.' } },
       ],
     },
     {
-      id: 'workbench', scene: 'store', name: 'שולחן התיקונים', art: 'drawer', x: 300, y: 330, w: 200, h: 90, activeWhen: ['used:workbench'],
+      id: 'workbench', photo: [1235, 690, 380, 250], scene: 'store', name: 'שולחן התיקונים', art: 'drawer', x: 300, y: 330, w: 200, h: 90, activeWhen: ['used:workbench'],
       interactions: [
         { type: 'blocked', when: ['!took:battery'], note: { title: 'שולחן התיקונים', text: 'שולחן עם כלים קטנים. כדי לתקן כאן פנס צריך סוללה.' } },
         { type: 'needItem', when: ['!used:workbench'], item: 'flashlight', note: { title: 'שולחן התיקונים', text: 'יש סוללה. עכשיו צריך את הפנס כדי להרכיב אותה בו.' }, onUse: { removeItems: ['flashlight', 'battery'], giveItems: ['litlamp'], message: 'הסוללה הורכבה — הפנס דולק!' } },
@@ -108,7 +111,7 @@ export const jerusalem: RoomDef = {
       ],
     },
     {
-      id: 'shelf', scene: 'store', name: 'המדף החשוך', art: 'cabinet', x: 640, y: 120, w: 130, h: 320, activeWhen: ['used:shelf'],
+      id: 'shelf', photo: [1330, 145, 182, 545], scene: 'store', name: 'המדף החשוך', art: 'cabinet', x: 640, y: 120, w: 130, h: 320, activeWhen: ['used:shelf'],
       interactions: [
         { type: 'needItem', when: ['!used:shelf'], item: 'litlamp', note: { title: 'המדף החשוך', text: 'המדף בפינה חשוך לגמרי. לא רואים מה יש בו.' }, onUse: { giveItems: ['pliers'], message: 'באור הפנס נגלתה צבת על המדף!' } },
         { type: 'note', note: { title: 'המדף', text: 'על המדף רק חבלים ושקים ריקים.' } },

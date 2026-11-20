@@ -118,6 +118,12 @@ export interface Hotspot {
   activeWhen?: Cond[]
   /** Hidden until these hold (new messages, a room that appears…). */
   visibleWhen?: Cond[]
+  /**
+   * Photo scenes: where the object is in the scene's photo, in the photo's pixels [x, y, w, h].
+   * `photoArt` draws the object's own art there (for something the photo does not show).
+   */
+  photo?: [number, number, number, number]
+  photoArt?: boolean
   /** Icon and one-line subtitle in list views (phone apps, evidence board). */
   icon?: string
   subtitle?: string
@@ -148,6 +154,11 @@ export interface SceneDef {
   theme: Theme
   /** Phone apps / board sections: emoji icon. */
   icon?: string
+  /**
+   * A realistic photo of this area (in public/rooms/). `crop` is the part of the
+   * image this area shows, in the image's pixels [x, y, w, h]; several areas may share one image.
+   */
+  photo?: { src: string; size: [number, number]; crop?: [number, number, number, number]; credit?: string }
   visibleWhen?: Cond[]
 }
 

@@ -193,3 +193,18 @@ test('immersive puzzles: UV lens finds hidden ink; the whole factory room — li
   }
   await expect(page.getByRole('heading', { name: 'ברחתם!' })).toBeVisible({ timeout: 20_000 })
 })
+
+test('photo room: the Palmach HQ photo is the room, its objects are clickable, and the room can be escaped', async ({ page }, info) => {
+  test.skip(info.project.name !== 'desktop', 'the full run is checked once, on desktop')
+  test.setTimeout(150_000)
+  const room = getRoom('jerusalem')!
+  await page.goto('./')
+  await onboard(page)
+  await page.goto('./#/solo/jerusalem')
+  await page.getByRole('button', { name: /מתחילים/ }).click()
+  await expect(page.getByTestId('photo-scene')).toBeVisible()
+  await expect(page.getByTestId('photo-scene').locator('img')).toHaveJSProperty('complete', true)
+  expect(await page.getByTestId('photo-scene').locator('img').evaluate((i) => (i as HTMLImageElement).naturalWidth)).toBe(1672)
+  for (const s of room.walkthrough) await doStep(page, 'jerusalem', s)
+  await expect(page.getByRole('heading', { name: 'ברחתם!' })).toBeVisible({ timeout: 20_000 })
+})
