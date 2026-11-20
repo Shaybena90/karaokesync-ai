@@ -3,7 +3,7 @@ import type { RoomDef } from '../types'
 export const station: RoomDef = {
   id: 'station',
   version: 1,
-  title: 'תחנת החלל השקטה',
+  title: 'תחנת החלל — המסלול הקצר',
   emoji: '🚀',
   category: 'מדע ודמיון',
   length: '15–25 דקות',

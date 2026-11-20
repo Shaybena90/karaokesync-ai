@@ -27,6 +27,9 @@ const MOODS: Record<Theme, Mood> = {
   hut: { root: 130.8, scale: [0, 2, 3, 5, 7, 9, 10], chords: [[0, 2, 4], [5, 0, 2], [3, 5, 0], [6, 1, 3]], bpm: 90, pad: 'triangle', lead: 'sine', perc: 'morse', cutoff: 1100 },
   lab: { root: 116.5, scale: [0, 2, 3, 5, 7, 8, 10], chords: [[0, 2, 4], [5, 0, 2], [6, 1, 3], [4, 6, 1]], bpm: 100, pad: 'sawtooth', lead: 'square', perc: 'pulse', cutoff: 1200 },
   station: { root: 87.3, scale: [0, 2, 4, 7, 9], chords: [[0, 2, 4], [1, 3, 0], [2, 4, 1], [3, 0, 2]], bpm: 66, pad: 'sine', lead: 'sine', perc: 'none', cutoff: 1500 },
+  bank: { root: 92.5, scale: [0, 1, 3, 5, 7, 8, 10], chords: [[0, 2, 4], [1, 3, 5], [3, 5, 0], [4, 6, 1]], bpm: 104, pad: 'sawtooth', lead: 'square', perc: 'tick', cutoff: 800 },
+  hotel: { root: 110, scale: [0, 2, 3, 6, 7, 8, 11], chords: [[0, 2, 4], [3, 5, 0], [5, 0, 2], [1, 3, 5]], bpm: 70, pad: 'triangle', lead: 'sine', perc: 'none', cutoff: 1000 },
+  office: { root: 98, scale: [0, 2, 3, 5, 7, 8, 10], chords: [[0, 2, 4], [5, 0, 2], [3, 5, 0], [4, 6, 1]], bpm: 80, pad: 'sawtooth', lead: 'triangle', perc: 'tick', cutoff: 900 },
   museum: { root: 103.8, scale: [0, 2, 3, 5, 7, 8, 11], chords: [[0, 2, 4], [3, 5, 0], [5, 0, 2], [4, 6, 1]], bpm: 76, pad: 'triangle', lead: 'triangle', perc: 'tick', cutoff: 900 },
 }
 

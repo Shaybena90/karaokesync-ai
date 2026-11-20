@@ -1,5 +1,5 @@
 import type { GameState } from '../escape/engine'
-import { elapsedMs, levelOf, stars, type Level } from '../escape/engine'
+import { elapsedMs, hintTiersUsed, levelOf, points, stars, type Level } from '../escape/engine'
 import { getRoom } from '../escape/rooms'
 import { israelDate } from '../engine/date'
 import { decideEscapeGrants, type Grant } from '../engine/rewards'
@@ -33,6 +33,11 @@ export interface Run {
   wrongAttempts: number
   date: string
   finishedAt: number
+  /** Escape collection: score (1000 − 25×wrong − 50×hint tiers), timed challenge vs practice, loops. */
+  points?: number
+  runMode?: 'timed' | 'practice'
+  loops?: number
+  hintTiers?: number
 }
 
 // ── profile ──────────────────────────────────────────────
@@ -93,7 +98,11 @@ export async function completeRun(p: { runId: string; state: GameState; mode: Ru
   const timeMs = elapsedMs(p.state, now)
   const date = israelDate(p.state.escapedAt ?? now)
   const level = levelOf(p.state)
-  const run: Run = { runId: p.runId, roomId: room.id, level, mode: p.mode, players: p.players, timeMs, stars: stars(level, timeMs), hints: p.state.hintsShown.length, wrongAttempts: p.state.wrongAttempts, date, finishedAt: p.state.escapedAt ?? now }
+  const collection = !!room.puzzles
+  const pts = points(p.state)
+  const run: Run = collection
+    ? { runId: p.runId, roomId: room.id, level, mode: p.mode, players: p.players, timeMs, stars: pts >= 900 ? 3 : pts >= 700 ? 2 : 1, hints: hintTiersUsed(p.state), hintTiers: hintTiersUsed(p.state), wrongAttempts: p.state.wrongAttempts, date, finishedAt: p.state.escapedAt ?? now, points: pts, runMode: room.timer || room.loop ? (p.state.mode ?? 'timed') : undefined, loops: room.loop ? (p.state.loop ?? 0) + 1 : undefined }
+    : { runId: p.runId, roomId: room.id, level, mode: p.mode, players: p.players, timeMs, stars: stars(level, timeMs), hints: p.state.hintsShown.length, wrongAttempts: p.state.wrongAttempts, date, finishedAt: p.state.escapedAt ?? now }
 
   return withTx(['kv', 'ledger', 'runs'], 'readwrite', async (tx) => {
     const kv = tx.objectStore('kv')
@@ -102,7 +111,8 @@ export async function completeRun(p: { runId: string; state: GameState; mode: Ru
     const profile: Profile | undefined = await req(kv.get('profile'))
     if (!profile) throw new Error('no-profile')
     const allRuns = (await req(runs.getAll())) as Run[]
-    const sameRoom = allRuns.filter((r) => r.roomId === room.id && (r.level ?? 'medium') === level && r.runId !== p.runId)
+    // practice results never compete with the timed challenge
+    const sameRoom = allRuns.filter((r) => r.roomId === room.id && (collection ? r.runMode === run.runMode : (r.level ?? 'medium') === level) && r.runId !== p.runId)
     const prevBestMs = sameRoom.length ? Math.min(...sameRoom.map((r) => r.timeMs)) : undefined
     const existing = allRuns.find((r) => r.runId === p.runId)
     const all = (await req(ledger.getAll())) as LedgerEntry[]
@@ -110,7 +120,7 @@ export async function completeRun(p: { runId: string; state: GameState; mode: Ru
       const grants = all.filter((g) => g.runId === p.runId)
       return { run: existing, grants, prevXp: profile.xp - grants.reduce((a, g) => a + g.xp, 0), profile, isBest: prevBestMs === undefined || existing.timeMs < prevBestMs, prevBestMs, alreadyRecorded: true }
     }
-    const grants = decideEscapeGrants({ roomId: room.id, level, date, ledgerKeys: new Set(all.map((g) => g.key)) })
+    const grants = decideEscapeGrants({ roomId: room.id, level, date, ledgerKeys: new Set(all.map((g) => g.key)), collection })
     for (const g of grants) await req(ledger.add({ ...g, grantedAt: now, runId: p.runId } satisfies LedgerEntry))
     const next: Profile = { ...profile, xp: profile.xp + grants.reduce((a, g) => a + g.xp, 0), coins: profile.coins + grants.reduce((a, g) => a + g.coins, 0) }
     await req(kv.put(next, 'profile'))

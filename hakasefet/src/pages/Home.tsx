@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { TAGLINE } from '../content/labels'
-import { ROOMS } from '../escape/rooms'
+import { CLASSIC, COLLECTION, ROOMS } from '../escape/rooms'
 import { formatDuration, hebrewWeekdayShort, formatHebDate, lastNDates } from '../engine/date'
 import { daysPlayedLast7, rankInfo } from '../engine/rewards'
 import { backupFor } from '../state/useSession'
@@ -44,7 +44,7 @@ export function Home() {
           <p className="mx-auto mt-2 max-w-md text-mist">30 דקות. חפצים נסתרים, מנעולים ומחשבים נעולים. בורחים לבד — או עם עד 3 חברים, כל אחד מהטלפון שלו.</p>
         </div>
         <div className="relative mt-5 grid gap-2 sm:grid-cols-2">
-          <Link to="/rooms" className="btn btn-gold text-lg">🔐 משחק לבד</Link>
+          <Link to="/escape" className="btn btn-gold text-lg">🗝️ חדרי בריחה</Link>
           <Link to="/coop" className="btn btn-ghost text-lg">👥 משחק עם חברים</Link>
         </div>
       </TiltCard>
@@ -59,10 +59,20 @@ export function Home() {
         </section>
       ))}
 
+      <section aria-labelledby="collection-title" className="card card-hero p-5">
+        <h2 id="collection-title" className="font-display text-2xl font-bold">🗝️ חדרי בריחה — 7 חדרים חדשים</h2>
+        <p className="mt-1 text-sm text-mist">טלפון נטוש, כספת מתוזמנת, לולאת זמן, מלון שמשתנה, תחנת חלל, חדר לשני שחקנים ולוח חקירה.</p>
+        <ul className="mt-3 flex flex-wrap gap-2" aria-hidden="true">
+          {COLLECTION.map((r) => <li key={r.id} className="chip">{r.emoji} {r.title}</li>)}
+          <li className="chip">🚪 שני צדדים של הדלת</li>
+        </ul>
+        <Link to="/escape" className="btn btn-gold mt-3 w-full text-lg">לחדרי הבריחה</Link>
+      </section>
+
       <section aria-labelledby="rooms-title">
-        <h2 id="rooms-title" className="mb-2 font-display text-2xl font-bold">החדרים</h2>
+        <h2 id="rooms-title" className="mb-2 font-display text-2xl font-bold">חדרים נוספים</h2>
         <div className="grid gap-3 sm:grid-cols-3">
-          {ROOMS.map((room) => {
+          {CLASSIC.map((room) => {
             const mine = data.runs.filter((x) => x.roomId === room.id)
             const best = mine.length ? mine.reduce((a, b) => (b.timeMs < a.timeMs ? b : a)) : undefined
             return (

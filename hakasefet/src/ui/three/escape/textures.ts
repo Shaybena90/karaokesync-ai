@@ -4,7 +4,7 @@ import * as THREE from 'three'
  * Procedural textures drawn on canvases — no image files to download, sharp
  * at any resolution (the size follows the chosen graphics quality).
  */
-export type Theme = 'lab' | 'station' | 'museum' | 'bunker' | 'hq' | 'hut'
+export type Theme = 'lab' | 'station' | 'museum' | 'bunker' | 'hq' | 'hut' | 'bank' | 'hotel' | 'office'
 
 function canvas(w: number, h: number) {
   const c = document.createElement('canvas')
@@ -107,6 +107,39 @@ export function wallTexture(theme: Theme, res: number) {
         g.fillRect(x, y, 31 * res, 1)
       }
     }
+  } else if (theme === 'bank') {
+    // dark marble panels with brass seams
+    g.fillStyle = '#2b2f36'
+    g.fillRect(0, 0, S, S)
+    for (let i = 0; i < 40; i++) {
+      g.strokeStyle = `rgba(200,200,210,${0.04 + Math.random() * 0.06})`
+      g.lineWidth = (1 + Math.random() * 2) * res
+      g.beginPath()
+      g.moveTo(Math.random() * S, 0)
+      g.bezierCurveTo(Math.random() * S, S / 3, Math.random() * S, (2 * S) / 3, Math.random() * S, S)
+      g.stroke()
+    }
+    g.fillStyle = 'rgba(242,193,78,.35)'
+    for (let x = 0; x <= S; x += S / 3) g.fillRect(x - 1.5 * res, 0, 3 * res, S)
+    noise(g, S, S, 4000 * res, 0.05)
+  } else if (theme === 'hotel') {
+    // striped wallpaper above a wood dado rail
+    g.fillStyle = '#3d1f2a'
+    g.fillRect(0, 0, S, S)
+    for (let x = 0; x < S; x += 24 * res) {
+      g.fillStyle = '#4a2734'
+      g.fillRect(x, 0, 10 * res, S)
+    }
+    g.fillStyle = '#6b3a24'
+    g.fillRect(0, S * 0.68, S, 10 * res)
+    noise(g, S, S, 5000 * res, 0.04)
+  } else if (theme === 'office') {
+    // painted plasterboard
+    g.fillStyle = '#c9ced5'
+    g.fillRect(0, 0, S, S)
+    g.fillStyle = 'rgba(0,0,0,.06)'
+    for (let x = 0; x <= S; x += S / 2) g.fillRect(x - 1 * res, 0, 2 * res, S)
+    noise(g, S, S, 8000 * res, 0.03)
   } else {
     // red velvet with a damask-like repeat
     g.fillStyle = '#3b0f1d'
@@ -133,12 +166,22 @@ export function wallTexture(theme: Theme, res: number) {
 export function floorTexture(theme: Theme, res: number) {
   const S = 512 * res
   const { c, g } = canvas(S, S)
-  if (theme === 'museum' || theme === 'hut') {
+  if (theme === 'museum' || theme === 'hut' || theme === 'hotel') {
     for (let y = 0; y < 16; y++)
       for (let x = 0; x < 4; x++) {
         const v = 70 + Math.random() * 25
         g.fillStyle = `rgb(${v + 20},${v - 10},${v - 40})`
         g.fillRect(x * (S / 4) + ((y % 2) * S) / 8, y * (S / 16), S / 4 - 2 * res, S / 16 - 2 * res)
+      }
+    noise(g, S, S, 6000 * res, 0.05)
+  } else if (theme === 'bank' || theme === 'office') {
+    // polished stone tiles / office carpet tiles
+    const base = theme === 'bank' ? [34, 36, 40] : [80, 88, 98]
+    for (let y = 0; y < 4; y++)
+      for (let x = 0; x < 4; x++) {
+        const v = Math.random() * 10
+        g.fillStyle = `rgb(${base[0] + v},${base[1] + v},${base[2] + v})`
+        g.fillRect((x * S) / 4, (y * S) / 4, S / 4 - 2 * res, S / 4 - 2 * res)
       }
     noise(g, S, S, 6000 * res, 0.05)
   } else if (theme === 'bunker' || theme === 'hq') {

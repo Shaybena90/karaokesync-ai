@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import type { Color, Dir, LockDef } from '../../escape/types'
+import type { Color, Dir, LockDef, Opt } from '../../escape/types'
 import type { SessionOutcome } from '../../net/session'
 import { getAudioCtx, isSoundEnabled, noiseBuffer, play } from '../audio'
 
@@ -36,7 +36,7 @@ export function LockPanel({ lock, onSubmit }: { lock: LockDef; onSubmit: (input:
     if (r === 'wrong') {
       play('wrong')
       setShake(true)
-      setError('לא נכון. נסו שוב.')
+      setError(wrongFeedback(lock, input))
       setResetKey((k) => k + 1)
     } else if (r === 'timeout') setError('אין חיבור לשאר השחקנים כרגע. נסו שוב בעוד רגע.')
     else if (r === 'invalid') setError('המנעול כבר לא זמין — אולי מישהו אחר כבר פתח אותו.')
@@ -50,10 +50,34 @@ export function LockPanel({ lock, onSubmit }: { lock: LockDef; onSubmit: (input:
       {lock.kind === 'arrows' && <Sequence key={resetKey} length={lock.answer.length} busy={busy} onDone={(v) => submit(v.join(','))} options={DIRS.map((d) => ({ value: d.d, node: <span className="text-2xl leading-none">{d.arrow}</span>, label: DIR_LABEL[d.d] }))} />}
       {lock.kind === 'switches' && <Switches key={resetKey} count={lock.count} busy={busy} onDone={(v) => submit(v.map((b) => (b ? '1' : '0')).join(''))} />}
       {lock.kind === 'terminal' && <Terminal key={resetKey} numeric={lock.numeric} busy={busy} onDone={submit} />}
+      {lock.kind === 'choice' && <Choice key={resetKey} options={lock.options} busy={busy} onDone={submit} />}
+      {lock.kind === 'sequence' && <Sequence key={resetKey} unique={!lock.repeat} length={lock.answer.length} busy={busy} onDone={(v) => submit(v.join(','))} options={lock.options.map((o) => ({ value: o.id, node: o.icon ? <span aria-hidden="true">{o.icon}</span> : null, label: o.label }))} />}
+      {lock.kind === 'multi' && <Multi key={resetKey} options={lock.options} busy={busy} onDone={(v) => submit(v.join(','))} />}
+      {lock.kind === 'accuse' && <Accuse key={resetKey} suspects={lock.suspects} evidence={lock.evidence} busy={busy} onDone={(who, ev) => submit(`${who}|${ev.join(',')}`)} />}
       {lock.kind === 'tuner' && <Tuner key={resetKey} min={lock.min} max={lock.max} answer={lock.answer} busy={busy} onDone={(v) => submit(String(v))} />}
       <p role="alert" aria-live="assertive" className="mt-2 min-h-6 text-center font-bold text-coral">{error ? `✗ ${error}` : busy ? <span className="text-mist">בודק…</span> : ''}</p>
     </div>
   )
+}
+
+/** Short, spoiler-free feedback for a wrong submission. */
+export function wrongFeedback(lock: LockDef, input: string): string {
+  if (lock.kind === 'choice' && lock.feedback?.[input]) return lock.feedback[input]
+  if (lock.kind === 'multi') {
+    const got = input.split(',').filter(Boolean)
+    if (got.length < lock.answer.length) return 'חסר משהו ברשימה.'
+    if (got.length > lock.answer.length) return 'סימנתם יותר מדי.'
+    return 'הבחירה לא מדויקת.'
+  }
+  if (lock.kind === 'accuse') {
+    const [who, ev = ''] = input.split('|')
+    const got = ev.split(',').filter(Boolean)
+    if (who !== lock.answer) return 'הראיות לא תומכות בטענה הזאת.'
+    if (!lock.required.every((x) => got.includes(x))) return 'הכיוון נכון — אבל חסרה ראיה שמוכיחה את זה.'
+    return 'אחת הראיות שצירפתם לא קשורה או סותרת.'
+  }
+  if (lock.kind === 'sequence') return 'הסדר לא נכון.'
+  return 'לא נכון. נסו שוב.'
 }
 
 function Slots({ values, length, ltr }: { values: string[]; length: number; ltr?: boolean }) {
@@ -116,7 +140,7 @@ function CodeEntry({ length, alphabet, ltr, busy, onDone }: { length: number; al
   )
 }
 
-function Sequence<T extends string>({ length, options, busy, onDone }: { length: number; options: { value: T; node: React.ReactNode; label: string }[]; busy: boolean; onDone: (v: T[]) => void }) {
+function Sequence<T extends string>({ length, options, busy, onDone, unique }: { length: number; options: { value: T; node: React.ReactNode; label: string }[]; busy: boolean; onDone: (v: T[]) => void; unique?: boolean }) {
   const [v, setV] = useState<T[]>([])
   const full = v.length === length
   const label = (x: T) => options.find((o) => o.value === x)!.label
@@ -143,7 +167,7 @@ function Sequence<T extends string>({ length, options, busy, onDone }: { length:
             key={o.value}
             type="button"
             className="tile flex min-h-14 items-center justify-center gap-2 rounded-xl border border-gold/20 text-lg font-bold"
-            disabled={busy || full}
+            disabled={busy || full || (unique && v.includes(o.value))}
             onClick={() => {
               play('tap')
               setV([...v, o.value])
@@ -158,6 +182,98 @@ function Sequence<T extends string>({ length, options, busy, onDone }: { length:
         <button type="button" className="btn btn-ghost flex-1" onClick={() => setV([])} disabled={busy || !v.length}>התחלה מחדש</button>
         <button type="button" className="btn btn-gold flex-1" onClick={() => onDone(v)} disabled={busy || !full}>פתיחה</button>
       </div>
+    </div>
+  )
+}
+
+function Choice({ options, busy, onDone }: { options: Opt[]; busy: boolean; onDone: (v: string) => void }) {
+  return (
+    <div className="mx-auto grid max-w-md gap-2" role="group" aria-label="אפשרויות">
+      {options.map((o) => (
+        <button key={o.id} type="button" className="tile flex min-h-14 items-center gap-3 rounded-xl border border-gold/25 px-4 text-right text-lg font-bold" disabled={busy} onClick={() => { play('tap'); onDone(o.id) }}>
+          {o.icon && <span className="text-2xl" aria-hidden="true">{o.icon}</span>}
+          {o.label}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function Multi({ options, busy, onDone }: { options: Opt[]; busy: boolean; onDone: (v: string[]) => void }) {
+  const [v, setV] = useState<string[]>([])
+  return (
+    <div className="mx-auto max-w-md">
+      <div className="grid grid-cols-2 gap-2" role="group" aria-label="סמנו את כל מה שמתאים">
+        {options.map((o) => {
+          const on = v.includes(o.id)
+          return (
+            <button key={o.id} type="button" role="checkbox" aria-checked={on} disabled={busy} onClick={() => { play('tap'); setV(on ? v.filter((x) => x !== o.id) : [...v, o.id]) }} className={`tile flex min-h-14 items-center gap-2 rounded-xl border-2 px-3 font-bold ${on ? 'border-teal bg-teal/15 text-teal-2' : 'border-white/15'}`}>
+              <span aria-hidden="true">{on ? '☑' : '☐'}</span>
+              {o.icon && <span aria-hidden="true">{o.icon}</span>}
+              {o.label}
+            </button>
+          )
+        })}
+      </div>
+      <button type="button" className="btn btn-gold mt-3 w-full" disabled={busy || !v.length} onClick={() => onDone(v)}>אישור ({v.length})</button>
+    </div>
+  )
+}
+
+/**
+ * Name a claim / suspect and attach evidence. Evidence can be dragged onto the
+ * case file, or simply tapped (the accessible way, and the only one on touch).
+ */
+function Accuse({ suspects, evidence, busy, onDone }: { suspects: Opt[]; evidence: Opt[]; busy: boolean; onDone: (who: string, ev: string[]) => void }) {
+  const [who, setWho] = useState<string | null>(null)
+  const [ev, setEv] = useState<string[]>([])
+  const [over, setOver] = useState(false)
+  const toggle = (id: string) => setEv((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]))
+  return (
+    <div className="mx-auto max-w-md space-y-3">
+      <fieldset>
+        <legend className="mb-1 text-sm font-bold text-mist">1. בחרו:</legend>
+        <div className="grid grid-cols-2 gap-2" role="radiogroup">
+          {suspects.map((o) => (
+            <button key={o.id} type="button" role="radio" aria-checked={who === o.id} disabled={busy} onClick={() => { play('tap'); setWho(o.id) }} className={`tile flex min-h-12 items-center gap-2 rounded-xl border-2 px-3 text-right font-bold ${who === o.id ? 'border-gold bg-gold/15 text-gold-2' : 'border-white/15'}`}>
+              {o.icon && <span aria-hidden="true">{o.icon}</span>}
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend className="mb-1 text-sm font-bold text-mist">2. צרפו ראיות (גררו לתיק או הקישו):</legend>
+        <div className="flex flex-wrap gap-2">
+          {evidence.filter((o) => !ev.includes(o.id)).map((o) => (
+            <button key={o.id} type="button" draggable disabled={busy} onDragStart={(e) => e.dataTransfer.setData('text/plain', o.id)} onClick={() => { play('tap'); toggle(o.id) }} className="tile flex min-h-11 items-center gap-1.5 rounded-full border border-white/20 px-3 text-sm font-bold" aria-label={`לצרף: ${o.label}`}>
+              {o.icon && <span aria-hidden="true">{o.icon}</span>}
+              {o.label}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+      <div
+        className={`min-h-20 rounded-xl border-2 border-dashed p-3 ${over ? 'border-teal bg-teal/10' : 'border-gold/40 bg-black/20'}`}
+        onDragOver={(e) => { e.preventDefault(); setOver(true) }}
+        onDragLeave={() => setOver(false)}
+        onDrop={(e) => { e.preventDefault(); setOver(false); const id = e.dataTransfer.getData('text/plain'); if (id && !ev.includes(id) && evidence.some((x) => x.id === id)) setEv([...ev, id]) }}
+        aria-label="תיק ההוכחות"
+      >
+        <p className="mb-2 text-xs text-dim">📂 תיק ההוכחות {ev.length > 0 && `(${ev.length})`}</p>
+        <div className="flex flex-wrap gap-2">
+          {ev.map((id) => {
+            const o = evidence.find((x) => x.id === id)!
+            return (
+              <button key={id} type="button" disabled={busy} onClick={() => toggle(id)} className="flex min-h-10 items-center gap-1.5 rounded-full border border-teal/60 bg-teal/15 px-3 text-sm font-bold text-teal-2" aria-label={`להסיר: ${o.label}`}>
+                {o.icon && <span aria-hidden="true">{o.icon}</span>}
+                {o.label} ✕
+              </button>
+            )
+          })}
+        </div>
+      </div>
+      <button type="button" className="btn btn-gold w-full" disabled={busy || !who || !ev.length} onClick={() => who && onDone(who, ev)}>⚖️ הגשה</button>
     </div>
   )
 }

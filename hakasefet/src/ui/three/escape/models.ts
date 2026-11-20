@@ -105,7 +105,7 @@ export function buildObject(h: Hotspot, kit: Kit): ObjectModel {
   const H = h.h / 100
   const M = kit.mats
   const g = new THREE.Group()
-  const floorArts = new Set(['door', 'hatch', 'cabinet', 'showcase', 'statues', 'tanks', 'trash', 'crate', 'desk-under', 'console', 'machine', 'ladder'])
+  const floorArts = new Set(['bed', 'elevator', 'pod', 'door', 'hatch', 'cabinet', 'showcase', 'statues', 'tanks', 'trash', 'crate', 'desk-under', 'console', 'machine', 'ladder'])
   const floor = floorArts.has(h.art) || h.y + h.h >= 520
   let update: ObjectModel['update'] = () => {}
   let height = H
@@ -353,6 +353,12 @@ export function buildObject(h: Hotspot, kit: Kit): ObjectModel {
     case 'painting':
     case 'slot':
     case 'fusebox':
+    case 'photo':
+    case 'camera':
+    case 'board':
+    case 'gauges':
+    case 'mirror':
+    case 'card':
     case 'switches': {
       const D = h.art === 'painting' ? 0.1 : h.art === 'slot' || h.art === 'fusebox' ? 0.22 : h.art === 'switches' ? 0.14 : 0.05
       const frameMat = h.art === 'painting' ? M.gold : h.art === 'map' ? M.wood : h.art === 'whiteboard' || h.art === 'calendar' ? M.white : h.art === 'poster' || h.art === 'manual' ? M.white : M.darkSteel

@@ -5,6 +5,7 @@ import { ErrorBox, Loading } from './ui/kit'
 import { Onboarding } from './pages/Onboarding'
 import { Home } from './pages/Home'
 import { Rooms } from './pages/Rooms'
+import { Escape } from './pages/Escape'
 import { Solo } from './pages/Solo'
 import { CoopHub, CoopRoom } from './pages/Coop'
 import { MyRoom } from './pages/MyRoom'
@@ -29,6 +30,7 @@ export default function App() {
           <Route element={<Layout />}>
             <Route path="/welcome" element={<Onboarding />} />
             <Route path="/" element={<Guarded><Home /></Guarded>} />
+            <Route path="/escape" element={<Guarded><Escape /></Guarded>} />
             <Route path="/rooms" element={<Guarded><Rooms /></Guarded>} />
             <Route path="/solo/:roomId" element={<Guarded><Solo /></Guarded>} />
             <Route path="/coop" element={<Guarded><CoopHub /></Guarded>} />

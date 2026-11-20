@@ -107,6 +107,38 @@ export function SceneBackground({ theme }: { theme: SceneDef['theme'] }) {
         <ellipse cx="400" cy="0" rx="320" ry="300" fill="url(#spot)" />
       </g>
     )
+  if (theme === 'bank')
+    return (
+      <g>
+        <rect width="800" height="460" fill="#2b2f36" />
+        {Array.from({ length: 9 }, (_, i) => <rect key={i} x={i * 90 + 10} y="30" width="80" height="400" rx="4" fill="none" stroke="#3a4049" strokeWidth="3" />)}
+        <rect y="460" width="800" height="140" fill="#1b1e23" />
+        <path d="M0 460H800" stroke={GOLD} strokeWidth="3" opacity=".5" />
+        {[200, 600].map((x) => <ellipse key={x} cx={x} cy="0" rx="200" ry="260" fill="url(#spot)" />)}
+      </g>
+    )
+  if (theme === 'hotel')
+    return (
+      <g>
+        <rect width="800" height="440" fill="#3d1f2a" />
+        {Array.from({ length: 20 }, (_, i) => <path key={i} d={`M${i * 40 + 20} 0V440`} stroke="#4a2734" strokeWidth="10" opacity=".6" />)}
+        <rect y="300" width="800" height="12" fill="#6b3a24" />
+        <rect y="440" width="800" height="160" fill="#4d1527" />
+        {Array.from({ length: 10 }, (_, i) => <path key={i} d={`M${i * 80} 440l40 160`} stroke="#3b0f1d" strokeWidth="6" />)}
+        <path d="M0 440H800" stroke={GOLD} strokeWidth="3" opacity=".6" />
+        {[150, 400, 650].map((x) => <ellipse key={x} cx={x} cy="30" rx="120" ry="200" fill="url(#spot)" />)}
+      </g>
+    )
+  if (theme === 'office')
+    return (
+      <g>
+        <rect width="800" height="450" fill="#cfd4da" />
+        {Array.from({ length: 8 }, (_, i) => <rect key={i} x={i * 100} y="0" width="100" height="450" fill={i % 2 ? '#c8cdd4' : '#d3d8de'} />)}
+        <rect y="450" width="800" height="150" fill="#5b6470" />
+        <path d="M0 450H800" stroke="#3a414a" strokeWidth="4" />
+        <ellipse cx="400" cy="0" rx="340" ry="280" fill="url(#spot)" />
+      </g>
+    )
   if (theme === 'museum')
     return (
       <g>
@@ -634,6 +666,97 @@ export function ObjectArt({ art, w, h, active, variant }: { art: ArtKey; w: numb
           ))}
           {Array.from({ length: 18 }, (_, i) => <circle key={i} cx={20 + (i % 9) * ((w - 40) / 8)} cy={h * 0.58 + Math.floor(i / 9) * (h * 0.15)} r="6" fill={active && i % 5 === 0 ? '#ffd97a' : '#2b2b33'} filter={active && i % 5 === 0 ? 'url(#glow)' : undefined} />)}
           {Array.from({ length: 9 }, (_, i) => <circle key={i} cx={20 + i * ((w - 40) / 8)} cy={h * 0.9} r="5" fill="#e9ecf8" />)}
+        </g>
+      )
+    case 'card':
+      return (
+        <g>
+          <rect width={w} height={h} rx="8" fill="#f4ecd8" stroke={GOLD} strokeWidth="2" />
+          {Array.from({ length: 5 }, (_, i) => <rect key={i} x="14" y={22 + i * (h / 7)} width={w - 28 - (i % 2) * 20} height="5" rx="2" fill="#8d7a5a" />)}
+          <circle cx={w - 14} cy="12" r="6" fill="#e0533f" />
+        </g>
+      )
+    case 'photo':
+      return (
+        <g>
+          <rect width={w} height={h} fill="#f4f6ff" stroke="#8d7a5a" strokeWidth="2" />
+          <rect x="8" y="8" width={w - 16} height={h - 30} fill="#33415e" />
+          <circle cx={w * 0.35} cy={h * 0.4} r={Math.min(w, h) * 0.12} fill="#f2c14e" opacity=".8" />
+          <path d={`M8 ${h - 22}L${w * 0.4} ${h * 0.5}L${w - 8} ${h - 22}Z`} fill="#1f2a44" />
+        </g>
+      )
+    case 'mirror':
+      return (
+        <g>
+          <ellipse cx={cx} cy={cy} rx={cx} ry={cy} fill="url(#goldg)" />
+          <ellipse cx={cx} cy={cy} rx={cx - 10} ry={cy - 10} fill="#9fb6c9" />
+          <path d={`M${cx - cx * 0.5} ${cy - cy * 0.5}l${cx * 0.3} ${-cy * 0.15}M${cx - cx * 0.45} ${cy - cy * 0.3}l${cx * 0.5} ${-cy * 0.25}`} stroke="#fff" strokeWidth="5" opacity=".6" strokeLinecap="round" />
+          <text x={cx} y={cy + 6} textAnchor="middle" fontSize="16" fill="#2a3a4a" transform={`scale(-1 1) translate(${-w} 0)`} opacity=".7">לילה</text>
+        </g>
+      )
+    case 'bed':
+      return (
+        <g>
+          <rect y={h * 0.15} width="22" height={h * 0.85} rx="4" fill="url(#wood)" />
+          <rect y={h * 0.45} width={w} height={h * 0.4} rx="10" fill="#f4f6ff" stroke="#c9cfdc" strokeWidth="2" />
+          <rect x="30" y={h * 0.35} width={w * 0.25} height={h * 0.18} rx="10" fill="#fff" stroke="#c9cfdc" />
+          <rect x={w * 0.4} y={h * 0.45} width={w * 0.6} height={h * 0.4} rx="8" fill="#7a1f36" />
+          <rect y={h * 0.85} width={w} height={h * 0.15} fill="url(#wood)" />
+        </g>
+      )
+    case 'elevator':
+      return (
+        <g>
+          <rect width={w} height={h} rx="4" fill="url(#goldg)" />
+          <rect x="10" y="40" width={w - 20} height={h - 50} fill="#1b1e23" />
+          <rect x="12" y="42" width={(w - 24) / 2 - 2} height={h - 54} fill="url(#steel)" transform={active ? `translate(${-(w - 24) / 2 + 6} 0)` : ''} />
+          <rect x={cx + 2} y="42" width={(w - 24) / 2 - 2} height={h - 54} fill="url(#steel)" transform={active ? `translate(${(w - 24) / 2 - 6} 0)` : ''} />
+          <rect x={cx - 26} y="8" width="52" height="24" rx="4" fill={INK} />
+          <text x={cx} y="26" textAnchor="middle" fontSize="16" fill={active ? TEAL2 : '#e0533f'} fontWeight="700">{active ? '▲' : '—'}</text>
+        </g>
+      )
+    case 'gauges':
+      return (
+        <g>
+          <rect width={w} height={h} rx="10" fill={INK} stroke={TEAL} strokeWidth="2" />
+          {[0, 1, 2].map((i) => {
+            const gx = (w / 3) * i + w / 6
+            const r = Math.min(w / 7, h / 3)
+            const a = variant === 'radiation' ? -0.2 : active ? 0 : [-0.9, 0.9, 0][i]
+            return (
+              <g key={i}>
+                <circle cx={gx} cy={h * 0.45} r={r} fill="#03140f" stroke={GOLD} strokeWidth="2" />
+                <path d={`M${gx} ${h * 0.45}l${Math.sin(a) * r * 0.85} ${-Math.cos(a) * r * 0.85}`} stroke={variant === 'radiation' ? '#e0533f' : TEAL2} strokeWidth="3" strokeLinecap="round" />
+              </g>
+            )
+          })}
+          <text x={cx} y={h - 12} textAnchor="middle" fontSize="13" fill={TEAL2}>{variant === 'radiation' ? '☢' : 'O₂ · CO₂ · P'}</text>
+        </g>
+      )
+    case 'camera':
+      return (
+        <g>
+          <rect width={w} height={h} rx="6" fill="#111" stroke="#555" strokeWidth="2" />
+          <rect x="6" y="6" width={w - 12} height={h - 12} fill="#1f2b2a" />
+          {Array.from({ length: Math.floor(h / 6) }, (_, i) => <path key={i} d={`M6 ${8 + i * 6}H${w - 6}`} stroke="#000" opacity=".25" />)}
+          <circle cx="16" cy="16" r="4" fill="#e0533f" />
+          <text x={w - 10} y="20" textAnchor="end" fontSize="11" fill={TEAL2} fontFamily="monospace">REC</text>
+        </g>
+      )
+    case 'board':
+      return (
+        <g>
+          <rect width={w} height={h} rx="6" fill="#a8794a" stroke="#5a3a1e" strokeWidth="4" />
+          {[[0.15, 0.2], [0.55, 0.15], [0.3, 0.6], [0.7, 0.55]].map(([px, py], i) => <rect key={i} x={w * px} y={h * py} width={w * 0.25} height={h * 0.28} fill="#f4ecd8" transform={`rotate(${i % 2 ? 4 : -3} ${w * px} ${h * py})`} />)}
+          <path d={`M${w * 0.27} ${h * 0.3}L${w * 0.67} ${h * 0.25}L${w * 0.42} ${h * 0.7}L${w * 0.82} ${h * 0.65}`} stroke="#e0533f" strokeWidth="2" fill="none" />
+        </g>
+      )
+    case 'pod':
+      return (
+        <g>
+          <ellipse cx={cx} cy={cy} rx={cx} ry={cy} fill="url(#steel)" stroke={TEAL} strokeWidth="3" />
+          <ellipse cx={cx} cy={cy * 0.8} rx={cx * 0.5} ry={cy * 0.35} fill={active ? TEAL2 : '#0a1430'} stroke={GOLD} strokeWidth="2" filter={active ? 'url(#glow)' : undefined} />
+          <path d={`M${cx - cx * 0.6} ${h - 10}l-14 10M${cx + cx * 0.6} ${h - 10}l14 10`} stroke={GOLD} strokeWidth="4" />
         </g>
       )
     case 'jewelbox':
