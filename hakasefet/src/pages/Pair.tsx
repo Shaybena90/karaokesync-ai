@@ -13,6 +13,8 @@ import { Coin } from '../ui/art'
 import { LockPanel } from '../ui/escape/LockPanel'
 import { play } from '../ui/audio'
 import { Toast } from '../ui/kit'
+import { TourView } from '../ui/escape/TourView'
+import { useApp as usePrefs } from '../state/AppState'
 
 // ── hub ───────────────────────────────────────────────────
 
@@ -196,6 +198,7 @@ export function PairBoard({ view, role, now, act }: { view: PairView; role: Role
         </div>
         <span className="chip" data-testid="points">🏆 {view.points}</span>
       </div>
+      <PairRoomView role={role} />
       <ol className="flex gap-1" aria-label={`שלב ${Math.min(view.stage + 1, 6)} מתוך 6`}>
         {PAIR_PUZZLES.map((p, i) => <li key={p.id} className={`h-2 flex-1 rounded-full ${i < view.stage ? 'bg-teal' : i === view.stage ? 'bg-gold' : 'bg-white/15'}`} />)}
       </ol>
@@ -240,6 +243,16 @@ export function PairBoard({ view, role, now, act }: { view: PairView; role: Role
       <ul className="space-y-1 text-sm" aria-live="polite" aria-label="מה קרה">
         {view.log.slice(-4).reverse().map((l, i) => <li key={`${l.at}-${i}`} className={l.kind === 'wrong' ? 'text-coral' : l.kind === 'good' ? 'text-teal-2' : 'text-mist'}>{l.text}</li>)}
       </ul>
+    </div>
+  )
+}
+
+/** The room itself: side A looks at the cipher desk, side B through the glass at the control room. */
+function PairRoomView({ role }: { role: Role }) {
+  const { prefs } = usePrefs()
+  return (
+    <div className="card overflow-hidden p-1.5">
+      <TourView src="rooms/pair.webp" size={[1672, 941]} view={role === 'A' ? [0, 120, 1200, 821] : [560, 40, 760, 560]} spots={[]} flags={[]} label={role === 'A' ? 'צד א׳ — שולחן הצפנים' : 'צד ב׳ — חדר הבקרה שמעבר לזכוכית'} reducedMotion={prefs.reducedMotion} onTap={() => {}} />
     </div>
   )
 }

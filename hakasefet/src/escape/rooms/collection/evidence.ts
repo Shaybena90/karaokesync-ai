@@ -1,5 +1,5 @@
 import type { RoomDef } from '../../types'
-import { doc } from './kit'
+import { doc, placeOnPhoto } from './kit'
 
 const PEOPLE = [
   { id: 'smadar', label: 'סמדר', icon: '👩‍💼' },
@@ -22,6 +22,7 @@ export const evidence: RoomDef = {
   blurb: 'התיק נגד סמדר נראה סגור. קצת יותר מדי סגור.',
   story: 'בלילה שבין רביעי לחמישי נמחק מסמך רגיש משרת החברה. כל הראיות מצביעות על סמדר, מנהלת הפרויקט. נעלתם את עצמכם בחדר החקירות עם לוח הראיות, ואתם לא יוצאים עד שהתמונה ברורה.',
   goal: 'לבדוק כל ראיה, לגלות מה זויף ומי זייף, להצמיד לחשוד את הראיות שמוכיחות זאת — ולפתוח את דלת חדר החקירות.',
+  photo: { src: 'rooms/evidence.webp', size: [1672, 941], views: { docs: [0, 0, 1672, 941], photos: [0, 300, 760, 520], testimony: [600, 300, 560, 330], logs: [900, 150, 772, 620], conclusions: [0, 0, 1672, 941] } },
   illustration: { art: 'board', theme: 'office' },
   scenes: [
     { id: 'docs', name: 'מסמכים', theme: 'office', icon: '📄' },
@@ -128,3 +129,12 @@ export const evidence: RoomDef = {
     { solve: 'exit', input: '2150' },
   ],
 }
+
+// where each object is in the room's image (pixels of the 1672×941 image)
+placeOnPhoto(evidence.hotspots, {
+  brief: [460, 600, 285, 56], report1: [185, 665, 225, 175], report2: [415, 660, 225, 128], rights: [1195, 185, 130, 420], boarding: [1420, 700, 252, 140],
+  photo: [65, 365, 275, 260], lobbycam: [345, 365, 310, 255],
+  tsmadar: [668, 378, 85, 108], tyoav: [752, 378, 85, 108], tadi: [836, 378, 85, 108], tnadav: [918, 378, 88, 108],
+  badgelog: [970, 250, 135, 100], activity: [1525, 540, 147, 150],
+  timeline: [780, 118, 305, 100], phototime: [755, 245, 212, 90], reportdiff: [430, 795, 175, 135], editor: [1020, 362, 135, 105], liar: [1100, 128, 90, 112], accuse: [1330, 505, 190, 150], exit: [1395, 110, 277, 390],
+})

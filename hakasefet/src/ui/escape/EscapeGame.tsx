@@ -9,7 +9,7 @@ import { Modal } from '../kit'
 import { LockPanel } from './LockPanel'
 import { ObjectArt, SceneBackground, SceneDefs } from './sceneArt'
 import { Scene3D } from './Scene3D'
-import { PhotoScene } from './PhotoScene'
+import { TourView } from './TourView'
 import { useApp } from '../../state/AppState'
 import { RevealViewer } from './RevealViewer'
 import { VoicePlayer } from './VoicePlayer'
@@ -83,6 +83,24 @@ export function EscapeGame({ room, snap, session, coop, onRestart }: { room: Roo
   }, [scenes, sceneId, room])
   const scene = scenes.find((s) => s.id === sceneId) ?? scenes[0] ?? room.scenes[0]
   const hotspots = visibleRoom.hotspots.filter((h) => h.scene === scene.id)
+
+  // realistic rooms: a virtual tour of the room's image, every visible area's objects in it
+  const [inside, setInside] = useState(false)
+  const tourSrc = scene.photo?.src ?? room.photo?.src
+  const sceneIds = new Set(scenes.map((sc) => sc.id))
+  const srcOf = (sid: string) => room.scenes.find((sc) => sc.id === sid)?.photo?.src ?? room.photo?.src
+  const tour = tourSrc
+    ? {
+        src: tourSrc,
+        size: (scene.photo?.size ?? room.photo!.size) as [number, number],
+        view: scene.photo?.crop ?? room.photo?.views?.[scene.id],
+        spots: [
+          ...visibleRoom.hotspots.filter((h) => h.photo && sceneIds.has(h.scene) && srcOf(h.scene) === tourSrc).map((h) => ({ id: h.id, name: h.name, rect: h.photo!, hotspot: h, done: isActive(h, flags) })),
+          ...(room.photo?.enter ? [{ id: '__enter', name: room.photo.enter.label, rect: room.photo.enter.rect }] : []),
+        ],
+      }
+    : null
+  const unplaced = tour ? hotspots.filter((h) => !h.photo) : []
   const left = remainingMs(room, state, now)
   const items = state.inventory.map((id) => room.items.find((i) => i.id === id)!).filter(Boolean)
   const level = levelOf(state)
@@ -173,15 +191,45 @@ export function EscapeGame({ room, snap, session, coop, onRestart }: { room: Roo
       </div>}
 
       {/* the scene */}
-      {room.presentation === 'phone' ? (
-        <PhoneView room={room} scenes={scenes} sceneId={phoneApp} setSceneId={setPhoneApp} flags={flags} onOpen={tapHotspot} />
+      {tour && !inside ? (
+        <div className="card relative overflow-hidden p-1.5">
+          {room.presentation === 'board' && <button className="btn btn-ghost mb-1.5 w-full !min-h-10 !text-sm" onClick={() => setInside(true)}>📌 לוח הראיות — פתיחה והשוואה זה לצד זה</button>}
+          <TourView
+            src={tour.src}
+            size={tour.size}
+            view={tour.view}
+            spots={tour.spots}
+            flags={flags}
+            label={scene.name}
+            using={!!using}
+            dark={!!room.darkUntil && !flags.includes(room.darkUntil)}
+            reducedMotion={prefs.reducedMotion}
+            focusId={open?.id ?? null}
+            onTap={(id) => (id === '__enter' ? setInside(true) : tapHotspot(room.hotspots.find((h) => h.id === id)!))}
+          />
+          {unplaced.length > 0 && (
+            <div className="mt-1.5 flex flex-wrap items-center gap-1.5 px-1 pb-1">
+              <span className="text-xs font-bold text-dim">עוד כאן:</span>
+              {unplaced.map((h) => (
+                <button key={h.id} data-hotspot aria-label={h.name} className="chip !min-h-9 !text-xs hover:border-gold" onClick={() => tapHotspot(h)}>{h.icon ?? '🔎'} {h.name}</button>
+              ))}
+            </div>
+          )}
+          {flying && <span key={flying.key} className="item-fly" aria-hidden="true" onAnimationEnd={() => setFlying(null)}>{flying.icon}</span>}
+        </div>
+      ) : room.presentation === 'phone' ? (
+        <div>
+          {room.photo && <button className="btn btn-ghost mb-2 w-full !min-h-10 !text-sm" onClick={() => setInside(false)}>⬅ להניח את הטלפון ולחזור לחדר</button>}
+          <PhoneView room={room} scenes={scenes} sceneId={phoneApp} setSceneId={setPhoneApp} flags={flags} onOpen={tapHotspot} />
+        </div>
       ) : room.presentation === 'board' ? (
-        <BoardView room={room} hotspots={hotspots} flags={flags} onOpen={tapHotspot} />
+        <div>
+          {room.photo && <button className="btn btn-ghost mb-2 w-full !min-h-10 !text-sm" onClick={() => setInside(false)}>⬅ חזרה לחדר החקירות</button>}
+          <BoardView room={room} hotspots={hotspots} flags={flags} onOpen={tapHotspot} />
+        </div>
       ) : (
       <div className="card relative overflow-hidden p-1.5">
-        {scene.photo ? (
-          <PhotoScene room={room} sceneId={scene.id} hotspots={hotspots} flags={flags} using={!!using} dark={!!room.darkUntil && !flags.includes(room.darkUntil)} reducedMotion={prefs.reducedMotion} onTap={(id) => tapHotspot(room.hotspots.find((h) => h.id === id)!)} />
-        ) : use2D ? (
+        {use2D ? (
           <Scene2D room={visibleRoom} sceneId={scene.id} flags={flags} using={!!using} onTap={(id) => tapHotspot(room.hotspots.find((h) => h.id === id)!)} />
         ) : (
           <Scene3D

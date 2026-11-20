@@ -18,6 +18,12 @@ async function openHotspot(page: Page, roomId: string, id: string) {
   const h = room.hotspots.find((x) => x.id === id)!
   const scene = room.scenes.find((s) => s.id === h.scene)!
   if (room.presentation === 'phone') {
+    // in the room image: pick up the phone first
+    const pick = page.locator('[data-hotspot][aria-label*="הטלפון של"]')
+    if (await pick.isVisible()) {
+      await pick.click()
+      await expect(page.getByTestId('phone')).toBeVisible()
+    }
     // go to the app: back to the home screen first, then the app icon (a lone lock screen has neither)
     const home = page.getByRole('button', { name: 'חזרה למסך הבית' })
     if (await home.isVisible()) await home.click()

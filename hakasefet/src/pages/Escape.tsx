@@ -7,7 +7,6 @@ import { PAIR_ROOM } from '../pair/meta'
 import { backupFor } from '../state/useSession'
 import { listRuns, type Run } from '../storage/repo'
 import { RoomIllustration } from '../ui/escape/collection'
-import { ObjectArt, SceneBackground, SceneDefs } from '../ui/escape/sceneArt'
 
 function progressOf(room: RoomDef, runs: Run[]) {
   const mine = runs.filter((r) => r.roomId === room.id)
@@ -50,12 +49,7 @@ export function Escape() {
           )
         })}
         <li className="card overflow-hidden p-0" data-room="pair">
-          <svg viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice" className="block h-36 w-full" aria-hidden="true">
-            <SceneDefs />
-            <SceneBackground theme="hotel" />
-            <g transform="translate(150 140)"><ObjectArt art="door" w={200} h={320} active={false} /></g>
-            <g transform="translate(450 140)"><ObjectArt art="door" w={200} h={320} active={false} /></g>
-          </svg>
+          <img src={`${import.meta.env.BASE_URL}rooms/pair.webp`} alt="" loading="lazy" decoding="async" className="block h-36 w-full object-cover" />
           <div className="p-4">
             <h2 className="font-display text-2xl font-bold">{PAIR_ROOM.emoji} {PAIR_ROOM.title}</h2>
             <p className="mt-1 text-sm text-mist">{PAIR_ROOM.blurb}</p>

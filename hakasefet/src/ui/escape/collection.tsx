@@ -12,6 +12,8 @@ export const isUnseen = (h: Hotspot, flags: string[]) => !flags.includes(`seen:$
 // ── catalog illustration ──────────────────────────────────
 
 export function RoomIllustration({ room, className = '' }: { room: RoomDef; className?: string }) {
+  const photo = room.photo?.src ?? room.scenes.find((s) => s.photo)?.photo?.src
+  if (photo) return <img src={`${import.meta.env.BASE_URL}${photo}`} alt="" loading="lazy" decoding="async" className={`block object-cover ${className}`} />
   const il = room.illustration ?? { art: 'door' as const, theme: room.scenes[0].theme }
   return (
     <svg viewBox="0 0 800 600" preserveAspectRatio="xMidYMid slice" className={`block ${className}`} aria-hidden="true">

@@ -1,3 +1,4 @@
+import { placeOnPhoto } from './kit'
 import type { Interaction, RoomDef } from '../../types'
 
 const announce = (min: number, text: string, notebook: string): Interaction => ({
@@ -7,6 +8,8 @@ const announce = (min: number, text: string, notebook: string): Interaction => (
 })
 
 /** "שבע דקות לאחור" — a 7-minute time loop: objects reset, the evidence notebook stays. */
+const PHOTO = { src: 'rooms/loop.webp', size: [1672, 941] as [number, number] }
+
 export const loop: RoomDef = {
   id: 'loop',
   version: 1,
@@ -22,8 +25,8 @@ export const loop: RoomDef = {
   loop: { minutes: 7, persist: ['schedule', 'terminal'] },
   illustration: { art: 'clock', theme: 'lab' },
   scenes: [
-    { id: 'room', name: 'חדר הניסוי', theme: 'lab' },
-    { id: 'servers', name: 'חדר השרתים', theme: 'lab' },
+    { id: 'room', name: 'חדר הניסוי', theme: 'lab', photo: { ...PHOTO, crop: [0, 0, 1672, 941] } },
+    { id: 'servers', name: 'חדר השרתים', theme: 'lab', photo: { ...PHOTO, crop: [300, 330, 1150, 600] } },
   ],
   items: [
     { id: 'fuse', name: 'נתיך', icon: '🔌', note: { title: 'נתיך', text: 'נתיך זכוכית קטן. נראה שהוא מתאים ללוח של הדלת.' } },
@@ -136,3 +139,9 @@ export const loop: RoomDef = {
     { use: 'door', item: 'fuse' },
   ],
 }
+
+// where each object is in the room's image (pixels of the 1672×941 image)
+placeOnPhoto(loop.hotspots, {
+  clock: [790, 95, 400, 440], intercom: [0, 365, 185, 170], drawer: [120, 575, 290, 130], schedule: [345, 90, 225, 315], wall: [640, 380, 135, 150],
+  terminal: [190, 355, 165, 170], door: [1420, 90, 230, 500], router: [360, 395, 270, 100], rack: [1195, 400, 190, 185], logbook: [800, 615, 570, 280],
+})
